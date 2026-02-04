@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Obit Results Viewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .header {
+      background: #2c3e50;
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .stats {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .container {
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+
+    .query-group {
+      background: white;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .query-header {
+      background: #34495e;
+      color: white;
+      padding: 8px 12px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .query-name {
+      font-weight: 600;
+    }
+
+    .query-details {
+      opacity: 0.8;
+    }
+
+    .result-row {
+      display: grid;
+      grid-template-columns: 32px 180px 60px 100px 140px 1fr 80px 70px;
+      gap: 8px;
+      padding: 6px 12px;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      min-height: 36px;
+    }
+
+    .result-row:hover {
+      background: #f8f9fa;
+    }
+
+    .result-row.best-guess {
+      background: #e8f5e9;
+    }
+
+    .result-row.best-guess:hover {
+      background: #c8e6c9;
+    }
+
+    .result-row.excluded {
+      background: #ffebee;
+      opacity: 0.6;
+    }
+
+    .result-row.other-result {
+      background: #fafafa;
+    }
+
+    .other-results {
+      display: none;
+    }
+
+    .other-results.expanded {
+      display: block;
+    }
+
+    .expand-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: #666;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .expand-btn:hover {
+      background: #ddd;
+    }
+
+    .expand-btn.expanded {
+      transform: rotate(180deg);
+    }
+
+    .col-rank {
+      font-weight: 600;
+      color: #27ae60;
+    }
+
+    .col-name {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-score {
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .col-score .good { color: #27ae60; }
+    .col-score .ok { color: #f39c12; }
+    .col-score .bad { color: #e74c3c; }
+
+    .col-age {
+      text-align: center;
+    }
+
+    .col-location {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-url {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-url a {
+      color: #3498db;
+      text-decoration: none;
+    }
+
+    .col-url a:hover {
+      text-decoration: underline;
+    }
+
+    .col-source {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .col-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .btn {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+
+    .btn-exclude {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .btn-exclude:hover {
+      background: #c0392b;
+    }
+
+    .btn-exclude:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-global {
+      background: #9b59b6;
+      color: white;
+    }
+
+    .btn-global:hover {
+      background: #8e44ad;
+    }
+
+    .no-results {
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #2c3e50;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 4px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: #e74c3c;
+    }
+
+    .toast.success {
+      background: #27ae60;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      font-size: 11px;
+      padding: 8px 12px;
+      background: #ecf0f1;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+    }
+
+    .legend-color.best { background: #e8f5e9; border: 1px solid #a5d6a7; }
+    .legend-color.other { background: #fafafa; border: 1px solid #ddd; }
+    .legend-color.excluded { background: #ffebee; border: 1px solid #ef9a9a; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Obituary Results Viewer</h1>
+    <div class="stats" id="stats">Loading...</div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color best"></div> Best Guess</div>
+    <div class="legend-item"><div class="legend-color other"></div> Other Results</div>
+    <div class="legend-item"><div class="legend-color excluded"></div> Excluded</div>
+  </div>
+
+  <div class="container" id="results-container">
+    Loading results...
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let resultsData = [];
+    const excludedSet = new Set();
+
+    async function loadResults() {
+      try {
+        const response = await fetch('/api/results');
+        resultsData = await response.json();
+        renderResults();
+        updateStats();
+      } catch (err) {
+        showToast('Error loading results: ' + err.message, 'error');
+      }
+    }
+
+    function updateStats() {
+      const totalQueries = resultsData.length;
+      const totalResults = resultsData.reduce((sum, q) => sum + q.results.length, 0);
+      document.getElementById('stats').textContent =
+        `${totalQueries} queries | ${totalResults} total results | ${excludedSet.size} excluded`;
+    }
+
+    function renderResults() {
+      const container = document.getElementById('results-container');
+
+      if (resultsData.length === 0) {
+        container.innerHTML = '<div class="no-results">No results to display</div>';
+        return;
+      }
+
+      container.innerHTML = resultsData.map((queryResult, qi) => {
+        const query = queryResult.query;
+        const results = queryResult.results;
+        const searchKey = queryResult.searchKey;
+
+        if (results.length === 0) {
+          return `
+            <div class="query-group">
+              <div class="query-header">
+                <span class="query-name">${query.firstName} ${query.lastName}</span>
+                <span class="query-details">No results</span>
+              </div>
+            </div>
+          `;
+        }
+
+        const bestGuess = results[0];
+        const otherResults = results.slice(1);
+
+        return `
+          <div class="query-group">
+            <div class="query-header">
+              <span class="query-name">${query.firstName} ${query.lastName}</span>
+              <span class="query-details">
+                ${query.city || ''} ${query.state || ''} | Age: ${query.apxAge || '?'} |
+                ${results.length} result${results.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            ${renderResultRow(bestGuess, searchKey, true, otherResults.length > 0, qi)}
+            <div class="other-results" id="other-${qi}">
+              ${otherResults.map(r => renderResultRow(r, searchKey, false, false, qi)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderResultRow(result, searchKey, isBestGuess, hasOthers, queryIndex) {
+      const isExcluded = excludedSet.has(result.fingerprint) || excludedSet.has(result.url);
+      const scorePercent = result.maxPossible > 0 ? Math.round((result.finalScore / result.maxPossible) * 100) : 0;
+      const scoreClass = scorePercent >= 80 ? 'good' : scorePercent >= 50 ? 'ok' : 'bad';
+
+      const rowClass = isExcluded ? 'excluded' : (isBestGuess ? 'best-guess' : 'other-result');
+
+      const expandBtn = isBestGuess && hasOthers
+        ? `<button class="expand-btn" onclick="toggleExpand(${queryIndex})" title="Show/hide other results">&#9660;</button>`
+        : '';
+
+      const domain = result.url ? new URL(result.url).hostname.replace('www.', '') : '';
+
+      return `
+        <div class="result-row ${rowClass}" data-fingerprint="${result.fingerprint}" data-url="${result.url}">
+          <div>${expandBtn}</div>
+          <div class="col-name" title="${result.fullName}">${result.fullName}</div>
+          <div class="col-score"><span class="${scoreClass}">${result.finalScore}/${result.maxPossible}</span></div>
+          <div class="col-age">${result.ageYears || '-'}</div>
+          <div class="col-location" title="${result.city || ''}, ${result.state || ''}">${result.city || '?'}, ${result.state || '?'}</div>
+          <div class="col-url"><a href="${result.url}" target="_blank" title="${result.url}">${domain}</a></div>
+          <div class="col-source">${result.source}</div>
+          <div class="col-actions">
+            <button class="btn btn-exclude" onclick="excludeResult('${searchKey}', '${result.fingerprint}', '${encodeURIComponent(result.url)}', '${encodeURIComponent(result.fullName)}', 'per-query')" ${isExcluded ? 'disabled' : ''} title="Exclude for this query">X</button>
+            <button class="btn btn-global" onclick="excludeResult('${searchKey}', '${result.fingerprint}', '${encodeURIComponent(result.url)}', '${encodeURIComponent(result.fullName)}', 'global')" ${isExcluded ? 'disabled' : ''} title="Exclude globally">G</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function toggleExpand(queryIndex) {
+      const otherResults = document.getElementById(`other-${queryIndex}`);
+      const btn = otherResults.previousElementSibling.querySelector('.expand-btn');
+
+      otherResults.classList.toggle('expanded');
+      btn.classList.toggle('expanded');
+    }
+
+    async function excludeResult(searchKey, fingerprint, encodedUrl, encodedName, scope) {
+      const url = decodeURIComponent(encodedUrl);
+      const name = decodeURIComponent(encodedName);
+
+      try {
+        const response = await fetch('/api/exclude', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            searchKey,
+            fingerprint,
+            url,
+            name,
+            scope,
+            reason: scope === 'global' ? 'excluded globally via web UI' : 'excluded via web UI'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          excludedSet.add(fingerprint);
+          excludedSet.add(url);
+
+          // Update UI
+          document.querySelectorAll(`[data-fingerprint="${fingerprint}"]`).forEach(row => {
+            row.classList.add('excluded');
+            row.querySelectorAll('.btn').forEach(btn => btn.disabled = true);
+          });
+
+          updateStats();
+          showToast(`Excluded: ${name} (${scope})`, 'success');
+        } else {
+          showToast('Error: ' + data.error, 'error');
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + type + ' show';
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Load on page load
+    loadResults();
+  </script>
+</body>
+</html>
