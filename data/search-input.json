@@ -1,0 +1,82 @@
+[
+  {
+    "firstName": "Carol",
+    "middleName": "Jean",
+    "lastName": "Frollmer",
+    "apxAge": 90,
+    "city": "Hamilton",
+    "state": "OH"
+  },
+  {
+    "firstName": "Charles",
+    "middleName": "",
+    "lastName": "Jacobs",
+    "apxAge": 99,
+    "city": "Dayton",
+    "state": "OH"
+  },
+  {
+    "firstName": "Jack",
+    "middleName": "",
+    "lastName": "Roman",
+    "apxAge": 65,
+    "city": "St. Augustine",
+    "state": "FL"
+  },
+   {
+    "firstName": "Louis",
+    "middleName": "D",
+    "lastName": "Chabut",
+    "apxAge": 86,
+    "city": "Hamilton",
+    "state": "OH"
+  },
+  {
+    "firstName": "Billy",
+    "middleName": "Bass",
+    "lastName": "Nelson",
+    "apxAge": 75,
+    "city": "New York",
+    "state": "NY"
+  },
+  {
+    "firstName": "Shirley",
+    "middleName": "",
+    "lastName": "Raines",
+    "apxAge": 58,
+    "city": "New York",
+    "state": "NY"
+  },
+  {
+    "firstName": "Cynthia",
+    "middleName": "Russell",
+    "lastName": "Montague",
+    "apxAge": 72,
+    "city": "Salinas",
+    "state": "CA"
+  },
+   {
+    "firstName": "Mary Ann",
+    "middleName": "",
+    "lastName": "Torrente",
+    "apxAge": 93,
+    "city": "Monterey",
+    "state": "CA"
+  },
+  {
+    "firstName": "Margaret",
+    "middleName": "Ann",
+    "lastName": "Hurrell",
+    "apxAge": 76,
+    "city": "Medford",
+    "state": "OR"
+  },
+  {
+    "firstName": "Eldon",
+    "middleName": "Eugene",
+    "lastName": "Fagen",
+    "apxAge": 86,
+    "city": "Medford",
+    "state": "OR"
+  }
+]
