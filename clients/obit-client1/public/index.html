@@ -73,8 +73,8 @@
 
     .result-row {
       display: grid;
-      grid-template-columns: 32px 180px 60px 100px 140px 1fr 80px 70px;
-      gap: 8px;
+      grid-template-columns: 32px 160px 55px 45px 85px 85px 120px 1fr 60px 70px;
+      gap: 6px;
       padding: 6px 12px;
       align-items: center;
       border-bottom: 1px solid #eee;
@@ -153,6 +153,19 @@
     .col-age {
       text-align: center;
     }
+
+    .col-dod {
+      font-size: 11px;
+      color: #555;
+    }
+
+    .col-services {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .col-services .vis { color: #8e44ad; }
+    .col-services .fun { color: #2980b9; }
 
     .col-location {
       white-space: nowrap;
@@ -299,6 +312,22 @@
     let resultsData = [];
     const excludedSet = new Set();
 
+    // Format ISO date to short display (MM/DD/YY)
+    function formatDate(isoDate) {
+      if (!isoDate) return '-';
+      const parts = isoDate.split('-');
+      if (parts.length !== 3) return isoDate;
+      return `${parts[1]}/${parts[2]}/${parts[0].slice(2)}`;
+    }
+
+    // Format service dates (visitation & funeral)
+    function formatServices(visitation, funeral) {
+      const parts = [];
+      if (visitation) parts.push(`<span class="vis" title="Visitation">V:${formatDate(visitation)}</span>`);
+      if (funeral) parts.push(`<span class="fun" title="Funeral">F:${formatDate(funeral)}</span>`);
+      return parts.length > 0 ? parts.join(' ') : '-';
+    }
+
     async function loadResults() {
       try {
         const response = await fetch('/api/results');
@@ -375,12 +404,18 @@
 
       const domain = result.url ? new URL(result.url).hostname.replace('www.', '') : '';
 
+      // Format dates for display
+      const dod = result.dod ? formatDate(result.dod) : '-';
+      const services = formatServices(result.visitationDate, result.funeralDate);
+
       return `
         <div class="result-row ${rowClass}" data-fingerprint="${result.fingerprint}" data-url="${result.url}">
           <div>${expandBtn}</div>
           <div class="col-name" title="${result.fullName}">${result.fullName}</div>
           <div class="col-score"><span class="${scoreClass}">${result.finalScore}/${result.maxPossible}</span></div>
           <div class="col-age">${result.ageYears || '-'}</div>
+          <div class="col-dod" title="Date of Death">${dod}</div>
+          <div class="col-services">${services}</div>
           <div class="col-location" title="${result.city || ''}, ${result.state || ''}">${result.city || '?'}, ${result.state || '?'}</div>
           <div class="col-url"><a href="${result.url}" target="_blank" title="${result.url}">${domain}</a></div>
           <div class="col-source">${result.source}</div>
