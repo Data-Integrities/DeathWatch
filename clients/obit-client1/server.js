@@ -1,6 +1,53 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
+
+const PORT = process.env.PORT || 3001;
+
+// Kill any existing process on our port
+function killProcessOnPort(port) {
+  try {
+    if (process.platform === 'win32') {
+      // Windows: find PID and kill it
+      const result = execSync(`netstat -ano | findstr :${port} | findstr LISTENING`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const lines = result.trim().split('\n');
+      const pids = new Set();
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (pid && /^\d+$/.test(pid)) {
+          pids.add(pid);
+        }
+      }
+      for (const pid of pids) {
+        try {
+          execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
+          console.log(`Killed existing process on port ${port} (PID: ${pid})`);
+        } catch (e) {
+          // Process may have already exited
+        }
+      }
+    } else {
+      // Unix: use lsof and kill
+      const result = execSync(`lsof -ti :${port}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const pids = result.trim().split('\n').filter(p => p);
+      for (const pid of pids) {
+        try {
+          execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+          console.log(`Killed existing process on port ${port} (PID: ${pid})`);
+        } catch (e) {
+          // Process may have already exited
+        }
+      }
+    }
+  } catch (e) {
+    // No process found on port, that's fine
+  }
+}
+
+// Kill any existing server on our port before starting
+killProcessOnPort(PORT);
 
 // Get results file from CLI argument
 const resultsFile = process.argv[2];
@@ -91,7 +138,6 @@ app.get('/api/exclusion-stats', (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`\nObit Client running at http://localhost:${PORT}`);
   console.log(`Viewing results from: ${resultsPath}`);
