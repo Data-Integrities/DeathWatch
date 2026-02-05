@@ -5,26 +5,36 @@ Node.js obituary search engine that searches Google for obituaries based on user
 
 ## Project Structure
 ```
-obit-engine/
+DeathWatch/
 ├── src/
 │   ├── index.js              # Main search orchestrator
-│   ├── config.js             # Settings & scoring weights
+│   ├── config.js             # Settings & provider config
 │   ├── cli/search.js         # CLI interface (commander.js)
 │   ├── api/server.js         # Express HTTP API (port 3000)
 │   ├── utils/                # logger, cache
 │   ├── normalize/            # name, nicknames, location, age
-│   ├── data/                 # ExclusionStore
+│   ├── data/
+│   │   └── ExclusionStore.js # Per-query & global exclusions
 │   ├── providers/
 │   │   ├── google/           # GoogleProvider (requires CSE setup)
 │   │   ├── serper/           # SerperProvider (recommended)
 │   │   └── serpapi/          # SerpApiProvider
-│   ├── scoring/              # score, explain
+│   ├── scoring/
+│   │   ├── criteriaScore.js  # 0-100 scoring per criteria
+│   │   ├── levenshtein.js    # Fuzzy string matching
+│   │   ├── score.js          # Legacy scoring
+│   │   └── explain.js        # Result formatting
 │   ├── dedupe/               # fingerprint, dedupe
-│   └── __tests__/            # Jest tests
+│   └── __tests__/            # Jest tests (64 tests)
+├── clients/
+│   └── obit-client1/         # Web UI for reviewing results
+│       ├── server.js         # Express server (port 3001)
+│       └── public/index.html # Single-page UI
 ├── data/
 │   ├── search-input.json     # User-supplied search input
-│   ├── exclusions.json       # False positive exclusions
-│   └── cache/google-sample.json  # Stub Google SERP data
+│   ├── exclusions.json       # False positive exclusions (gitignored)
+│   ├── results-*.json        # Search results (gitignored)
+│   └── cache/                # Stub data for offline testing
 └── package.json
 ```
 
@@ -82,14 +92,37 @@ node src/cli/search.js search --first James --last Smith --city Hamilton --state
 
 ### CLI - Exclusions
 ```bash
-# Exclude false positive
+# Exclude false positive (per-query)
 node src/cli/search.js exclude --first James --last Smith --state OH --fingerprint "smith-j-cincinnati-oh-unknown"
 
-# List exclusions
+# Exclude globally (applies to all searches)
+node src/cli/search.js exclude --global --url "https://example.com/page" --reason "generic page"
+
+# List exclusions for a query
 node src/cli/search.js exclusions --first James --last Smith --state OH
+
+# List all exclusions
+node src/cli/search.js exclusions --all
+
+# Show exclusion statistics
+node src/cli/search.js exclusion-stats
 
 # Remove exclusion
 node src/cli/search.js unexclude --id <uuid>
+```
+
+### CLI - Interactive Review
+```bash
+# Review results and mark false positives interactively
+node src/cli/search.js review --file data/results-20260204-031939.json
+# Commands: [y]es/correct, [n]o/exclude, [g]lobal exclude, [s]kip, [q]uit
+```
+
+### Web UI - obit-client1
+```bash
+cd clients/obit-client1 && npm install
+node server.js ../../data/results-20260204-031939.json
+# Open http://localhost:3001
 ```
 
 ### API Server
@@ -109,20 +142,22 @@ npm start  # Runs on http://localhost:3000
 npm test
 ```
 
-## Scoring Weights
-| Signal | Points |
-|--------|--------|
-| Last name exact | +35 |
-| Last name mismatch | -35 |
-| City exact | +20 |
-| State exact | +15 |
-| Age in range (±6 years) | +15 |
-| First name exact | +10 |
-| First name mismatch | -10 |
-| Nickname match | +6 |
-| Middle initial | +3 |
-| City mismatch same state | -10 |
-| Age outside range | -15 |
+## Scoring System
+
+Each result is scored on 5 criteria (0-100 each). `finalScore` = sum of all applicable criteria.
+Results are ranked by finalScore (rank 1 = best guess).
+
+| Criteria | Score Range | Notes |
+|----------|-------------|-------|
+| Last Name | 0-100 | Levenshtein similarity (e.g., Fagen→Fagan = 80) |
+| First Name | 0-100 | Levenshtein + nickname matching (Jim→James = 90) |
+| State | 0 or 100 | Exact match only |
+| City | 0, 50, or 100 | 100=exact, 50=different city same state, 0=mismatch |
+| Age | 0-100 | ±0.5yr=100, ±1yr=90, ... ±6yr=40, >6yr=0 |
+
+**Age Adjustment:** If `inputDate` is provided per-person, query age is adjusted based on elapsed time since that date.
+
+**Example:** Score 480/500 means 4 criteria matched well, 1 partial match.
 
 ## Fingerprint Format
 `lastname-firstinitial-city-state-dod`
