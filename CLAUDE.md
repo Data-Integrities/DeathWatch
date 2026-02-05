@@ -12,7 +12,7 @@ DeathWatch/
 │   ├── cli/search.js         # CLI interface (commander.js)
 │   ├── api/server.js         # Express HTTP API (port 3000)
 │   ├── utils/                # logger, cache
-│   ├── normalize/            # name, nicknames, location, age
+│   ├── normalize/            # name, nicknames, location, age, dod, serviceDates, enrichPage
 │   ├── data/
 │   │   └── ExclusionStore.js # Per-query & global exclusions
 │   ├── providers/
@@ -195,6 +195,23 @@ GOOGLE_CSE_ID=your_cse_id
 ```
 
 Without any API keys configured, the engine uses stub data from `data/cache/google-sample.json`.
+
+## Page Enrichment
+
+After scoring, the engine fetches actual obituary web pages for the top results to extract data not available in truncated search snippets (especially funeral/visitation dates).
+
+- Enabled by default; disable with `ENRICH_PAGES=false` in `.env`
+- Fetches up to 5 results per query, 3 concurrent requests, 8s timeout per page
+- Extracts: funeral date, visitation date, DOD (if missing from snippet)
+- Year inference: when a service date has no year, it's inferred from DOD (same year, but next year if the date falls before DOD at year-end cusp)
+- Gracefully handles 403s, timeouts, PDFs, and non-HTML content
+
+**Extraction rates (10-query sample):**
+| Field | Snippet Only | With Enrichment |
+|-------|-------------|-----------------|
+| DOD   | 42%         | 54%             |
+| Funeral date | 1%   | 13%             |
+| Visitation   | 0%   | 7%              |
 
 ## Dependencies
 - express - HTTP server

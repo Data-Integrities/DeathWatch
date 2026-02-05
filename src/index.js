@@ -9,6 +9,7 @@ const { normalizeName } = require('./normalize/name');
 const { getNicknameVariants } = require('./normalize/nicknames');
 const { normalizeCity, normalizeState } = require('./normalize/location');
 const config = require('./config');
+const { enrichResults } = require('./normalize/enrichPage');
 const { logger } = require('./utils/logger');
 
 /**
@@ -137,7 +138,16 @@ async function searchObits(query) {
   // 5. Score and rank all candidates (sorts by finalScore, assigns rank)
   const rankedCandidates = scoreAndRankCandidates(filtered, normalizedQuery);
 
-  // 6. Limit results
+  // 6. Enrich top results by fetching obituary pages (for funeral dates, etc.)
+  if (config.enrichment.enabled) {
+    await enrichResults(
+      rankedCandidates,
+      config.enrichment.maxPerQuery,
+      config.enrichment.concurrency
+    );
+  }
+
+  // 7. Limit results
   const limited = rankedCandidates.slice(0, config.maxResults);
 
   logger.info(`Returning ${limited.length} results`);
