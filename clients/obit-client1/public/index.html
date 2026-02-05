@@ -288,6 +288,22 @@
     .legend-color.best { background: #e8f5e9; border: 1px solid #a5d6a7; }
     .legend-color.other { background: #fafafa; border: 1px solid #ddd; }
     .legend-color.excluded { background: #ffebee; border: 1px solid #ef9a9a; }
+
+    .col-headers {
+      display: grid;
+      grid-template-columns: 32px 160px 55px 45px 85px 85px 120px 1fr 60px 70px;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #2c3e50;
+      color: #ccc;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 44px;
+      z-index: 99;
+    }
   </style>
 </head>
 <body>
@@ -300,6 +316,19 @@
     <div class="legend-item"><div class="legend-color best"></div> Best Guess</div>
     <div class="legend-item"><div class="legend-color other"></div> Other Results</div>
     <div class="legend-item"><div class="legend-color excluded"></div> Excluded</div>
+  </div>
+
+  <div class="col-headers">
+    <div></div>
+    <div>Name</div>
+    <div>Score</div>
+    <div>Age</div>
+    <div>DOD</div>
+    <div>DOF</div>
+    <div>Location</div>
+    <div>URL</div>
+    <div>Source</div>
+    <div>Actions</div>
   </div>
 
   <div class="container" id="results-container">
@@ -320,12 +349,11 @@
       return `${parts[1]}/${parts[2]}/${parts[0].slice(2)}`;
     }
 
-    // Format service dates (visitation & funeral)
-    function formatServices(visitation, funeral) {
-      const parts = [];
-      if (visitation) parts.push(`<span class="vis" title="Visitation">V:${formatDate(visitation)}</span>`);
-      if (funeral) parts.push(`<span class="fun" title="Funeral">F:${formatDate(funeral)}</span>`);
-      return parts.length > 0 ? parts.join(' ') : '-';
+    // Format funeral/service date (prefer funeral, fallback to visitation)
+    function formatDof(visitation, funeral) {
+      if (funeral) return `<span class="fun" title="Funeral">${formatDate(funeral)}</span>`;
+      if (visitation) return `<span class="vis" title="Visitation">${formatDate(visitation)}</span>`;
+      return '-';
     }
 
     async function loadResults() {
@@ -406,7 +434,7 @@
 
       // Format dates for display
       const dod = result.dod ? formatDate(result.dod) : '-';
-      const services = formatServices(result.visitationDate, result.funeralDate);
+      const dof = formatDof(result.visitationDate, result.funeralDate);
 
       return `
         <div class="result-row ${rowClass}" data-fingerprint="${result.fingerprint}" data-url="${result.url}">
@@ -415,7 +443,7 @@
           <div class="col-score"><span class="${scoreClass}">${result.finalScore}/${result.maxPossible}</span></div>
           <div class="col-age">${result.ageYears || '-'}</div>
           <div class="col-dod" title="Date of Death">${dod}</div>
-          <div class="col-services">${services}</div>
+          <div class="col-services" title="Date of Funeral">${dof}</div>
           <div class="col-location" title="${result.city || ''}, ${result.state || ''}">${result.city || '?'}, ${result.state || '?'}</div>
           <div class="col-url"><a href="${result.url}" target="_blank" title="${result.url}">${domain}</a></div>
           <div class="col-source">${result.source}</div>
