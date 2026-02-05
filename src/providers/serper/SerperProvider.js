@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const { generateFingerprint } = require('../../dedupe/fingerprint');
 const { extractAgeFromText } = require('../../normalize/age');
 const { extractDodFromText } = require('../../normalize/dod');
+const { extractServiceDates } = require('../../normalize/serviceDates');
 const config = require('../../config');
 const { logger } = require('../../utils/logger');
 
@@ -88,6 +89,9 @@ class SerperProvider {
     // Extract date of death from snippet/title
     const dod = extractDodFromText(snippet) || extractDodFromText(title);
 
+    // Extract service dates (visitation, funeral)
+    const serviceDates = extractServiceDates(snippet);
+
     // Extract location from snippet
     const locationInfo = this._extractLocation(combined);
 
@@ -107,6 +111,8 @@ class SerperProvider {
       lastName: nameInfo.lastName,
       ageYears: age,
       dod,
+      visitationDate: serviceDates.visitation,
+      funeralDate: serviceDates.funeral,
       city: locationInfo.city,
       state: locationInfo.state,
       source: 'Serper',
