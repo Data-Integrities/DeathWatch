@@ -89,8 +89,8 @@ class SerperProvider {
     // Extract date of death from snippet/title
     const dod = extractDodFromText(snippet) || extractDodFromText(title);
 
-    // Extract service dates (visitation, funeral)
-    const serviceDates = extractServiceDates(snippet);
+    // Extract service dates (visitation, funeral) - use DOD for year inference
+    const serviceDates = extractServiceDates(snippet, dod);
 
     // Extract location from snippet
     const locationInfo = this._extractLocation(combined);

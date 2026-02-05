@@ -1,5 +1,8 @@
 /**
  * Extract visitation and funeral/service dates from text
+ * When year is missing, infer from DOD:
+ *   - Assume same year as DOD
+ *   - If service month/day is before DOD month/day, it's the following year
  * Returns { visitation: 'YYYY-MM-DD', funeral: 'YYYY-MM-DD' } or nulls
  */
 
@@ -27,7 +30,7 @@ function parseDate(month, day, year) {
   const m = MONTHS[month.toLowerCase()];
   if (!m) return null;
 
-  const d = day.padStart(2, '0');
+  const d = day.replace(/(?:st|nd|rd|th)$/i, '').padStart(2, '0');
   const y = year.length === 2 ? (parseInt(year) > 50 ? '19' + year : '20' + year) : year;
 
   const date = new Date(`${y}-${m}-${d}`);
@@ -37,42 +40,87 @@ function parseDate(month, day, year) {
 }
 
 /**
- * Extract a date following a keyword pattern
+ * Given a month and day with no year, infer the year from DOD.
+ * The service date must be on or after the DOD.
  */
-function extractDateAfterKeyword(text, keywordPattern) {
-  const pattern = new RegExp(
-    `${keywordPattern}[^.]*?(?:on\\s+)?(?:\\w+,\\s+)?(${MONTH_PATTERN})\\s+(\\d{1,2}),?\\s+(\\d{4})`,
+function inferYearFromDod(month, day, dod) {
+  if (!dod) return null;
+
+  const m = MONTHS[month.toLowerCase()];
+  if (!m) return null;
+
+  const d = day.replace(/(?:st|nd|rd|th)$/i, '').padStart(2, '0');
+  const dodParts = dod.split('-');
+  if (dodParts.length !== 3) return null;
+
+  const dodYear = parseInt(dodParts[0]);
+  const dodMonth = dodParts[1];
+  const dodDay = dodParts[2];
+
+  // Try same year as DOD
+  const serviceInDodYear = `${m}${d}`;
+  const dodMonthDay = `${dodMonth}${dodDay}`;
+
+  // Service must be on or after DOD
+  if (serviceInDodYear >= dodMonthDay) {
+    return `${dodYear}-${m}-${d}`;
+  }
+
+  // Service month/day is before DOD month/day — must be next year
+  // (e.g., DOD Dec 29, funeral Jan 3)
+  return `${dodYear + 1}-${m}-${d}`;
+}
+
+/**
+ * Extract a date following a keyword pattern
+ * Tries full date (with year) first, then month/day only (inferred from DOD)
+ */
+function extractDateAfterKeyword(text, keywordPattern, dod) {
+  // Try with full year first
+  const fullPattern = new RegExp(
+    `${keywordPattern}[^.]*?(?:on\\s+)?(?:\\w+,\\s+)?(${MONTH_PATTERN})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})`,
     'i'
   );
-  const match = text.match(pattern);
+  let match = text.match(fullPattern);
   if (match) {
-    return parseDate(match[1], match[2], match[3]);
+    const result = parseDate(match[1], match[2], match[3]);
+    if (result) return result;
   }
+
+  // Try without year — "Month DD" or "Month DDth"
+  if (dod) {
+    const noYearPattern = new RegExp(
+      `${keywordPattern}[^.]*?(?:on\\s+)?(?:\\w+,\\s+)?(${MONTH_PATTERN})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:\\b|,|\\s)`,
+      'i'
+    );
+    match = text.match(noYearPattern);
+    if (match) {
+      const result = inferYearFromDod(match[1], match[2], dod);
+      if (result) return result;
+    }
+  }
+
   return null;
 }
 
 /**
  * Extract visitation date from text
  */
-function extractVisitationDate(text) {
+function extractVisitationDate(text, dod) {
   if (!text) return null;
 
   const t = text.replace(/\s+/g, ' ').trim();
 
-  // Pattern 1: "visitation will be held on..." or "visitation on..."
-  let date = extractDateAfterKeyword(t, 'visitation(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  let date = extractDateAfterKeyword(t, 'visitation(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
   if (date) return date;
 
-  // Pattern 2: "viewing will be..." or "viewing on..."
-  date = extractDateAfterKeyword(t, 'viewing(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  date = extractDateAfterKeyword(t, 'viewing(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
   if (date) return date;
 
-  // Pattern 3: "calling hours..."
-  date = extractDateAfterKeyword(t, 'calling\\s+hours');
+  date = extractDateAfterKeyword(t, 'calling\\s+hours', dod);
   if (date) return date;
 
-  // Pattern 4: "friends may call..."
-  date = extractDateAfterKeyword(t, 'friends\\s+(?:may|will)\\s+(?:be\\s+received|call)');
+  date = extractDateAfterKeyword(t, 'friends\\s+(?:may|will)\\s+(?:be\\s+received|call)', dod);
   if (date) return date;
 
   return null;
@@ -81,37 +129,33 @@ function extractVisitationDate(text) {
 /**
  * Extract funeral/memorial service date from text
  */
-function extractFuneralDate(text) {
+function extractFuneralDate(text, dod) {
   if (!text) return null;
 
   const t = text.replace(/\s+/g, ' ').trim();
 
-  // Pattern 1: "funeral service..." or "funeral services..."
-  let date = extractDateAfterKeyword(t, 'funeral\\s+services?(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  let date = extractDateAfterKeyword(t, 'funeral\\s+services?(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
   if (date) return date;
 
-  // Pattern 2: "memorial service..."
-  date = extractDateAfterKeyword(t, 'memorial\\s+services?(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  date = extractDateAfterKeyword(t, 'memorial\\s+(?:services?|gathering)(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
   if (date) return date;
 
-  // Pattern 3: "celebration of life..."
-  date = extractDateAfterKeyword(t, 'celebration\\s+of\\s+life(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  date = extractDateAfterKeyword(t, 'celebration\\s+of\\s+life(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
   if (date) return date;
 
-  // Pattern 4: "service will be held..."
-  date = extractDateAfterKeyword(t, 'services?\\s+will\\s+be\\s+held');
+  date = extractDateAfterKeyword(t, 'services?\\s+will\\s+be\\s+(?:held|at)', dod);
   if (date) return date;
 
-  // Pattern 5: "graveside service..."
-  date = extractDateAfterKeyword(t, 'graveside\\s+services?(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  date = extractDateAfterKeyword(t, 'the\\s+service\\s+will\\s+be\\s+at', dod);
   if (date) return date;
 
-  // Pattern 6: "burial will be..."
-  date = extractDateAfterKeyword(t, 'burial(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  date = extractDateAfterKeyword(t, 'graveside\\s+services?(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
   if (date) return date;
 
-  // Pattern 7: "interment..."
-  date = extractDateAfterKeyword(t, 'interment(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?');
+  date = extractDateAfterKeyword(t, 'burial(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
+  if (date) return date;
+
+  date = extractDateAfterKeyword(t, 'interment(?:\\s+will)?(?:\\s+be)?(?:\\s+held)?', dod);
   if (date) return date;
 
   return null;
@@ -119,16 +163,19 @@ function extractFuneralDate(text) {
 
 /**
  * Extract all service dates from text
+ * @param {string} text - snippet/title text
+ * @param {string|null} dod - ISO date of death (YYYY-MM-DD) for year inference
  */
-function extractServiceDates(text) {
+function extractServiceDates(text, dod) {
   return {
-    visitation: extractVisitationDate(text),
-    funeral: extractFuneralDate(text)
+    visitation: extractVisitationDate(text, dod),
+    funeral: extractFuneralDate(text, dod)
   };
 }
 
 module.exports = {
   extractVisitationDate,
   extractFuneralDate,
-  extractServiceDates
+  extractServiceDates,
+  inferYearFromDod
 };
