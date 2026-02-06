@@ -89,7 +89,8 @@ function calculateLastNameScore(candidateLastName, queryLastName) {
 
 /**
  * Calculate first name score using Levenshtein similarity
- * Also considers nicknames
+ * Also considers nicknames, but exact matches have priority
+ * Exact match = 100, Nickname/variant match = 85, Close spelling = up to 90, Different = 0
  */
 function calculateFirstNameScore(candidateFirstName, queryFirstName) {
   if (!candidateFirstName || !queryFirstName) return null;
@@ -97,33 +98,31 @@ function calculateFirstNameScore(candidateFirstName, queryFirstName) {
   const candNorm = normalizeName(candidateFirstName);
   const queryNorm = normalizeName(queryFirstName);
 
-  // Direct similarity
+  // Exact match gets 100
+  if (candNorm === queryNorm) {
+    return 100;
+  }
+
+  // Check if it's a nickname/variant match
+  const isNickname = isNicknameMatch(queryNorm, candNorm) || isNicknameMatch(candNorm, queryNorm);
+
+  if (isNickname) {
+    // Nickname match caps at 85 to ensure exact matches rank higher
+    return 85;
+  }
+
+  // Direct similarity (for close spellings like "Jon" vs "John")
   const directSimilarity = stringSimilarity(candNorm, queryNorm);
 
-  // Check nickname matches
-  const queryVariants = getNicknameVariants(queryNorm);
-  const candVariants = getNicknameVariants(candNorm);
-
-  let bestSimilarity = directSimilarity;
-
-  // Check if candidate matches any query nickname variant
-  for (const variant of queryVariants) {
-    const sim = stringSimilarity(candNorm, variant);
-    if (sim > bestSimilarity) bestSimilarity = sim;
+  // Only give points for very close spellings (>= 70% similar)
+  // Otherwise it's a different name and gets 0
+  if (directSimilarity < 0.7) {
+    return 0;
   }
 
-  // Check if query matches any candidate nickname variant
-  for (const variant of candVariants) {
-    const sim = stringSimilarity(queryNorm, variant);
-    if (sim > bestSimilarity) bestSimilarity = sim;
-  }
-
-  // Also check direct nickname match (Jim = James)
-  if (isNicknameMatch(queryNorm, candNorm) || isNicknameMatch(candNorm, queryNorm)) {
-    bestSimilarity = Math.max(bestSimilarity, 0.9); // Nickname match = at least 90
-  }
-
-  return similarityToScore(bestSimilarity);
+  // Close spelling gets score based on similarity, capped at 90
+  const score = similarityToScore(directSimilarity);
+  return Math.min(score, 90);
 }
 
 /**
@@ -179,25 +178,60 @@ function scoreCandidateWithCriteria(candidate, query) {
 }
 
 /**
- * Score all candidates and assign ranks
+ * Check if a DOD is within the recent window (default 14 days)
  */
-function scoreAndRankCandidates(candidates, query) {
+function isRecentDod(dod, daysWindow = 14) {
+  if (!dod) return false;
+
+  const dodDate = new Date(dod);
+  const now = new Date();
+  const diffMs = now - dodDate;
+  const diffDays = diffMs / (24 * 60 * 60 * 1000);
+
+  return diffDays >= 0 && diffDays <= daysWindow;
+}
+
+/**
+ * Score all candidates and assign ranks
+ * Recent DODs (within 14 days) are grouped first, then older/unknown DODs
+ * Within each group, sorted by finalScore descending
+ * Candidates with firstName score of 0 are excluded (different name = not a match)
+ */
+function scoreAndRankCandidates(candidates, query, recentDaysWindow = 14) {
   // Score all candidates
   const scored = candidates.map(c => scoreCandidateWithCriteria(c, query));
 
-  // Sort by finalScore descending
-  scored.sort((a, b) => b.finalScore - a.finalScore);
+  // Filter out candidates with first name score of 0 (completely different name)
+  // These should never be a best guess - would cause false alerts
+  const validCandidates = scored.filter(c =>
+    c.criteriaScores.firstName === null || c.criteriaScores.firstName > 0
+  );
+
+  // Separate into recent DOD and other
+  const recentDod = validCandidates.filter(c => isRecentDod(c.dod, recentDaysWindow));
+  const otherDod = validCandidates.filter(c => !isRecentDod(c.dod, recentDaysWindow));
+
+  // Sort each group by finalScore descending
+  recentDod.sort((a, b) => b.finalScore - a.finalScore);
+  otherDod.sort((a, b) => b.finalScore - a.finalScore);
+
+  // Combine: recent first, then others
+  const combined = [...recentDod, ...otherDod];
 
   // Assign ranks (1 = best)
   let currentRank = 1;
-  for (let i = 0; i < scored.length; i++) {
-    if (i > 0 && scored[i].finalScore < scored[i - 1].finalScore) {
+  for (let i = 0; i < combined.length; i++) {
+    if (i > 0 && (
+      // New rank if score changed OR if we crossed from recent to non-recent
+      combined[i].finalScore < combined[i - 1].finalScore ||
+      (isRecentDod(combined[i - 1].dod, recentDaysWindow) && !isRecentDod(combined[i].dod, recentDaysWindow))
+    )) {
       currentRank = i + 1;
     }
-    scored[i].rank = currentRank;
+    combined[i].rank = currentRank;
   }
 
-  return scored;
+  return combined;
 }
 
 module.exports = {
@@ -209,5 +243,6 @@ module.exports = {
   calculateCriteriaScores,
   calculateFinalScore,
   scoreCandidateWithCriteria,
-  scoreAndRankCandidates
+  scoreAndRankCandidates,
+  isRecentDod
 };

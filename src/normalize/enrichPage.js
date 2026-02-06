@@ -7,6 +7,15 @@ const { extractServiceDates } = require('./serviceDates');
 const { extractDodFromText } = require('./dod');
 const { logger } = require('../utils/logger');
 
+// Lazy load to avoid circular dependency
+let searchMetrics = null;
+function getSearchMetrics() {
+  if (!searchMetrics) {
+    searchMetrics = require('../index').searchMetrics;
+  }
+  return searchMetrics;
+}
+
 /**
  * Strip HTML tags and decode entities to get plain text
  */
@@ -37,9 +46,99 @@ function htmlToText(html) {
 }
 
 /**
- * Fetch a URL and return the page text, or null on failure
+ * Extract the primary obituary image URL from HTML
+ * Looks for common patterns: og:image meta tag, obituary photo containers, etc.
  */
-async function fetchPageText(url, timeoutMs = 8000) {
+function extractImageUrl(html, pageUrl) {
+  // Check for site-specific patterns first (these are more reliable than generic patterns)
+
+  // Legacy.com uses data-component="obitImage"
+  const legacyMatch = html.match(/data-component=["']obitImage["'][^>]*src=["']([^"']+)["']/i)
+    || html.match(/src=["']([^"']+)["'][^>]*data-component=["']obitImage["']/i);
+  if (legacyMatch && legacyMatch[1]) {
+    return resolveUrl(legacyMatch[1], pageUrl);
+  }
+
+  // Also check for legacy.com/echovita cache.legacy.net images in any img tag
+  const legacyCacheMatch = html.match(/<img[^>]+src=["'](https?:\/\/cache\.legacy\.net\/[^"']+)["']/i);
+  if (legacyCacheMatch && legacyCacheMatch[1]) {
+    const imgUrl = legacyCacheMatch[1];
+    // Skip if it looks like a generic/placeholder
+    if (!imgUrl.includes('placeholder') && !imgUrl.includes('default') && !imgUrl.includes('no-photo')) {
+      return resolveUrl(imgUrl, pageUrl);
+    }
+  }
+
+  // Try Open Graph image (but skip if it looks generic)
+  const ogMatch = html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i)
+    || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
+  if (ogMatch && ogMatch[1]) {
+    const imgUrl = ogMatch[1];
+    // Skip generic site logos/placeholders - be more aggressive with filtering
+    if (!imgUrl.includes('logo') &&
+        !imgUrl.includes('placeholder') &&
+        !imgUrl.includes('default') &&
+        !imgUrl.includes('share') &&
+        !imgUrl.includes('social') &&
+        !imgUrl.includes('og-image') &&
+        !imgUrl.includes('opengraph')) {
+      return resolveUrl(imgUrl, pageUrl);
+    }
+  }
+
+  // Try Twitter card image
+  const twitterMatch = html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i)
+    || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
+  if (twitterMatch && twitterMatch[1]) {
+    const imgUrl = twitterMatch[1];
+    if (!imgUrl.includes('logo') && !imgUrl.includes('placeholder') && !imgUrl.includes('default')) {
+      return resolveUrl(imgUrl, pageUrl);
+    }
+  }
+
+  // Look for images in common obituary photo containers
+  const containerPatterns = [
+    /<(?:div|figure|span)[^>]*class=["'][^"']*(?:obit|photo|portrait|deceased|memorial)[^"']*["'][^>]*>[\s\S]*?<img[^>]+src=["']([^"']+)["']/i,
+    /<img[^>]+class=["'][^"']*(?:obit|photo|portrait|deceased|memorial)[^"']*["'][^>]+src=["']([^"']+)["']/i,
+    /<img[^>]+src=["']([^"']+)["'][^>]+class=["'][^"']*(?:obit|photo|portrait|deceased|memorial)[^"']*["']/i,
+  ];
+
+  for (const pattern of containerPatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      const imgUrl = match[1];
+      if (!imgUrl.includes('logo') && !imgUrl.includes('placeholder') && !imgUrl.includes('icon')) {
+        return resolveUrl(imgUrl, pageUrl);
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolve a potentially relative URL against a base URL
+ */
+function resolveUrl(url, baseUrl) {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  try {
+    return new URL(url, baseUrl).href;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch a URL and return { text, html } or null on failure
+ */
+async function fetchPage(url, timeoutMs = 8000) {
+  // Track page fetch
+  const metrics = getSearchMetrics();
+  if (metrics) metrics.enrichmentPageFetches++;
+
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -66,7 +165,7 @@ async function fetchPageText(url, timeoutMs = 8000) {
     }
 
     const html = await response.text();
-    return htmlToText(html);
+    return { html, text: htmlToText(html) };
   } catch (err) {
     if (err.name === 'AbortError') {
       logger.debug(`Page fetch timed out for ${url}`);
@@ -78,17 +177,27 @@ async function fetchPageText(url, timeoutMs = 8000) {
 }
 
 /**
- * Enrich a single result by fetching its page and extracting dates
- * Only fetches if the result is missing funeralDate and has a URL
+ * Fetch a URL and return the page text, or null on failure
+ * @deprecated Use fetchPage() instead for access to both HTML and text
+ */
+async function fetchPageText(url, timeoutMs = 8000) {
+  const result = await fetchPage(url, timeoutMs);
+  return result ? result.text : null;
+}
+
+/**
+ * Enrich a single result by fetching its page and extracting dates + image
+ * Only fetches if the result is missing funeralDate or imageUrl and has a URL
  * Returns true if any fields were updated
  */
 async function enrichResult(result) {
   if (!result.url) return false;
-  if (result.funeralDate && result.visitationDate) return false;
+  if (result.funeralDate && result.visitationDate && result.imageUrl) return false;
 
-  const text = await fetchPageText(result.url);
-  if (!text) return false;
+  const page = await fetchPage(result.url);
+  if (!page) return false;
 
+  const { html, text } = page;
   let updated = false;
 
   // Try to extract DOD from full page if we don't have it
@@ -116,6 +225,30 @@ async function enrichResult(result) {
     logger.debug(`Enriched visitation date for ${result.fullName}: ${serviceDates.visitation}`);
   }
 
+  // Extract image URL from HTML
+  if (!result.imageUrl) {
+    const imageUrl = extractImageUrl(html, result.url);
+    if (imageUrl) {
+      result.imageUrl = imageUrl;
+      updated = true;
+      logger.debug(`Enriched image URL for ${result.fullName}: ${imageUrl}`);
+    }
+  }
+
+  // Fallback: if DOD is still missing, use funeral or visitation date
+  // (person definitely died before their funeral/visitation)
+  if (!result.dod) {
+    if (result.funeralDate) {
+      result.dod = result.funeralDate;
+      updated = true;
+      logger.debug(`Using funeral date as DOD fallback for ${result.fullName}: ${result.funeralDate}`);
+    } else if (result.visitationDate) {
+      result.dod = result.visitationDate;
+      updated = true;
+      logger.debug(`Using visitation date as DOD fallback for ${result.fullName}: ${result.visitationDate}`);
+    }
+  }
+
   return updated;
 }
 
@@ -127,9 +260,9 @@ async function enrichResult(result) {
  * @param {number} concurrency - Concurrent fetches (default: 3)
  */
 async function enrichResults(results, maxEnrich = 5, concurrency = 3) {
-  // Only enrich results that need it
+  // Only enrich results that need it (missing dates or image)
   const toEnrich = results
-    .filter(r => r.url && (!r.funeralDate || !r.visitationDate))
+    .filter(r => r.url && (!r.funeralDate || !r.visitationDate || !r.imageUrl))
     .slice(0, maxEnrich);
 
   if (toEnrich.length === 0) return 0;
@@ -155,6 +288,8 @@ async function enrichResults(results, maxEnrich = 5, concurrency = 3) {
 module.exports = {
   enrichResults,
   enrichResult,
+  fetchPage,
   fetchPageText,
-  htmlToText
+  htmlToText,
+  extractImageUrl
 };

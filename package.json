@@ -6,14 +6,23 @@
   "scripts": {
     "start": "node src/api/server.js",
     "cli": "node src/cli/search.js",
-    "test": "jest"
+    "test": "jest",
+    "db:migrate": "node src/db/migrate.js",
+    "db:import-legacy": "node src/db/import-legacy.js"
   },
-  "keywords": ["obituary", "search", "engine"],
+  "keywords": [
+    "obituary",
+    "search",
+    "engine"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "pg": "^8.13.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

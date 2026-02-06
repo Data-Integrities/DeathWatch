@@ -14,7 +14,14 @@ DeathWatch/
 │   ├── utils/                # logger, cache
 │   ├── normalize/            # name, nicknames, location, age, dod, serviceDates, enrichPage
 │   ├── data/
-│   │   └── ExclusionStore.js # Per-query & global exclusions
+│   │   └── ExclusionStore.js # Per-query & global exclusions (PostgreSQL)
+│   ├── db/
+│   │   ├── pool.js           # pg.Pool singleton
+│   │   ├── migrate.js        # Database migration runner
+│   │   ├── import-legacy.js  # Import exclusions.json into DB
+│   │   ├── BatchStore.js     # Batch/query/results CRUD
+│   │   └── migrations/
+│   │       └── 001_initial_schema.sql
 │   ├── providers/
 │   │   ├── google/           # GoogleProvider (requires CSE setup)
 │   │   ├── serper/           # SerperProvider (recommended)
@@ -32,8 +39,7 @@ DeathWatch/
 │       └── public/index.html # Single-page UI
 ├── data/
 │   ├── search-input.json     # User-supplied search input
-│   ├── exclusions.json       # False positive exclusions (gitignored)
-│   ├── results-*.json        # Search results (gitignored)
+│   ├── exclusions.json       # Legacy exclusions (imported to DB)
 │   └── cache/                # Stub data for offline testing
 └── package.json
 ```
@@ -58,28 +64,15 @@ User-supplied list of people to search for:
 Required fields: `firstName`, `lastName`
 Optional fields: `middleName`, `apxAge`, `city`, `state`
 
-### Output File Format
-Results are written to `data/results-YYYYMMDD-HHMMSS.json`:
-```json
-[
-  {
-    "query": { "firstName": "James", "lastName": "Smith", ... },
-    "searchKey": "3dbf81fdb5b93fe5",
-    "resultCount": 5,
-    "results": [ ... ]
-  }
-]
-```
+### Output
+Batch results are stored in PostgreSQL. Each batch search prints a batch ID on completion. Results can be viewed via the web UI or queried via the API.
 
 ## Commands
 
 ### CLI - Batch Search (Primary Use)
 ```bash
-# Search for all people in input file
+# Search for all people in input file (results stored in PostgreSQL)
 node src/cli/search.js batch --file data/search-input.json
-
-# With custom output directory
-node src/cli/search.js batch --file data/search-input.json --output-dir results/
 
 # With verbose logging
 node src/cli/search.js batch --file data/search-input.json -v
@@ -113,7 +106,10 @@ node src/cli/search.js unexclude --id <uuid>
 
 ### CLI - Interactive Review
 ```bash
-# Review results and mark false positives interactively
+# Review results from a batch in the database
+node src/cli/search.js review --batch <batch-id>
+
+# Review results from a legacy JSON file
 node src/cli/search.js review --file data/results-20260204-031939.json
 # Commands: [y]es/correct, [n]o/exclude, [g]lobal exclude, [s]kip, [q]uit
 ```
@@ -121,7 +117,8 @@ node src/cli/search.js review --file data/results-20260204-031939.json
 ### Web UI - obit-client1
 ```bash
 cd clients/obit-client1 && npm install
-node server.js ../../data/results-20260204-031939.json
+node server.js                    # Serves latest batch from DB
+node server.js --batch <batch-id> # Serves specific batch
 # Open http://localhost:3001
 ```
 
@@ -135,6 +132,9 @@ npm start  # Runs on http://localhost:3000
 - `POST /exclude` - body: `{ searchKey, fingerprint, url?, name?, reason? }`
 - `GET /exclusions?searchKey=`
 - `DELETE /exclude/:id`
+- `GET /batches` - list all batches
+- `GET /batches/latest` - get latest batch with results
+- `GET /batches/:id` - get batch by ID with results
 - `GET /health`
 
 ### Tests
@@ -201,7 +201,7 @@ Without any API keys configured, the engine uses stub data from `data/cache/goog
 After scoring, the engine fetches actual obituary web pages for the top results to extract data not available in truncated search snippets (especially funeral/visitation dates).
 
 - Enabled by default; disable with `ENRICH_PAGES=false` in `.env`
-- Fetches up to 5 results per query, 3 concurrent requests, 8s timeout per page
+- Fetches only the best guess (rank 1) per query, 8s timeout per page
 - Extracts: funeral date, visitation date, DOD (if missing from snippet)
 - Year inference: when a service date has no year, it's inferred from DOD (same year, but next year if the date falls before DOD at year-end cusp)
 - Gracefully handles 403s, timeouts, PDFs, and non-HTML content
@@ -213,9 +213,49 @@ After scoring, the engine fetches actual obituary web pages for the top results 
 | Funeral date | 1%   | 13%             |
 | Visitation   | 0%   | 7%              |
 
+## Database Setup
+
+### Credentials
+- **User**: dwadmin
+- **Password**: dwdata
+- **Database**: dw
+- **Host**: localhost:5432
+
+### Prerequisites
+1. Install PostgreSQL locally
+2. Create the database and user:
+   ```sql
+   CREATE DATABASE dw;
+   CREATE USER dwadmin WITH PASSWORD 'dwdata';
+   ALTER USER dwadmin WITH SUPERUSER;
+   ```
+3. `.env` is committed to the repo with all credentials
+
+### Migration
+```bash
+npm run db:migrate
+node src/db/load-name-variants.js
+```
+
+### Import Legacy Data
+To import existing `data/exclusions.json` into PostgreSQL:
+```bash
+node src/db/import-legacy.js
+```
+
+### Tables
+- `exclusions` - Per-query and global exclusions
+- `batches` - Batch search runs
+- `queries` - Individual search queries within a batch
+- `results` - Search results for each query
+- `user_query` - User-managed search queries
+- `user_result` - Results from user queries
+- `name_first_variant` - First name nickname/variant mappings (2,691 entries)
+
 ## Dependencies
 - express - HTTP server
 - commander - CLI parsing
+- pg - PostgreSQL client
 - uuid - ID generation
 - dotenv - Environment configuration
 - jest - Testing

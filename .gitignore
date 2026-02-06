@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Environment variables (contains API keys)
-.env
+# Environment variables - committed intentionally for backup
+# .env
 
 # Results and data files
 data/results-*.json

@@ -35,6 +35,32 @@
       font-weight: 500;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .batch-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .batch-selector label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .batch-selector select {
+      padding: 4px 8px;
+      border-radius: 3px;
+      border: 1px solid #555;
+      background: #34495e;
+      color: white;
+      font-size: 12px;
+    }
+
     .stats {
       font-size: 12px;
       opacity: 0.8;
@@ -73,12 +99,12 @@
 
     .result-row {
       display: grid;
-      grid-template-columns: 32px 160px 55px 45px 85px 85px 120px 1fr 60px 70px;
+      grid-template-columns: 32px 50px 160px 55px 45px 85px 85px 120px 1fr 60px 70px;
       gap: 6px;
       padding: 6px 12px;
       align-items: center;
       border-bottom: 1px solid #eee;
-      min-height: 36px;
+      min-height: 50px;
     }
 
     .result-row:hover {
@@ -291,7 +317,7 @@
 
     .col-headers {
       display: grid;
-      grid-template-columns: 32px 160px 55px 45px 85px 85px 120px 1fr 60px 70px;
+      grid-template-columns: 32px 50px 160px 55px 45px 85px 85px 120px 1fr 60px 70px;
       gap: 6px;
       padding: 6px 12px;
       background: #2c3e50;
@@ -304,12 +330,41 @@
       top: 44px;
       z-index: 99;
     }
+
+    .col-photo {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #eee;
+    }
+
+    .col-photo-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      background: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bbb;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Obituary Results Viewer</h1>
-    <div class="stats" id="stats">Loading...</div>
+    <div class="header-right">
+      <div class="batch-selector">
+        <label>Run:</label>
+        <select id="run-select" onchange="onRunChange()">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div class="stats" id="stats">Loading...</div>
+      <a href="/queries.html" style="color:#bdc3c7;text-decoration:none;font-size:12px;">Manage Queries</a>
+    </div>
   </div>
 
   <div class="legend">
@@ -320,6 +375,7 @@
 
   <div class="col-headers">
     <div></div>
+    <div>Photo</div>
     <div>Name</div>
     <div>Score</div>
     <div>Age</div>
@@ -338,7 +394,8 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    let resultsData = [];
+    let queriesData = [];
+    let currentRunDt = null;
     const excludedSet = new Set();
 
     // Format ISO date to short display (MM/DD/YY)
@@ -356,10 +413,51 @@
       return '-';
     }
 
-    async function loadResults() {
+    // Format run date for dropdown
+    function formatRunDate(isoDate) {
+      const d = new Date(isoDate);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function loadRuns() {
       try {
-        const response = await fetch('/api/results');
-        resultsData = await response.json();
+        const response = await fetch('/api/runs');
+        const runs = await response.json();
+        const select = document.getElementById('run-select');
+
+        if (runs.length === 0) {
+          select.innerHTML = '<option value="">No runs</option>';
+          return;
+        }
+
+        select.innerHTML = runs.map((r, i) =>
+          `<option value="${r.ran_dt}">${formatRunDate(r.ran_dt)} (${r.query_count}q / ${r.result_count}r)${i === 0 ? ' [latest]' : ''}</option>`
+        ).join('');
+
+        // Load the first (latest) run
+        currentRunDt = runs[0].ran_dt;
+        await loadResults(currentRunDt);
+      } catch (err) {
+        showToast('Error loading runs: ' + err.message, 'error');
+      }
+    }
+
+    async function onRunChange() {
+      const select = document.getElementById('run-select');
+      currentRunDt = select.value;
+      if (currentRunDt) {
+        await loadResults(currentRunDt);
+      }
+    }
+
+    async function loadResults(ranDt) {
+      try {
+        const url = ranDt ? `/api/results?ran_dt=${encodeURIComponent(ranDt)}` : '/api/results';
+        const response = await fetch(url);
+        const data = await response.json();
+
+        queriesData = data.queries || [];
+
         renderResults();
         updateStats();
       } catch (err) {
@@ -368,8 +466,8 @@
     }
 
     function updateStats() {
-      const totalQueries = resultsData.length;
-      const totalResults = resultsData.reduce((sum, q) => sum + q.results.length, 0);
+      const totalQueries = queriesData.length;
+      const totalResults = queriesData.reduce((sum, q) => sum + q.results.length, 0);
       document.getElementById('stats').textContent =
         `${totalQueries} queries | ${totalResults} total results | ${excludedSet.size} excluded`;
     }
@@ -377,12 +475,12 @@
     function renderResults() {
       const container = document.getElementById('results-container');
 
-      if (resultsData.length === 0) {
+      if (queriesData.length === 0) {
         container.innerHTML = '<div class="no-results">No results to display</div>';
         return;
       }
 
-      container.innerHTML = resultsData.map((queryResult, qi) => {
+      container.innerHTML = queriesData.map((queryResult, qi) => {
         const query = queryResult.query;
         const results = queryResult.results;
         const searchKey = queryResult.searchKey;
@@ -410,16 +508,16 @@
                 ${results.length} result${results.length !== 1 ? 's' : ''}
               </span>
             </div>
-            ${renderResultRow(bestGuess, searchKey, true, otherResults.length > 0, qi)}
+            ${renderResultRow(bestGuess, searchKey, true, otherResults.length > 0, qi, query)}
             <div class="other-results" id="other-${qi}">
-              ${otherResults.map(r => renderResultRow(r, searchKey, false, false, qi)).join('')}
+              ${otherResults.map(r => renderResultRow(r, searchKey, false, false, qi, query)).join('')}
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function renderResultRow(result, searchKey, isBestGuess, hasOthers, queryIndex) {
+    function renderResultRow(result, searchKey, isBestGuess, hasOthers, queryIndex, query) {
       const isExcluded = excludedSet.has(result.fingerprint) || excludedSet.has(result.url);
       const scorePercent = result.maxPossible > 0 ? Math.round((result.finalScore / result.maxPossible) * 100) : 0;
       const scoreClass = scorePercent >= 80 ? 'good' : scorePercent >= 50 ? 'ok' : 'bad';
@@ -436,10 +534,20 @@
       const dod = result.dod ? formatDate(result.dod) : '-';
       const dof = formatDof(result.visitationDate, result.funeralDate);
 
+      const photoHtml = result.imageUrl
+        ? `<img class="col-photo" src="${result.imageUrl}" alt="" onerror="this.outerHTML='<div class=\\'col-photo-placeholder\\'>?</div>'">`
+        : `<div class="col-photo-placeholder">?</div>`;
+
+      // Build query tooltip for best guess row
+      const queryTooltip = isBestGuess
+        ? `Query: ${query.firstName} ${query.lastName}${query.city ? ', ' + query.city : ''}${query.state ? ' ' + query.state : ''}${query.apxAge ? ', Age ' + query.apxAge : ''}`
+        : result.fullName;
+
       return `
         <div class="result-row ${rowClass}" data-fingerprint="${result.fingerprint}" data-url="${result.url}">
           <div>${expandBtn}</div>
-          <div class="col-name" title="${result.fullName}">${result.fullName}</div>
+          <div>${photoHtml}</div>
+          <div class="col-name" title="${queryTooltip}">${result.fullName}</div>
           <div class="col-score"><span class="${scoreClass}">${result.finalScore}/${result.maxPossible}</span></div>
           <div class="col-age">${result.ageYears || '-'}</div>
           <div class="col-dod" title="Date of Death">${dod}</div>
@@ -514,7 +622,7 @@
     }
 
     // Load on page load
-    loadResults();
+    loadRuns();
   </script>
 </body>
 </html>

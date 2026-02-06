@@ -12,6 +12,16 @@ const config = require('./config');
 const { enrichResults } = require('./normalize/enrichPage');
 const { logger } = require('./utils/logger');
 
+// Global metrics tracking (can be accessed by run scripts)
+const searchMetrics = {
+  serperApiCalls: 0,
+  enrichmentPageFetches: 0,
+  reset() {
+    this.serperApiCalls = 0;
+    this.enrichmentPageFetches = 0;
+  }
+};
+
 /**
  * Generate a search key for exclusion matching
  * Hash of normalized: lastName + firstName + city + state + ageRange
@@ -125,9 +135,15 @@ async function searchObits(query) {
   logger.info(`After deduplication: ${deduplicated.length} candidates`);
 
   // 4. Filter out excluded candidates (by fingerprint OR URL)
+  const excludedFingerprints = await exclusionStore.getExcludedFingerprints(normalizedQuery.searchKey);
+  const excludedUrls = await exclusionStore.getExcludedUrls(normalizedQuery.searchKey);
   const filtered = deduplicated.filter(c => {
-    const { excluded } = exclusionStore.isExcluded(c, normalizedQuery.searchKey);
-    return !excluded;
+    if (c.fingerprint && excludedFingerprints.has(c.fingerprint)) return false;
+    if (c.url) {
+      const normalizedUrl = exclusionStore._normalizeUrl(c.url);
+      if (excludedUrls.has(normalizedUrl)) return false;
+    }
+    return true;
   });
 
   const excludedCount = deduplicated.length - filtered.length;
@@ -161,5 +177,6 @@ async function searchObits(query) {
 module.exports = {
   searchObits,
   normalizeQuery,
-  generateSearchKey
+  generateSearchKey,
+  searchMetrics
 };

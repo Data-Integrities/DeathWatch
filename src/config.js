@@ -33,9 +33,18 @@ const config = {
   // Page enrichment: fetch actual obituary pages for service dates
   enrichment: {
     enabled: process.env.ENRICH_PAGES !== 'false',  // enabled by default
-    maxPerQuery: 5,     // max results to enrich per query
+    maxPerQuery: 1,     // only enrich the best guess (rank 1)
     concurrency: 3,     // concurrent page fetches
     timeoutMs: 8000     // per-page fetch timeout
+  },
+
+  db: {
+    connectionString: process.env.DATABASE_URL || null,
+    host: process.env.PG_HOST || 'localhost',
+    port: parseInt(process.env.PG_PORT || '5432', 10),
+    database: process.env.PG_DATABASE || 'dw',
+    user: process.env.PG_USER || 'postgres',
+    password: process.env.PG_PASSWORD || '',
   },
 
   scoring: {

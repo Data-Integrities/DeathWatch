@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { searchObits, normalizeQuery } = require('../index');
 const { exclusionStore } = require('../data/ExclusionStore');
+const { batchStore } = require('../db/BatchStore');
 const config = require('../config');
 const { logger } = require('../utils/logger');
 
@@ -48,7 +49,7 @@ app.post('/exclude', async (req, res, next) => {
       return;
     }
 
-    const exclusion = exclusionStore.add({
+    const exclusion = await exclusionStore.add({
       searchKey,
       excludedFingerprint: fingerprint,
       excludedUrl: url,
@@ -72,7 +73,7 @@ app.get('/exclusions', async (req, res, next) => {
       return;
     }
 
-    const exclusions = exclusionStore.getBySearchKey(searchKey);
+    const exclusions = await exclusionStore.getBySearchKey(searchKey);
     res.json({ exclusions });
   } catch (err) {
     next(err);
@@ -83,8 +84,46 @@ app.get('/exclusions', async (req, res, next) => {
 app.delete('/exclude/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const success = exclusionStore.remove(id);
+    const success = await exclusionStore.remove(id);
     res.json({ success });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// List batches
+app.get('/batches', async (req, res, next) => {
+  try {
+    const batches = await batchStore.listBatches();
+    res.json({ batches });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Get latest batch
+app.get('/batches/latest', async (req, res, next) => {
+  try {
+    const batch = await batchStore.getLatestBatch();
+    if (!batch) {
+      res.status(404).json({ error: 'No batches found' });
+      return;
+    }
+    res.json(batch);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Get batch by ID
+app.get('/batches/:id', async (req, res, next) => {
+  try {
+    const batch = await batchStore.getBatch(req.params.id);
+    if (!batch) {
+      res.status(404).json({ error: 'Batch not found' });
+      return;
+    }
+    res.json(batch);
   } catch (err) {
     next(err);
   }

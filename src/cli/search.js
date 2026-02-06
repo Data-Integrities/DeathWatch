@@ -4,8 +4,10 @@ const fs = require('fs');
 const { Command } = require('commander');
 const { searchObits, normalizeQuery } = require('../index');
 const { exclusionStore } = require('../data/ExclusionStore');
+const { batchStore } = require('../db/BatchStore');
 const { formatCandidate } = require('../scoring/explain');
 const { logger, LogLevel } = require('../utils/logger');
+const { close: closePool } = require('../db/pool');
 
 const program = new Command();
 
@@ -108,7 +110,7 @@ program
     }
 
     try {
-      const { exclusion, isNew } = exclusionStore.add({
+      const { exclusion, isNew } = await exclusionStore.add({
         searchKey,
         excludedFingerprint: options.fingerprint,
         excludedUrl: options.url,
@@ -160,10 +162,10 @@ program
     let title = '';
 
     if (options.all) {
-      exclusions = exclusionStore.getAll();
+      exclusions = await exclusionStore.getAll();
       title = 'All Exclusions';
     } else if (options.global) {
-      exclusions = exclusionStore.getGlobalExclusions();
+      exclusions = await exclusionStore.getGlobalExclusions();
       title = 'Global Exclusions';
     } else if (options.first && options.last) {
       const query = {
@@ -175,7 +177,7 @@ program
         age: options.age
       };
       const normalized = normalizeQuery(query);
-      exclusions = exclusionStore.getBySearchKey(normalized.searchKey);
+      exclusions = await exclusionStore.getBySearchKey(normalized.searchKey);
       title = `Exclusions for Search Key: ${normalized.searchKey}`;
     } else {
       console.error('Error: Provide --first and --last, or use --global or --all');
@@ -219,7 +221,7 @@ program
   .command('exclusion-stats')
   .description('Show exclusion statistics')
   .action(async () => {
-    const stats = exclusionStore.getStats();
+    const stats = await exclusionStore.getStats();
 
     console.log('\n=== Exclusion Statistics ===\n');
     console.log(`Total exclusions: ${stats.total}`);
@@ -243,7 +245,7 @@ program
   .description('Remove an exclusion by ID')
   .requiredOption('--id <id>', 'Exclusion ID to remove')
   .action(async (options) => {
-    const success = exclusionStore.remove(options.id);
+    const success = await exclusionStore.remove(options.id);
 
     if (success) {
       console.log(`\nExclusion ${options.id} removed successfully.`);
@@ -257,19 +259,35 @@ program
 program
   .command('review')
   .description('Interactively review results and mark false positives')
-  .requiredOption('--file <path>', 'Results JSON file to review')
+  .option('--file <path>', 'Results JSON file to review')
+  .option('--batch <id>', 'Batch ID to review (from database)')
   .option('--start <index>', 'Start from this query index (0-based)', parseInt, 0)
   .action(async (options) => {
     const readline = require('readline');
 
-    // Read results file
-    let results;
-    try {
-      const data = fs.readFileSync(options.file, 'utf-8');
-      results = JSON.parse(data);
-    } catch (err) {
-      console.error(`Error reading file: ${err.message}`);
+    if (!options.file && !options.batch) {
+      console.error('Error: Must provide --file or --batch');
       process.exit(1);
+    }
+
+    // Load results from file or database
+    let results;
+    if (options.batch) {
+      const batch = await batchStore.getBatch(options.batch);
+      if (!batch) {
+        console.error(`Batch not found: ${options.batch}`);
+        process.exit(1);
+      }
+      results = batch.queries;
+      console.log(`Loaded batch ${batch.id} (${batch.totalQueries} queries)`);
+    } else {
+      try {
+        const data = fs.readFileSync(options.file, 'utf-8');
+        results = JSON.parse(data);
+      } catch (err) {
+        console.error(`Error reading file: ${err.message}`);
+        process.exit(1);
+      }
     }
 
     const rl = readline.createInterface({
@@ -336,7 +354,7 @@ program
           const isGlobal = cmd === 'g' || cmd === 'global';
           const reason = await ask('  Reason (optional): ');
 
-          const { exclusion, isNew } = exclusionStore.add({
+          const { exclusion, isNew } = await exclusionStore.add({
             searchKey: queryResult.searchKey,
             excludedFingerprint: result.fingerprint,
             excludedUrl: result.url,
@@ -363,7 +381,6 @@ program
   .command('batch')
   .description('Search for multiple people from a JSON file')
   .requiredOption('--file <path>', 'Input JSON file with array of people to search')
-  .option('--output-dir <dir>', 'Output directory for results (default: data/)')
   .option('-v, --verbose', 'Verbose output')
   .action(async (options) => {
     if (options.verbose) {
@@ -386,7 +403,8 @@ program
 
     console.error(`Processing ${people.length} people...`);
 
-    const batchResults = [];
+    // Create batch in DB
+    const batch = await batchStore.createBatch(options.file);
     let processed = 0;
     let found = 0;
 
@@ -409,12 +427,7 @@ program
       try {
         const { results, searchKey } = await searchObits(query);
 
-        batchResults.push({
-          query: person,
-          searchKey,
-          resultCount: results.length,
-          results
-        });
+        await batchStore.addQuery(batch.id, person, searchKey, results, null);
 
         processed++;
         if (results.length > 0) found++;
@@ -422,41 +435,17 @@ program
         console.error(`  [${processed}/${people.length}] ${person.firstName} ${person.lastName}: ${results.length} results`);
       } catch (err) {
         console.error(`  Error searching for ${person.firstName} ${person.lastName}: ${err.message}`);
-        batchResults.push({
-          query: person,
-          error: err.message,
-          resultCount: 0,
-          results: []
-        });
+        await batchStore.addQuery(batch.id, person, '', [], err.message);
         processed++;
       }
     }
 
+    await batchStore.finalizeBatch(batch.id);
+
     console.error(`\nCompleted: ${processed} searched, ${found} with results`);
+    console.error(`Batch ID: ${batch.id}`);
 
-    // Generate output filename with datetime stamp
-    const now = new Date();
-    const timestamp = now.toISOString()
-      .replace(/[-:]/g, '')
-      .replace('T', '-')
-      .replace(/\.\d{3}Z$/, '');
-    const outputDir = options.outputDir || 'data';
-    const outputPath = `${outputDir}/results-${timestamp}.json`;
-
-    // Ensure output directory exists
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    // Write results
-    const output = JSON.stringify(batchResults, null, 2);
-    try {
-      fs.writeFileSync(outputPath, output);
-      console.error(`Results written to: ${outputPath}`);
-    } catch (err) {
-      console.error(`Error writing output file: ${err.message}`);
-      process.exit(1);
-    }
+    await closePool();
   });
 
 program.parse();
