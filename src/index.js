@@ -5,6 +5,7 @@ const { serperProvider } = require('./providers/serper/SerperProvider');
 const { scoreAndRankCandidates } = require('./scoring/criteriaScore');
 const { deduplicateCandidates } = require('./dedupe/dedupe');
 const { exclusionStore } = require('./data/ExclusionStore');
+const { parseFingerprint } = require('./dedupe/fingerprint');
 const { normalizeName } = require('./normalize/name');
 const { getNicknameVariants } = require('./normalize/nicknames');
 const { normalizeCity, normalizeState } = require('./normalize/location');
@@ -24,14 +25,14 @@ const searchMetrics = {
 
 /**
  * Generate a search key for exclusion matching
- * Hash of normalized: lastName + firstName + city + state + ageRange
+ * Hash of normalized: nameLast + nameFirst + city + state + ageRange
  */
-function generateSearchKey(query) {
+function generateKeySearch(query) {
   const parts = [
-    query.normalizedLastName,
-    query.normalizedFirstName,
-    query.normalizedCity || '',
-    query.normalizedState || '',
+    query.nameLastNorm,
+    query.nameFirstNorm,
+    query.cityNorm || '',
+    query.stateNorm || '',
     query.age?.toString() || ''
   ];
 
@@ -41,30 +42,55 @@ function generateSearchKey(query) {
 
 /**
  * Normalize a search query
+ * Accepts user-facing input (firstName, lastName) and outputs internal format (nameFirst, nameLast)
  */
 function normalizeQuery(query) {
-  const normalizedFirstName = normalizeName(query.firstName);
-  const normalizedLastName = normalizeName(query.lastName);
-  const normalizedCity = query.city ? normalizeCity(query.city) : undefined;
-  const normalizedState = query.state ? normalizeState(query.state) : undefined;
+  // Accept both user-facing (firstName) and internal (nameFirst) formats
+  const nameNickname = query.nameNickname || query.nickname || null;
+  let nameFirst = query.nameFirst || query.firstName;
+  const nameLast = query.nameLast || query.lastName;
+  const nameMiddle = query.nameMiddle || query.middleName;
 
-  const firstNameVariants = getNicknameVariants(normalizedFirstName);
+  // If nameFirst is missing but nickname is provided, use nickname as nameFirst (for scoring)
+  if (!nameFirst && nameNickname) {
+    nameFirst = nameNickname;
+  }
+
+  const nameFirstNorm = normalizeName(nameFirst);
+  const nameLastNorm = normalizeName(nameLast);
+  const cityNorm = query.city ? normalizeCity(query.city) : undefined;
+  const stateNorm = query.state ? normalizeState(query.state) : undefined;
+
+  const nameFirstVariants = getNicknameVariants(nameFirstNorm);
 
   // Use inputDate if provided, otherwise default to today
   const inputDate = query.inputDate || new Date().toISOString().split('T')[0];
 
+  // Parse keyWords: accept both keyWords and keywords, comma-separated string → lowercase array
+  const rawKeyWords = query.keyWords || query.keywords || null;
+  let keyWords = null;
+  if (rawKeyWords) {
+    const parsed = (typeof rawKeyWords === 'string' ? rawKeyWords : '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
+    if (parsed.length > 0) keyWords = parsed;
+  }
+
   const normalized = {
     ...query,
-    normalizedFirstName,
-    normalizedLastName,
-    normalizedCity,
-    normalizedState,
-    firstNameVariants,
+    nameFirst,
+    nameLast,
+    nameMiddle,
+    nameNickname,
+    nameFirstNorm,
+    nameLastNorm,
+    cityNorm,
+    stateNorm,
+    nameFirstVariants,
+    keyWords,
     inputDate,
-    searchKey: ''  // Will be set after full object is created
+    keySearch: ''  // Will be set after full object is created
   };
 
-  normalized.searchKey = generateSearchKey(normalized);
+  normalized.keySearch = generateKeySearch(normalized);
 
   return normalized;
 }
@@ -134,24 +160,34 @@ async function searchObits(query) {
   const deduplicated = deduplicateCandidates(allCandidates);
   logger.info(`After deduplication: ${deduplicated.length} candidates`);
 
-  // 4. Filter out excluded candidates (by fingerprint OR URL)
-  const excludedFingerprints = await exclusionStore.getExcludedFingerprints(normalizedQuery.searchKey);
-  const excludedUrls = await exclusionStore.getExcludedUrls(normalizedQuery.searchKey);
+  // 4. Filter out excluded candidates
+  // - Fingerprint with DOD: fingerprint match alone excludes (same person, high confidence)
+  // - Fingerprint without DOD ("unknown"): too coarse, require URL match as well
+  // - URL match: always excludes (exact same page)
+  const fingerprintsExcluded = await exclusionStore.getFingerprintsExcluded(normalizedQuery.keySearch);
+  const urlsExcluded = await exclusionStore.getUrlsExcluded(normalizedQuery.keySearch);
   const filtered = deduplicated.filter(c => {
-    if (c.fingerprint && excludedFingerprints.has(c.fingerprint)) return false;
-    if (c.url) {
-      const normalizedUrl = exclusionStore._normalizeUrl(c.url);
-      if (excludedUrls.has(normalizedUrl)) return false;
+    const urlNorm = c.url ? exclusionStore._normalizeUrl(c.url) : null;
+    const urlMatched = urlNorm && urlsExcluded.has(urlNorm);
+
+    // URL match alone always excludes
+    if (urlMatched) return false;
+
+    // Fingerprint match: only exclude if DOD is present (not "unknown")
+    if (c.fingerprint && fingerprintsExcluded.has(c.fingerprint)) {
+      const parsed = parseFingerprint(c.fingerprint);
+      if (parsed.dod !== 'unknown') return false;
     }
+
     return true;
   });
 
-  const excludedCount = deduplicated.length - filtered.length;
-  if (excludedCount > 0) {
-    logger.info(`Filtered out ${excludedCount} excluded results`);
+  const excludedCnt = deduplicated.length - filtered.length;
+  if (excludedCnt > 0) {
+    logger.info(`Filtered out ${excludedCnt} excluded results`);
   }
 
-  // 5. Score and rank all candidates (sorts by finalScore, assigns rank)
+  // 5. Score and rank all candidates (sorts by scoreFinal, assigns rank)
   const rankedCandidates = scoreAndRankCandidates(filtered, normalizedQuery);
 
   // 6. Enrich top results by fetching obituary pages (for funeral dates, etc.)
@@ -170,13 +206,13 @@ async function searchObits(query) {
 
   return {
     results: limited,
-    searchKey: normalizedQuery.searchKey
+    keySearch: normalizedQuery.keySearch
   };
 }
 
 module.exports = {
   searchObits,
   normalizeQuery,
-  generateSearchKey,
+  generateKeySearch,
   searchMetrics
 };

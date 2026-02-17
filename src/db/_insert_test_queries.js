@@ -124,7 +124,7 @@ async function run() {
   for (const [firstName, middleName, lastName, actualAge, city, state] of testData) {
     try {
       await pool.query(
-        `INSERT INTO user_query (first_name, middle_name, last_name, actual_age, city, state)
+        `INSERT INTO user_query (name_first, name_middle, name_last, age_actual, city, state)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [firstName, middleName, lastName, actualAge, city, state]
       );

@@ -18,10 +18,10 @@ class BatchStore {
   /**
    * Add a query and its results to a batch
    */
-  async addQuery(batchId, person, searchKey, results, error) {
+  async addQuery(batchId, person, keySearch, results, error) {
     const { rows: queryRows } = await pool.query(
-      `INSERT INTO queries (batch_id, first_name, middle_name, last_name, apx_age, city, state, search_key, result_count, error)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO queries (batch_id, name_first, name_middle, name_last, age_apx, city, state, search_key, result_cnt, error, key_words, name_nickname)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         batchId,
@@ -31,9 +31,11 @@ class BatchStore {
         person.apxAge || null,
         person.city || null,
         person.state || null,
-        searchKey,
+        keySearch,
         results ? results.length : 0,
-        error || null
+        error || null,
+        person.keyWords || null,
+        person.nickname || null
       ]
     );
 
@@ -54,10 +56,10 @@ class BatchStore {
       const id = r.id || uuidv4();
       await pool.query(
         `INSERT INTO results (
-           id, query_id, full_name, first_name, last_name, age_years,
-           dod, visitation_date, funeral_date, city, state, source, url,
-           snippet, score, reasons, fingerprint, provider_type, also_found_at,
-           criteria_scores, final_score, max_possible, criteria_count, rank
+           id, query_id, name_full, name_first, name_last, age_years,
+           dod, date_visitation, date_funeral, city, state, source, url,
+           snippet, score, reasons, fingerprint, type_provider, also_found_at,
+           scores_criteria, score_final, score_max, criteria_cnt, rank
          ) VALUES (
            $1, $2, $3, $4, $5, $6,
            $7, $8, $9, $10, $11, $12, $13,
@@ -66,15 +68,15 @@ class BatchStore {
          )`,
         [
           id, queryId,
-          r.fullName || null, r.firstName || null, r.lastName || null, r.ageYears || null,
-          r.dod || null, r.visitationDate || null, r.funeralDate || null,
+          r.nameFull || null, r.nameFirst || null, r.nameLast || null, r.ageYears || null,
+          r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
           r.city || null, r.state || null, r.source || null, r.url || null,
           r.snippet || null, r.score || 0,
           JSON.stringify(r.reasons || []),
-          r.fingerprint || null, r.providerType || null,
+          r.fingerprint || null, r.typeProvider || null,
           r.alsoFoundAt ? JSON.stringify(r.alsoFoundAt) : null,
-          r.criteriaScores ? JSON.stringify(r.criteriaScores) : null,
-          r.finalScore || null, r.maxPossible || null, r.criteriaCount || null,
+          r.scoresCriteria ? JSON.stringify(r.scoresCriteria) : null,
+          r.scoreFinal || null, r.scoreMax || null, r.criteriaCnt || null,
           r.rank || null
         ]
       );
@@ -88,7 +90,7 @@ class BatchStore {
     await pool.query(
       `UPDATE batches SET
          total_queries = (SELECT COUNT(*) FROM queries WHERE batch_id = $1),
-         total_results = (SELECT COALESCE(SUM(result_count), 0) FROM queries WHERE batch_id = $1)
+         total_results = (SELECT COALESCE(SUM(result_cnt), 0) FROM queries WHERE batch_id = $1)
        WHERE id = $1`,
       [batchId]
     );
@@ -121,15 +123,17 @@ class BatchStore {
 
       batch.queries.push({
         query: {
-          firstName: qr.first_name,
-          middleName: qr.middle_name,
-          lastName: qr.last_name,
-          apxAge: qr.apx_age,
+          firstName: qr.name_first,
+          middleName: qr.name_middle,
+          lastName: qr.name_last,
+          apxAge: qr.age_apx,
           city: qr.city,
-          state: qr.state
+          state: qr.state,
+          keyWords: qr.key_words,
+          nickname: qr.name_nickname
         },
-        searchKey: qr.search_key,
-        resultCount: qr.result_count,
+        keySearch: qr.search_key,
+        resultCnt: qr.result_cnt,
         error: qr.error,
         results: resultRows.map(r => this._rowToResult(r))
       });
@@ -172,13 +176,13 @@ class BatchStore {
   _rowToResult(row) {
     return {
       id: row.id,
-      fullName: row.full_name,
-      firstName: row.first_name,
-      lastName: row.last_name,
+      nameFull: row.name_full,
+      nameFirst: row.name_first,
+      nameLast: row.name_last,
       ageYears: row.age_years,
       dod: row.dod ? row.dod.toISOString().split('T')[0] : null,
-      visitationDate: row.visitation_date ? row.visitation_date.toISOString().split('T')[0] : null,
-      funeralDate: row.funeral_date ? row.funeral_date.toISOString().split('T')[0] : null,
+      dateVisitation: row.date_visitation ? row.date_visitation.toISOString().split('T')[0] : null,
+      dateFuneral: row.date_funeral ? row.date_funeral.toISOString().split('T')[0] : null,
       city: row.city,
       state: row.state,
       source: row.source,
@@ -187,12 +191,12 @@ class BatchStore {
       score: row.score,
       reasons: row.reasons || [],
       fingerprint: row.fingerprint,
-      providerType: row.provider_type,
+      typeProvider: row.type_provider,
       alsoFoundAt: row.also_found_at,
-      criteriaScores: row.criteria_scores,
-      finalScore: row.final_score,
-      maxPossible: row.max_possible,
-      criteriaCount: row.criteria_count,
+      scoresCriteria: row.scores_criteria,
+      scoreFinal: row.score_final,
+      scoreMax: row.score_max,
+      criteriaCnt: row.criteria_cnt,
       rank: row.rank
     };
   }

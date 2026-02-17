@@ -10,9 +10,9 @@ function calculateScore(candidate, query) {
   const weights = config.scoring;
 
   // Last name match (required for most cases, but check anyway)
-  if (candidate.lastName) {
-    const candLastName = normalizeName(candidate.lastName);
-    if (candLastName === query.normalizedLastName) {
+  if (candidate.nameLast) {
+    const candNameLast = normalizeName(candidate.nameLast);
+    if (candNameLast === query.nameLastNorm) {
       score += weights.lastNameExact;
       reasons.push(`Last name exact match (+${weights.lastNameExact})`);
     } else {
@@ -22,14 +22,14 @@ function calculateScore(candidate, query) {
   }
 
   // First name matching
-  if (candidate.firstName) {
-    const candFirstName = normalizeName(candidate.firstName);
+  if (candidate.nameFirst) {
+    const candNameFirst = normalizeName(candidate.nameFirst);
 
-    if (candFirstName === query.normalizedFirstName) {
+    if (candNameFirst === query.nameFirstNorm) {
       score += weights.firstNameExact;
       reasons.push(`First name exact match (+${weights.firstNameExact})`);
-    } else if (isNicknameMatch(query.normalizedFirstName, candFirstName) ||
-               isNicknameMatch(candFirstName, query.normalizedFirstName)) {
+    } else if (isNicknameMatch(query.nameFirstNorm, candNameFirst) ||
+               isNicknameMatch(candNameFirst, query.nameFirstNorm)) {
       score += weights.nicknameMatch;
       reasons.push(`First name nickname match (+${weights.nicknameMatch})`);
     } else {
@@ -39,9 +39,9 @@ function calculateScore(candidate, query) {
   }
 
   // Middle initial match
-  if (query.middleName && candidate.middleName) {
-    const queryMiddleInit = normalizeName(query.middleName).charAt(0);
-    const candMiddleInit = normalizeName(candidate.middleName).charAt(0);
+  if (query.nameMiddle && candidate.nameMiddle) {
+    const queryMiddleInit = normalizeName(query.nameMiddle).charAt(0);
+    const candMiddleInit = normalizeName(candidate.nameMiddle).charAt(0);
     if (queryMiddleInit === candMiddleInit) {
       score += weights.middleInitial;
       reasons.push(`Middle initial match (+${weights.middleInitial})`);
@@ -49,15 +49,15 @@ function calculateScore(candidate, query) {
   }
 
   // State match
-  if (candidate.state && query.normalizedState) {
+  if (candidate.state && query.stateNorm) {
     const candState = normalizeState(candidate.state);
-    if (candState === query.normalizedState) {
+    if (candState === query.stateNorm) {
       score += weights.stateExact;
       reasons.push(`State exact match (+${weights.stateExact})`);
 
       // City matching (only meaningful if state matches)
-      if (candidate.city && query.normalizedCity) {
-        if (citiesMatch(candidate.city, query.normalizedCity)) {
+      if (candidate.city && query.cityNorm) {
+        if (citiesMatch(candidate.city, query.cityNorm)) {
           score += weights.cityExact;
           reasons.push(`City exact match (+${weights.cityExact})`);
         } else {

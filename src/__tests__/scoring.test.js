@@ -1,28 +1,28 @@
 const { calculateScore, scoreCandidate } = require('../scoring/score');
-const { isRecentDod, scoreAndRankCandidates } = require('../scoring/criteriaScore');
+const { isRecentDod, scoreAndRankCandidates, calculateKeyWordsScore } = require('../scoring/criteriaScore');
 const config = require('../config');
 
 describe('Scoring Engine', () => {
   const makeQuery = (overrides = {}) => ({
-    firstName: 'James',
-    lastName: 'Smith',
+    nameFirst: 'James',
+    nameLast: 'Smith',
     city: 'Hamilton',
     state: 'OH',
     age: 71,
-    normalizedFirstName: 'james',
-    normalizedLastName: 'smith',
-    normalizedCity: 'hamilton',
-    normalizedState: 'OH',
-    firstNameVariants: ['james', 'jim', 'jimmy', 'jamie'],
-    searchKey: 'test-key',
+    nameFirstNorm: 'james',
+    nameLastNorm: 'smith',
+    cityNorm: 'hamilton',
+    stateNorm: 'OH',
+    nameFirstVariants: ['james', 'jim', 'jimmy', 'jamie'],
+    keySearch: 'test-key',
     ...overrides
   });
 
   const makeCandidate = (overrides = {}) => ({
     id: 'test-1',
-    fullName: 'James Smith',
-    firstName: 'James',
-    lastName: 'Smith',
+    nameFull: 'James Smith',
+    nameFirst: 'James',
+    nameLast: 'Smith',
     ageYears: 71,
     city: 'Hamilton',
     state: 'OH',
@@ -32,7 +32,7 @@ describe('Scoring Engine', () => {
     score: 0,
     reasons: [],
     fingerprint: 'test-fp',
-    providerType: 'native',
+    typeProvider: 'native',
     ...overrides
   });
 
@@ -54,7 +54,7 @@ describe('Scoring Engine', () => {
 
     it('should score nickname match', () => {
       const query = makeQuery();
-      const candidate = makeCandidate({ firstName: 'Jim' });
+      const candidate = makeCandidate({ nameFirst: 'Jim' });
       const result = calculateScore(candidate, query);
 
       expect(result.reasons.some(r => r.includes('nickname'))).toBe(true);
@@ -84,8 +84,8 @@ describe('Scoring Engine', () => {
     });
 
     it('should score middle initial match', () => {
-      const query = makeQuery({ middleName: 'William' });
-      const candidate = makeCandidate({ middleName: 'Walter' });
+      const query = makeQuery({ nameMiddle: 'William' });
+      const candidate = makeCandidate({ nameMiddle: 'Walter' });
       const result = calculateScore(candidate, query);
 
       expect(result.reasons.some(r => r.includes('Middle initial match'))).toBe(true);
@@ -95,7 +95,7 @@ describe('Scoring Engine', () => {
     it('should handle missing candidate fields gracefully', () => {
       const query = makeQuery();
       const candidate = makeCandidate({
-        firstName: undefined,
+        nameFirst: undefined,
         city: undefined,
         state: undefined,
         ageYears: undefined
@@ -158,8 +158,8 @@ describe('Scoring Engine', () => {
 
   describe('scoreAndRankCandidates with DOD recency', () => {
     const makeQueryForCriteria = () => ({
-      firstName: 'John',
-      lastName: 'Smith',
+      nameFirst: 'John',
+      nameLast: 'Smith',
       city: 'Columbus',
       state: 'OH',
       age: 75
@@ -167,9 +167,9 @@ describe('Scoring Engine', () => {
 
     const makeCandidateForCriteria = (overrides = {}) => ({
       id: 'test-1',
-      fullName: 'John Smith',
-      firstName: 'John',
-      lastName: 'Smith',
+      nameFull: 'John Smith',
+      nameFirst: 'John',
+      nameLast: 'Smith',
       ageYears: 75,
       city: 'Columbus',
       state: 'OH',
@@ -184,8 +184,8 @@ describe('Scoring Engine', () => {
 
       const query = makeQueryForCriteria();
       const candidates = [
-        makeCandidateForCriteria({ id: 'old', dod: oneYearAgo, firstName: 'John', lastName: 'Smith' }),
-        makeCandidateForCriteria({ id: 'recent', dod: fiveDaysAgo, firstName: 'Jon', lastName: 'Smyth' })  // Worse name match
+        makeCandidateForCriteria({ id: 'old', dod: oneYearAgo, nameFirst: 'John', nameLast: 'Smith' }),
+        makeCandidateForCriteria({ id: 'recent', dod: fiveDaysAgo, nameFirst: 'Jon', nameLast: 'Smyth' })  // Worse name match
       ];
 
       const ranked = scoreAndRankCandidates(candidates, query);
@@ -202,8 +202,8 @@ describe('Scoring Engine', () => {
 
       const query = makeQueryForCriteria();
       const candidates = [
-        makeCandidateForCriteria({ id: 'recent-bad', dod: threeDaysAgo, firstName: 'Jon', lastName: 'Smyth' }),
-        makeCandidateForCriteria({ id: 'recent-good', dod: fiveDaysAgo, firstName: 'John', lastName: 'Smith' })
+        makeCandidateForCriteria({ id: 'recent-bad', dod: threeDaysAgo, nameFirst: 'Jon', nameLast: 'Smyth' }),
+        makeCandidateForCriteria({ id: 'recent-good', dod: fiveDaysAgo, nameFirst: 'John', nameLast: 'Smith' })
       ];
 
       const ranked = scoreAndRankCandidates(candidates, query);
@@ -211,6 +211,54 @@ describe('Scoring Engine', () => {
       // Both recent, so better score should win
       expect(ranked[0].id).toBe('recent-good');
       expect(ranked[1].id).toBe('recent-bad');
+    });
+  });
+
+  describe('calculateKeyWordsScore', () => {
+    it('should return null when no keywords provided', () => {
+      expect(calculateKeyWordsScore({ snippet: 'some text' }, null)).toBeNull();
+      expect(calculateKeyWordsScore({ snippet: 'some text' }, [])).toBeNull();
+      expect(calculateKeyWordsScore({ snippet: 'some text' }, undefined)).toBeNull();
+    });
+
+    it('should return 100 when keyword found in snippet', () => {
+      const candidate = { snippet: 'He served in the Army for 20 years', title: 'Obituary' };
+      expect(calculateKeyWordsScore(candidate, ['army'])).toBe(100);
+    });
+
+    it('should return 100 when keyword found in title', () => {
+      const candidate = { snippet: 'Some text', title: 'Army veteran John Smith obituary' };
+      expect(calculateKeyWordsScore(candidate, ['army'])).toBe(100);
+    });
+
+    it('should return 0 when no keywords match', () => {
+      const candidate = { snippet: 'Loved gardening and fishing', title: 'Obituary' };
+      expect(calculateKeyWordsScore(candidate, ['army', 'navy'])).toBe(0);
+    });
+
+    it('should be case insensitive', () => {
+      const candidate = { snippet: 'Served in the ARMY', title: '' };
+      expect(calculateKeyWordsScore(candidate, ['army'])).toBe(100);
+    });
+
+    it('should return 100 when any of multiple keywords match', () => {
+      const candidate = { snippet: 'Lived in Middletown for years', title: '' };
+      expect(calculateKeyWordsScore(candidate, ['army', 'middletown'])).toBe(100);
+    });
+
+    it('should handle apostrophes in keywords', () => {
+      const candidate = { snippet: "Attended St. Mary's School", title: '' };
+      expect(calculateKeyWordsScore(candidate, ["st. mary's"])).toBe(100);
+    });
+
+    it('should match substrings in longer text', () => {
+      const candidate = { snippet: 'Graduate of Ohio University and worked at IBM', title: '' };
+      expect(calculateKeyWordsScore(candidate, ['ohio university'])).toBe(100);
+    });
+
+    it('should return 0 when snippet and title are missing', () => {
+      const candidate = {};
+      expect(calculateKeyWordsScore(candidate, ['army'])).toBe(0);
     });
   });
 });

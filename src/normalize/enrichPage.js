@@ -49,7 +49,7 @@ function htmlToText(html) {
  * Extract the primary obituary image URL from HTML
  * Looks for common patterns: og:image meta tag, obituary photo containers, etc.
  */
-function extractImageUrl(html, pageUrl) {
+function extractUrlImage(html, pageUrl) {
   // Check for site-specific patterns first (these are more reliable than generic patterns)
 
   // Legacy.com uses data-component="obitImage"
@@ -187,12 +187,12 @@ async function fetchPageText(url, timeoutMs = 8000) {
 
 /**
  * Enrich a single result by fetching its page and extracting dates + image
- * Only fetches if the result is missing funeralDate or imageUrl and has a URL
+ * Only fetches if the result is missing dateFuneral or urlImage and has a URL
  * Returns true if any fields were updated
  */
 async function enrichResult(result) {
   if (!result.url) return false;
-  if (result.funeralDate && result.visitationDate && result.imageUrl) return false;
+  if (result.dateFuneral && result.dateVisitation && result.urlImage) return false;
 
   const page = await fetchPage(result.url);
   if (!page) return false;
@@ -206,46 +206,46 @@ async function enrichResult(result) {
     if (dod) {
       result.dod = dod;
       updated = true;
-      logger.debug(`Enriched DOD for ${result.fullName}: ${dod}`);
+      logger.debug(`Enriched DOD for ${result.nameFull}: ${dod}`);
     }
   }
 
   // Extract service dates from full page text
   const serviceDates = extractServiceDates(text, result.dod);
 
-  if (!result.funeralDate && serviceDates.funeral) {
-    result.funeralDate = serviceDates.funeral;
+  if (!result.dateFuneral && serviceDates.funeral) {
+    result.dateFuneral = serviceDates.funeral;
     updated = true;
-    logger.debug(`Enriched funeral date for ${result.fullName}: ${serviceDates.funeral}`);
+    logger.debug(`Enriched funeral date for ${result.nameFull}: ${serviceDates.funeral}`);
   }
 
-  if (!result.visitationDate && serviceDates.visitation) {
-    result.visitationDate = serviceDates.visitation;
+  if (!result.dateVisitation && serviceDates.visitation) {
+    result.dateVisitation = serviceDates.visitation;
     updated = true;
-    logger.debug(`Enriched visitation date for ${result.fullName}: ${serviceDates.visitation}`);
+    logger.debug(`Enriched visitation date for ${result.nameFull}: ${serviceDates.visitation}`);
   }
 
   // Extract image URL from HTML
-  if (!result.imageUrl) {
-    const imageUrl = extractImageUrl(html, result.url);
-    if (imageUrl) {
-      result.imageUrl = imageUrl;
+  if (!result.urlImage) {
+    const urlImage = extractUrlImage(html, result.url);
+    if (urlImage) {
+      result.urlImage = urlImage;
       updated = true;
-      logger.debug(`Enriched image URL for ${result.fullName}: ${imageUrl}`);
+      logger.debug(`Enriched image URL for ${result.nameFull}: ${urlImage}`);
     }
   }
 
   // Fallback: if DOD is still missing, use funeral or visitation date
   // (person definitely died before their funeral/visitation)
   if (!result.dod) {
-    if (result.funeralDate) {
-      result.dod = result.funeralDate;
+    if (result.dateFuneral) {
+      result.dod = result.dateFuneral;
       updated = true;
-      logger.debug(`Using funeral date as DOD fallback for ${result.fullName}: ${result.funeralDate}`);
-    } else if (result.visitationDate) {
-      result.dod = result.visitationDate;
+      logger.debug(`Using funeral date as DOD fallback for ${result.nameFull}: ${result.dateFuneral}`);
+    } else if (result.dateVisitation) {
+      result.dod = result.dateVisitation;
       updated = true;
-      logger.debug(`Using visitation date as DOD fallback for ${result.fullName}: ${result.visitationDate}`);
+      logger.debug(`Using visitation date as DOD fallback for ${result.nameFull}: ${result.dateVisitation}`);
     }
   }
 
@@ -262,27 +262,27 @@ async function enrichResult(result) {
 async function enrichResults(results, maxEnrich = 5, concurrency = 3) {
   // Only enrich results that need it (missing dates or image)
   const toEnrich = results
-    .filter(r => r.url && (!r.funeralDate || !r.visitationDate || !r.imageUrl))
+    .filter(r => r.url && (!r.dateFuneral || !r.dateVisitation || !r.urlImage))
     .slice(0, maxEnrich);
 
   if (toEnrich.length === 0) return 0;
 
   logger.info(`Enriching ${toEnrich.length} results by fetching pages...`);
 
-  let enriched = 0;
+  let enrichedCnt = 0;
 
   // Process in batches for concurrency control
   for (let i = 0; i < toEnrich.length; i += concurrency) {
     const batch = toEnrich.slice(i, i + concurrency);
     const results = await Promise.all(batch.map(r => enrichResult(r)));
-    enriched += results.filter(Boolean).length;
+    enrichedCnt += results.filter(Boolean).length;
   }
 
-  if (enriched > 0) {
-    logger.info(`Enriched ${enriched} results with page data`);
+  if (enrichedCnt > 0) {
+    logger.info(`Enriched ${enrichedCnt} results with page data`);
   }
 
-  return enriched;
+  return enrichedCnt;
 }
 
 module.exports = {
@@ -291,5 +291,5 @@ module.exports = {
   fetchPage,
   fetchPageText,
   htmlToText,
-  extractImageUrl
+  extractUrlImage
 };

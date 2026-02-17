@@ -1,0 +1,2 @@
+ALTER TABLE queries ADD COLUMN IF NOT EXISTS name_nickname TEXT;
+ALTER TABLE user_query ADD COLUMN IF NOT EXISTS name_nickname TEXT;

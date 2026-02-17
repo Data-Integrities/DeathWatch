@@ -5,15 +5,15 @@ describe('Fingerprint Generation', () => {
   describe('generateFingerprint', () => {
     it('should generate consistent fingerprint', () => {
       const fp1 = generateFingerprint({
-        lastName: 'Smith',
-        firstName: 'James',
+        nameLast: 'Smith',
+        nameFirst: 'James',
         city: 'Hamilton',
         state: 'OH',
         dod: '2024-01-15'
       });
       const fp2 = generateFingerprint({
-        lastName: 'Smith',
-        firstName: 'James',
+        nameLast: 'Smith',
+        nameFirst: 'James',
         city: 'Hamilton',
         state: 'OH',
         dod: '2024-01-15'
@@ -23,15 +23,15 @@ describe('Fingerprint Generation', () => {
 
     it('should normalize case', () => {
       const fp1 = generateFingerprint({
-        lastName: 'SMITH',
-        firstName: 'JAMES',
+        nameLast: 'SMITH',
+        nameFirst: 'JAMES',
         city: 'HAMILTON',
         state: 'oh',
         dod: '2024-01-15'
       });
       const fp2 = generateFingerprint({
-        lastName: 'Smith',
-        firstName: 'James',
+        nameLast: 'Smith',
+        nameFirst: 'James',
         city: 'Hamilton',
         state: 'OH',
         dod: '2024-01-15'
@@ -41,22 +41,22 @@ describe('Fingerprint Generation', () => {
 
     it('should handle missing fields', () => {
       const fp = generateFingerprint({
-        lastName: 'Smith',
-        firstName: 'James'
+        nameLast: 'Smith',
+        nameFirst: 'James'
       });
       expect(fp).toContain('unknown');
     });
 
     it('should use first initial only', () => {
       const fp1 = generateFingerprint({
-        lastName: 'Smith',
-        firstName: 'James',
+        nameLast: 'Smith',
+        nameFirst: 'James',
         city: 'Hamilton',
         state: 'OH'
       });
       const fp2 = generateFingerprint({
-        lastName: 'Smith',
-        firstName: 'Jim',  // Different name, same initial
+        nameLast: 'Smith',
+        nameFirst: 'Jim',  // Different name, same initial
         city: 'Hamilton',
         state: 'OH'
       });
@@ -84,9 +84,9 @@ describe('Fingerprint Generation', () => {
 describe('Deduplication', () => {
   const makeCandidate = (overrides) => ({
     id: 'test-1',
-    fullName: 'James Smith',
-    firstName: 'James',
-    lastName: 'Smith',
+    nameFull: 'James Smith',
+    nameFirst: 'James',
+    nameLast: 'Smith',
     ageYears: 71,
     city: 'Hamilton',
     state: 'OH',
@@ -96,7 +96,7 @@ describe('Deduplication', () => {
     score: 50,
     reasons: [],
     fingerprint: 'smith-j-hamilton-oh-2024-01-15',
-    providerType: 'native',
+    typeProvider: 'native',
     ...overrides
   });
 
@@ -134,15 +134,15 @@ describe('Deduplication', () => {
         makeCandidate({
           id: '1',
           score: 80,
-          fullName: 'James William Smith',
-          providerType: 'native',
+          nameFull: 'James William Smith',
+          typeProvider: 'native',
           url: 'https://native.com/1'
         }),
         makeCandidate({
           id: '2',
           score: 90,  // Higher score
-          fullName: 'J. Smith',  // Less complete name
-          providerType: 'google',
+          nameFull: 'J. Smith',  // Less complete name
+          typeProvider: 'google',
           url: 'https://google.com/1'
         })
       ];
@@ -150,7 +150,7 @@ describe('Deduplication', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].score).toBe(90);  // Highest score
-      expect(result[0].fullName).toBe('James William Smith');  // Native data
+      expect(result[0].nameFull).toBe('James William Smith');  // Native data
     });
   });
 });

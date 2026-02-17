@@ -65,7 +65,7 @@ function mergeGroup(group) {
 
   // Prefer native provider data when available (usually more complete)
   let merged = best;
-  const nativeRecord = group.find(c => c.providerType === 'native');
+  const nativeRecord = group.find(c => c.typeProvider === 'native');
   if (nativeRecord && nativeRecord !== best) {
     // Use native data but keep best score
     merged = {

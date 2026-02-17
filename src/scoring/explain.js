@@ -25,8 +25,8 @@ function formatCandidate(candidate, index) {
   const rankLabel = (index === 0) ? ' ★ BEST GUESS' : '';
   const lines = [
     `\n--- Result ${index + 1} (Rank #${candidate.rank || '?'})${rankLabel} ---`,
-    `Name: ${candidate.fullName}`,
-    `Final Score: ${candidate.finalScore || 0}/${candidate.maxPossible || 500}`,
+    `Name: ${candidate.nameFull}`,
+    `Final Score: ${candidate.scoreFinal || 0}/${candidate.scoreMax || 500}`,
     `Fingerprint: ${candidate.fingerprint}`
   ];
 
@@ -53,14 +53,15 @@ function formatCandidate(candidate, index) {
   }
 
   // Show criteria scores if available
-  if (candidate.criteriaScores) {
+  if (candidate.scoresCriteria) {
     lines.push('Criteria Scores:');
-    const cs = candidate.criteriaScores;
-    if (cs.lastName !== null) lines.push(`  Last Name:  ${cs.lastName}/100`);
-    if (cs.firstName !== null) lines.push(`  First Name: ${cs.firstName}/100`);
+    const cs = candidate.scoresCriteria;
+    if (cs.nameLast !== null) lines.push(`  Last Name:  ${cs.nameLast}/100`);
+    if (cs.nameFirst !== null) lines.push(`  First Name: ${cs.nameFirst}/100`);
     if (cs.state !== null) lines.push(`  State:      ${cs.state}/100`);
     if (cs.city !== null) lines.push(`  City:       ${cs.city}/100`);
     if (cs.age !== null) lines.push(`  Age:        ${cs.age}/100`);
+    if (cs.keyWords != null) lines.push(`  Keywords:   ${cs.keyWords}/100`);
   } else if (candidate.reasons && candidate.reasons.length > 0) {
     // Fallback to old scoring format
     lines.push('Scoring:');

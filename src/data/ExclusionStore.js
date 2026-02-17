@@ -4,7 +4,7 @@ const { logger } = require('../utils/logger');
 
 /**
  * Exclusion types:
- * - 'per-query': Only applies to specific searchKey
+ * - 'per-query': Only applies to specific keySearch
  * - 'global': Applies to all searches (e.g., generic funeral home pages)
  */
 class ExclusionStore {
@@ -28,10 +28,10 @@ class ExclusionStore {
     return rows.map(r => this._rowToExclusion(r));
   }
 
-  async getBySearchKey(searchKey) {
+  async getByKeySearch(keySearch) {
     const { rows } = await pool.query(
       "SELECT * FROM exclusions WHERE search_key = $1 AND scope != 'global' ORDER BY created_at DESC",
-      [searchKey]
+      [keySearch]
     );
     return rows.map(r => this._rowToExclusion(r));
   }
@@ -46,27 +46,27 @@ class ExclusionStore {
   /**
    * Get all excluded fingerprints for a search (per-query + global)
    */
-  async getExcludedFingerprints(searchKey) {
+  async getFingerprintsExcluded(keySearch) {
     const { rows } = await pool.query(
-      `SELECT excluded_fingerprint FROM exclusions
+      `SELECT fingerprint_excluded FROM exclusions
        WHERE (search_key = $1 OR scope = 'global')
-         AND excluded_fingerprint IS NOT NULL`,
-      [searchKey]
+         AND fingerprint_excluded IS NOT NULL`,
+      [keySearch]
     );
-    return new Set(rows.map(r => r.excluded_fingerprint));
+    return new Set(rows.map(r => r.fingerprint_excluded));
   }
 
   /**
    * Get all excluded URLs for a search (per-query + global)
    */
-  async getExcludedUrls(searchKey) {
+  async getUrlsExcluded(keySearch) {
     const { rows } = await pool.query(
-      `SELECT excluded_url FROM exclusions
+      `SELECT url_excluded FROM exclusions
        WHERE (search_key = $1 OR scope = 'global')
-         AND excluded_url IS NOT NULL`,
-      [searchKey]
+         AND url_excluded IS NOT NULL`,
+      [keySearch]
     );
-    return new Set(rows.map(r => r.excluded_url));
+    return new Set(rows.map(r => r.url_excluded));
   }
 
   async getById(id) {
@@ -80,31 +80,31 @@ class ExclusionStore {
   /**
    * Add an exclusion
    * @param {Object} params
-   * @param {string} params.searchKey - The search key (required for per-query)
-   * @param {string} params.excludedFingerprint - Fingerprint to exclude
-   * @param {string} params.excludedUrl - URL to exclude (backup matching)
-   * @param {string} params.excludedName - Name for reference
+   * @param {string} params.keySearch - The search key (required for per-query)
+   * @param {string} params.fingerprintExcluded - Fingerprint to exclude
+   * @param {string} params.urlExcluded - URL to exclude (backup matching)
+   * @param {string} params.nameExcluded - Name for reference
    * @param {string} params.reason - Why excluded (wrong person, different location, etc.)
    * @param {string} params.scope - 'per-query' (default) or 'global'
    */
   async add(params) {
     const scope = params.scope || 'per-query';
-    const normalizedUrl = params.excludedUrl ? this._normalizeUrl(params.excludedUrl) : null;
+    const urlNorm = params.urlExcluded ? this._normalizeUrl(params.urlExcluded) : null;
 
     // Check if already excluded (by fingerprint or URL)
-    const existing = await this._findExisting(scope, params.searchKey, params.excludedFingerprint, normalizedUrl);
+    const existing = await this._findExisting(scope, params.keySearch, params.fingerprintExcluded, urlNorm);
     if (existing) {
       return { exclusion: existing, isNew: false };
     }
 
     const id = uuidv4();
-    const searchKey = scope === 'global' ? null : params.searchKey;
+    const keySearch = scope === 'global' ? null : params.keySearch;
 
     const { rows } = await pool.query(
-      `INSERT INTO exclusions (id, scope, search_key, excluded_fingerprint, excluded_url, excluded_name, reason)
+      `INSERT INTO exclusions (id, scope, search_key, fingerprint_excluded, url_excluded, name_excluded, reason)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [id, scope, searchKey, params.excludedFingerprint || null, normalizedUrl, params.excludedName || null, params.reason || null]
+      [id, scope, keySearch, params.fingerprintExcluded || null, urlNorm, params.nameExcluded || null, params.reason || null]
     );
 
     const exclusion = this._rowToExclusion(rows[0]);
@@ -167,36 +167,36 @@ class ExclusionStore {
   /**
    * Check for existing duplicate exclusion
    */
-  async _findExisting(scope, searchKey, fingerprint, normalizedUrl) {
+  async _findExisting(scope, keySearch, fingerprint, urlNorm) {
     if (scope === 'global') {
       // Global: match by fingerprint or URL
       if (fingerprint) {
         const { rows } = await pool.query(
-          "SELECT * FROM exclusions WHERE scope = 'global' AND excluded_fingerprint = $1",
+          "SELECT * FROM exclusions WHERE scope = 'global' AND fingerprint_excluded = $1",
           [fingerprint]
         );
         if (rows.length > 0) return this._rowToExclusion(rows[0]);
       }
-      if (normalizedUrl) {
+      if (urlNorm) {
         const { rows } = await pool.query(
-          "SELECT * FROM exclusions WHERE scope = 'global' AND excluded_url = $1",
-          [normalizedUrl]
+          "SELECT * FROM exclusions WHERE scope = 'global' AND url_excluded = $1",
+          [urlNorm]
         );
         if (rows.length > 0) return this._rowToExclusion(rows[0]);
       }
     } else {
-      // Per-query: must match searchKey + (fingerprint or URL)
+      // Per-query: must match keySearch + (fingerprint or URL)
       if (fingerprint) {
         const { rows } = await pool.query(
-          "SELECT * FROM exclusions WHERE scope != 'global' AND search_key = $1 AND excluded_fingerprint = $2",
-          [searchKey, fingerprint]
+          "SELECT * FROM exclusions WHERE scope != 'global' AND search_key = $1 AND fingerprint_excluded = $2",
+          [keySearch, fingerprint]
         );
         if (rows.length > 0) return this._rowToExclusion(rows[0]);
       }
-      if (normalizedUrl) {
+      if (urlNorm) {
         const { rows } = await pool.query(
-          "SELECT * FROM exclusions WHERE scope != 'global' AND search_key = $1 AND excluded_url = $2",
-          [searchKey, normalizedUrl]
+          "SELECT * FROM exclusions WHERE scope != 'global' AND search_key = $1 AND url_excluded = $2",
+          [keySearch, urlNorm]
         );
         if (rows.length > 0) return this._rowToExclusion(rows[0]);
       }
@@ -211,10 +211,10 @@ class ExclusionStore {
     return {
       id: row.id,
       scope: row.scope,
-      searchKey: row.search_key,
-      excludedFingerprint: row.excluded_fingerprint,
-      excludedUrl: row.excluded_url,
-      excludedName: row.excluded_name,
+      keySearch: row.search_key,
+      fingerprintExcluded: row.fingerprint_excluded,
+      urlExcluded: row.url_excluded,
+      nameExcluded: row.name_excluded,
       reason: row.reason,
       createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at
     };

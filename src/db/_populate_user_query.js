@@ -8,8 +8,8 @@ async function run() {
   await c.connect();
   for (const p of people) {
     await c.query(
-      'INSERT INTO user_query (first_name, middle_name, last_name, apx_age, city, state) VALUES ($1, $2, $3, $4, $5, $6)',
-      [p.firstName, p.middleName || null, p.lastName, p.apxAge || null, p.city || null, p.state || null]
+      'INSERT INTO user_query (name_first, name_middle, name_last, age_apx, city, state, key_words) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [p.firstName, p.middleName || null, p.lastName, p.apxAge || null, p.city || null, p.state || null, p.keyWords || null]
     );
   }
   const { rows } = await c.query('SELECT count(*) FROM user_query');

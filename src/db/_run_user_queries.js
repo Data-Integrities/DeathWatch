@@ -30,8 +30,8 @@ async function cleanupOldImageUrls() {
   const start = Date.now();
   const result = await pool.query(`
     UPDATE user_result
-    SET image_url = NULL
-    WHERE image_url IS NOT NULL
+    SET url_image = NULL
+    WHERE url_image IS NOT NULL
       AND ran_dt < (SELECT MAX(ran_dt) FROM user_result)
   `);
   metrics.timings.dbCleanupMs = Date.now() - start;
@@ -101,7 +101,7 @@ async function run() {
   // Load all user queries
   const dbLoadStart = Date.now();
   const { rows: queries } = await pool.query(
-    'SELECT id, first_name, middle_name, last_name, apx_age, city, state FROM user_query WHERE disabled = false ORDER BY last_name, first_name'
+    'SELECT id, name_first, name_middle, name_last, age_apx, city, state, key_words FROM user_query WHERE disabled = false ORDER BY name_last, name_first'
   );
   metrics.timings.dbLoadQueriesMs = Date.now() - dbLoadStart;
   metrics.totalQueries = queries.length;
@@ -115,15 +115,16 @@ async function run() {
   for (let i = 0; i < queries.length; i++) {
     const queryStart = Date.now();
     const q = queries[i];
-    const label = `${q.first_name} ${q.last_name}`;
+    const label = `${q.name_first} ${q.name_last}`;
 
     const query = {
-      firstName: q.first_name,
-      lastName: q.last_name,
-      middleName: q.middle_name || undefined,
+      firstName: q.name_first,
+      lastName: q.name_last,
+      middleName: q.name_middle || undefined,
       city: q.city || undefined,
       state: q.state || undefined,
-      age: q.apx_age || undefined
+      age: q.age_apx || undefined,
+      keyWords: q.key_words || undefined
     };
 
     const queryMetrics = {
@@ -148,24 +149,24 @@ async function run() {
       for (const r of results) {
         await pool.query(
           `INSERT INTO user_result (
-            id, user_query_id, ran_dt, full_name, first_name, last_name, age_years,
-            dod, visitation_date, funeral_date, city, state, source, url, snippet,
-            score, reasons, fingerprint, provider_type, also_found_at,
-            criteria_scores, final_score, max_possible, criteria_count, rank, image_url
+            id, user_query_id, ran_dt, name_full, name_first, name_last, age_years,
+            dod, date_visitation, date_funeral, city, state, source, url, snippet,
+            score, reasons, fingerprint, type_provider, also_found_at,
+            scores_criteria, score_final, score_max, criteria_cnt, rank, url_image
           ) VALUES (
             $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26
           )`,
           [
             uuidv4(), q.id, ranDt,
-            r.fullName || null, r.firstName || null, r.lastName || null, r.ageYears || null,
-            r.dod || null, r.visitationDate || null, r.funeralDate || null,
+            r.nameFull || null, r.nameFirst || null, r.nameLast || null, r.ageYears || null,
+            r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
             r.city || null, r.state || null, r.source || null, r.url || null, r.snippet || null,
             r.score || 0, JSON.stringify(r.reasons || []),
-            r.fingerprint || null, r.providerType || null,
+            r.fingerprint || null, r.typeProvider || null,
             r.alsoFoundAt ? JSON.stringify(r.alsoFoundAt) : null,
-            r.criteriaScores ? JSON.stringify(r.criteriaScores) : null,
-            r.finalScore || null, r.maxPossible || null, r.criteriaCount || null, r.rank || null,
-            r.imageUrl || null
+            r.scoresCriteria ? JSON.stringify(r.scoresCriteria) : null,
+            r.scoreFinal || null, r.scoreMax || null, r.criteriaCnt || null, r.rank || null,
+            r.urlImage || null
           ]
         );
       }

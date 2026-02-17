@@ -7,13 +7,13 @@ const { pool } = require('../db/pool');
 /**
  * Get all variants for a first name (bidirectional lookup)
  * If "jim" is input, returns ["jim", "james", "jimmy", "jamie", ...]
- * @param {string} firstName - The first name to look up
+ * @param {string} nameFirst - The first name to look up
  * @returns {Promise<string[]>} Array of variant names including the original
  */
-async function getFirstNameVariants(firstName) {
-  if (!firstName) return [];
+async function getFirstNameVariants(nameFirst) {
+  if (!nameFirst) return [];
 
-  const name = firstName.toLowerCase().trim();
+  const name = nameFirst.toLowerCase().trim();
 
   try {
     // Bidirectional lookup: find variants where this name is formal OR variant
@@ -21,16 +21,16 @@ async function getFirstNameVariants(firstName) {
       SELECT DISTINCT name
       FROM (
         -- If input is a formal name, get its variants
-        SELECT variant_name as name FROM name_first_variant WHERE formal_name = $1
+        SELECT name_variant as name FROM name_first_variant WHERE name_formal = $1
         UNION
         -- If input is a variant, get the formal name
-        SELECT formal_name as name FROM name_first_variant WHERE variant_name = $1
+        SELECT name_formal as name FROM name_first_variant WHERE name_variant = $1
         UNION
         -- Also get siblings (other variants of the same formal name)
-        SELECT v2.variant_name as name
+        SELECT v2.name_variant as name
         FROM name_first_variant v1
-        JOIN name_first_variant v2 ON v1.formal_name = v2.formal_name
-        WHERE v1.variant_name = $1
+        JOIN name_first_variant v2 ON v1.name_formal = v2.name_formal
+        WHERE v1.name_variant = $1
         UNION
         -- Include the original name
         SELECT $1 as name

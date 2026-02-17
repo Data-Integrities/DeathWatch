@@ -3,6 +3,27 @@
 ## Overview
 Node.js obituary search engine that searches Google for obituaries based on user-provided criteria.
 
+## Naming Convention (ENFORCED)
+
+**Property names follow category-first pattern:** `category_variant`
+
+| Pattern | Examples |
+|---------|----------|
+| Names | `nameFirst`, `nameLast`, `nameFull`, `nameMiddle` |
+| Dates | `dateFuneral`, `dateVisitation`, `dod` |
+| Scores | `scoreFinal`, `scoreMax`, `scoresCriteria` |
+| Counts | `criteriaCnt`, `resultCnt` (suffix is `Cnt`, not `Count`) |
+| URLs | `urlImage`, `urlExcluded` |
+| Types | `typeProvider` |
+| Keys | `keySearch`, `keyWords` |
+| Fingerprints | `fingerprintExcluded` |
+
+**Database columns:** Use snake_case version of the same pattern (`name_first`, `date_funeral`, `score_final`, `criteria_cnt`)
+
+**User-facing input (CLI/API/JSON files):** May use readable names (`firstName`, `lastName`) for backwards compatibility, but internal objects use the convention above.
+
+**Claude: Enforce this. Push back if I try to use `firstName` internally, `searchKey` instead of `keySearch`, `count` suffix, etc.**
+
 ## Project Structure
 ```
 DeathWatch/
@@ -12,7 +33,7 @@ DeathWatch/
 │   ├── cli/search.js         # CLI interface (commander.js)
 │   ├── api/server.js         # Express HTTP API (port 3000)
 │   ├── utils/                # logger, cache
-│   ├── normalize/            # name, nicknames, location, age, dod, serviceDates, enrichPage
+│   ├── normalize/            # name, nicknames, nameExtract, location, age, dod, serviceDates, enrichPage
 │   ├── data/
 │   │   └── ExclusionStore.js # Per-query & global exclusions (PostgreSQL)
 │   ├── db/
@@ -32,7 +53,13 @@ DeathWatch/
 │   │   ├── score.js          # Legacy scoring
 │   │   └── explain.js        # Result formatting
 │   ├── dedupe/               # fingerprint, dedupe
-│   └── __tests__/            # Jest tests (64 tests)
+│   └── __tests__/            # Jest tests (167 tests, 8 suites)
+├── search_test_data/
+│   ├── scrape.js             # Scrape funeral home sites for ground-truth test data
+│   ├── track.js              # Daily rank-1 tracker & report generator
+│   ├── test-input-2026-02-10.json  # 100 ground-truth records from funeral home scrapes
+│   ├── track-data.json       # Generated: metrics JSON
+│   └── track-report.html     # Generated: Chart.js dashboard
 ├── clients/
 │   └── obit-client1/         # Web UI for reviewing results
 │       ├── server.js         # Express server (port 3001)
@@ -56,13 +83,14 @@ User-supplied list of people to search for:
     "lastName": "Smith",
     "apxAge": 71,
     "city": "Hamilton",
-    "state": "OH"
+    "state": "OH",
+    "keyWords": "Army, Middletown"
   }
 ]
 ```
 
 Required fields: `firstName`, `lastName`
-Optional fields: `middleName`, `apxAge`, `city`, `state`
+Optional fields: `middleName`, `apxAge`, `city`, `state`, `keyWords`
 
 ### Output
 Batch results are stored in PostgreSQL. Each batch search prints a batch ID on completion. Results can be viewed via the web UI or queried via the API.
@@ -81,6 +109,7 @@ node src/cli/search.js batch --file data/search-input.json -v
 ### CLI - Single Search
 ```bash
 node src/cli/search.js search --first James --last Smith --city Hamilton --state OH --age 71
+node src/cli/search.js search --first James --last Smith --city Hamilton --state OH --age 71 --keywords "Army, Middletown"
 ```
 
 ### CLI - Exclusions
@@ -128,7 +157,7 @@ npm start  # Runs on http://localhost:3000
 ```
 
 **Endpoints:**
-- `GET /search?firstName=&lastName=&city=&state=&age=`
+- `GET /search?firstName=&lastName=&city=&state=&age=&keyWords=`
 - `POST /exclude` - body: `{ searchKey, fingerprint, url?, name?, reason? }`
 - `GET /exclusions?searchKey=`
 - `DELETE /exclude/:id`
@@ -142,9 +171,27 @@ npm start  # Runs on http://localhost:3000
 npm test
 ```
 
+### Indexing Tail Tracker
+Measures how rank-1 search results change over time as obituaries get indexed by Google.
+Uses 100 ground-truth records scraped from funeral home websites.
+```bash
+# Run a daily batch search (same 100 queries)
+npm run track:run
+
+# Generate tracking report from all batches of the test input
+npm run track:report
+# Opens: search_test_data/track-report.html
+
+# Use a different input file
+node search_test_data/track.js --input path/to/other-input.json
+```
+**Workflow**: Run `track:run` daily for ~10 days, then `track:report` to see trends.
+Matches queries across batches by `name_first + name_last` (lowercased).
+Report includes: hit rate, name match rate, avg scores, score distribution buckets, per-criteria averages, and a sortable per-person trajectory table.
+
 ## Scoring System
 
-Each result is scored on 5 criteria (0-100 each). `finalScore` = sum of all applicable criteria.
+Each result is scored on up to 6 criteria (0-100 each). `finalScore` = sum of all applicable criteria.
 Results are ranked by finalScore (rank 1 = best guess).
 
 | Criteria | Score Range | Notes |
@@ -154,14 +201,33 @@ Results are ranked by finalScore (rank 1 = best guess).
 | State | 0 or 100 | Exact match only |
 | City | 0, 50, or 100 | 100=exact, 50=different city same state, 0=mismatch |
 | Age | 0-100 | ±0.5yr=100, ±1yr=90, ... ±6yr=40, >6yr=0 |
+| Keywords | 0 or 100 | Any keyword found in snippet+title = 100, none = 0, not provided = null |
 
 **Age Adjustment:** If `inputDate` is provided per-person, query age is adjusted based on elapsed time since that date.
 
-**Example:** Score 480/500 means 4 criteria matched well, 1 partial match.
+**Keywords:** Comma-separated terms (e.g. `"Army, Middletown, Ohio University"`). Matched case-insensitively as substrings against snippet + title text. Any match = 100. Not included in `keySearch` hash.
+
+**Example:** Score 480/500 means 4 criteria matched well, 1 partial match. Max is 600 when keywords are provided.
 
 ## Fingerprint Format
 `lastname-firstinitial-city-state-dod`
 Example: `smith-j-hamilton-oh-2024-01-15`
+
+## Exclusion Matching Logic
+
+When a customer rejects a result, an exclusion is stored with both `fingerprint_excluded` and `url_excluded`. Matching during search filtering:
+
+- **Fingerprint with DOD** (98% of results): fingerprint match alone excludes — identifies the same person across syndicated URLs (funeral home, Legacy.com, newspapers, Facebook)
+- **Fingerprint without DOD** (`unknown`): too coarse to safely match — only excludes if URL also matches
+- **URL match**: always excludes — exact same page
+
+This prevents a coarse `kelly-s-youngstown-oh-unknown` fingerprint from accidentally excluding the correct obituary for a different person with the same name.
+
+## Name Extraction
+
+`src/normalize/nameExtract.js` — shared module used by SerperProvider and SerpApiProvider. Extracts person names from search result titles, with fallback chain: title → snippet → URL path.
+
+Handles: smashed dates (`KellyFebruary 7, 2026`), Facebook sentence titles (`Passed away on...`), memorial suffixes (`'s Memorial Website`), social media garbage (`(@user) • Instagram`), and hyphenated names (`Gonzalez-Irizarry` preserved, `Smith - Legacy.com` stripped).
 
 ## Search Provider Setup
 
@@ -259,3 +325,6 @@ node src/db/import-legacy.js
 - uuid - ID generation
 - dotenv - Environment configuration
 - jest - Testing
+
+## TODO: Verify Name Extraction Fix (2026-02-13)
+After running the noon ET batch search (`npm run track:run`), verify that the name extraction improvements fixed all 15 previously broken rank-1 names. Before the fix, 15/100 rank-1 results had wrong `nameLast` due to smashed dates, Facebook titles, memorial suffixes, social media garbage, and hyphenated name splitting. Run `npm run track:report` and check the name match rate — target is 97%+ (up from 84%).

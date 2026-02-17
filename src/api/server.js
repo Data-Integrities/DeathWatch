@@ -22,13 +22,15 @@ app.get('/search', async (req, res, next) => {
       firstName: req.query.firstName,
       lastName: req.query.lastName,
       middleName: req.query.middleName,
+      nickname: req.query.nickname,
       city: req.query.city,
       state: req.query.state,
-      age: req.query.age ? parseInt(req.query.age, 10) : undefined
+      age: req.query.age ? parseInt(req.query.age, 10) : undefined,
+      keyWords: req.query.keyWords
     };
 
-    if (!query.firstName || !query.lastName) {
-      res.status(400).json({ error: 'firstName and lastName are required' });
+    if ((!query.firstName && !query.nickname) || !query.lastName) {
+      res.status(400).json({ error: '(firstName or nickname) and lastName are required' });
       return;
     }
 
@@ -50,10 +52,10 @@ app.post('/exclude', async (req, res, next) => {
     }
 
     const exclusion = await exclusionStore.add({
-      searchKey,
-      excludedFingerprint: fingerprint,
-      excludedUrl: url,
-      excludedName: name,
+      keySearch: searchKey,
+      fingerprintExcluded: fingerprint,
+      urlExcluded: url,
+      nameExcluded: name,
       reason
     });
 
@@ -73,7 +75,7 @@ app.get('/exclusions', async (req, res, next) => {
       return;
     }
 
-    const exclusions = await exclusionStore.getBySearchKey(searchKey);
+    const exclusions = await exclusionStore.getByKeySearch(searchKey);
     res.json({ exclusions });
   } catch (err) {
     next(err);

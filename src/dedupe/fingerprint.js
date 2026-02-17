@@ -3,17 +3,17 @@ const { normalizeCity, normalizeState } = require('../normalize/location');
 
 /**
  * Generate a fingerprint for deduplication
- * Format: lastname-firstinitial-city-state-dod
+ * Format: namelast-initialfirst-city-state-dod
  * Example: smith-j-hamilton-oh-2024-01-15
  */
 function generateFingerprint(input) {
   const parts = [];
 
   // Normalized last name
-  parts.push(normalizeName(input.lastName).replace(/\s+/g, '-'));
+  parts.push(normalizeName(input.nameLast).replace(/\s+/g, '-'));
 
   // First initial
-  parts.push(getFirstInitial(input.firstName));
+  parts.push(getFirstInitial(input.nameFirst));
 
   // City (normalized)
   if (input.city) {
@@ -60,16 +60,16 @@ function parseFingerprint(fingerprint) {
 
   if (parts.length < 4) {
     return {
-      lastName: parts[0] || 'unknown',
-      firstInitial: parts[1] || '?',
+      nameLast: parts[0] || 'unknown',
+      initialFirst: parts[1] || '?',
       city: 'unknown',
       state: 'unknown',
       dod: 'unknown'
     };
   }
 
-  const lastName = parts[0];
-  const firstInitial = parts[1];
+  const nameLast = parts[0];
+  const initialFirst = parts[1];
 
   // Last parts are: state, yyyy, mm, dd (or state and unknown)
   const lastPart = parts[parts.length - 1];
@@ -80,13 +80,13 @@ function parseFingerprint(fingerprint) {
     const state = parts[parts.length - 4];
     const dod = `${parts[parts.length - 3]}-${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
     const city = parts.slice(2, parts.length - 4).join('-');
-    return { lastName, firstInitial, city: city || 'unknown', state, dod };
+    return { nameLast, initialFirst, city: city || 'unknown', state, dod };
   } else {
     // No date or unknown
     const state = parts[parts.length - 2];
     const dod = parts[parts.length - 1];
     const city = parts.slice(2, parts.length - 2).join('-');
-    return { lastName, firstInitial, city: city || 'unknown', state, dod };
+    return { nameLast, initialFirst, city: city || 'unknown', state, dod };
   }
 }
 

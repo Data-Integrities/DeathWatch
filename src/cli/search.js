@@ -20,33 +20,42 @@ program
 program
   .command('search')
   .description('Search for obituaries')
-  .requiredOption('--first <name>', 'First name')
+  .option('--first <name>', 'First name')
+  .option('--nickname <name>', 'Nickname (used in OR clause with first name)')
   .requiredOption('--last <name>', 'Last name')
   .option('--middle <name>', 'Middle name')
   .option('--city <city>', 'City')
   .option('--state <state>', 'State (2-letter code or full name)')
   .option('--age <age>', 'Approximate age', parseInt)
+  .option('--keywords <words>', 'Comma-separated keywords to match in results')
   .option('-v, --verbose', 'Verbose output')
   .action(async (options) => {
     if (options.verbose) {
       logger.setLevel(LogLevel.DEBUG);
     }
 
+    if (!options.first && !options.nickname) {
+      console.error('Error: Must provide --first or --nickname (or both)');
+      process.exit(1);
+    }
+
     const query = {
       firstName: options.first,
       lastName: options.last,
       middleName: options.middle,
+      nickname: options.nickname,
       city: options.city,
       state: options.state,
-      age: options.age
+      age: options.age,
+      keyWords: options.keywords
     };
 
     console.log('\nSearching for obituaries...\n');
 
     try {
-      const { results, searchKey } = await searchObits(query);
+      const { results, keySearch } = await searchObits(query);
 
-      console.log(`Search Key: ${searchKey}`);
+      console.log(`Search Key: ${keySearch}`);
       console.log(`Found ${results.length} results\n`);
 
       if (results.length === 0) {
@@ -106,15 +115,15 @@ program
         age: options.age
       };
       const normalized = normalizeQuery(query);
-      searchKey = normalized.searchKey;
+      searchKey = normalized.keySearch;
     }
 
     try {
       const { exclusion, isNew } = await exclusionStore.add({
-        searchKey,
-        excludedFingerprint: options.fingerprint,
-        excludedUrl: options.url,
-        excludedName: options.name,
+        keySearch: searchKey,
+        fingerprintExcluded: options.fingerprint,
+        urlExcluded: options.url,
+        nameExcluded: options.name,
         reason: options.reason,
         scope: options.global ? 'global' : 'per-query'
       });
@@ -126,17 +135,17 @@ program
       }
       console.log(`  ID: ${exclusion.id}`);
       console.log(`  Scope: ${exclusion.scope}`);
-      if (exclusion.searchKey) {
-        console.log(`  Search Key: ${exclusion.searchKey}`);
+      if (exclusion.keySearch) {
+        console.log(`  Search Key: ${exclusion.keySearch}`);
       }
-      if (exclusion.excludedFingerprint) {
-        console.log(`  Fingerprint: ${exclusion.excludedFingerprint}`);
+      if (exclusion.fingerprintExcluded) {
+        console.log(`  Fingerprint: ${exclusion.fingerprintExcluded}`);
       }
-      if (exclusion.excludedUrl) {
-        console.log(`  URL: ${exclusion.excludedUrl}`);
+      if (exclusion.urlExcluded) {
+        console.log(`  URL: ${exclusion.urlExcluded}`);
       }
-      if (exclusion.excludedName) {
-        console.log(`  Name: ${exclusion.excludedName}`);
+      if (exclusion.nameExcluded) {
+        console.log(`  Name: ${exclusion.nameExcluded}`);
       }
       console.log(`  Created: ${exclusion.createdAt}`);
     } catch (err) {
@@ -177,8 +186,8 @@ program
         age: options.age
       };
       const normalized = normalizeQuery(query);
-      exclusions = await exclusionStore.getBySearchKey(normalized.searchKey);
-      title = `Exclusions for Search Key: ${normalized.searchKey}`;
+      exclusions = await exclusionStore.getByKeySearch(normalized.keySearch);
+      title = `Exclusions for Search Key: ${normalized.keySearch}`;
     } else {
       console.error('Error: Provide --first and --last, or use --global or --all');
       process.exit(1);
@@ -196,17 +205,17 @@ program
       console.log(`--- Exclusion ---`);
       console.log(`  ID: ${ex.id}`);
       console.log(`  Scope: ${ex.scope || 'per-query'}`);
-      if (ex.searchKey) {
-        console.log(`  Search Key: ${ex.searchKey}`);
+      if (ex.keySearch) {
+        console.log(`  Search Key: ${ex.keySearch}`);
       }
-      if (ex.excludedFingerprint) {
-        console.log(`  Fingerprint: ${ex.excludedFingerprint}`);
+      if (ex.fingerprintExcluded) {
+        console.log(`  Fingerprint: ${ex.fingerprintExcluded}`);
       }
-      if (ex.excludedName) {
-        console.log(`  Name: ${ex.excludedName}`);
+      if (ex.nameExcluded) {
+        console.log(`  Name: ${ex.nameExcluded}`);
       }
-      if (ex.excludedUrl) {
-        console.log(`  URL: ${ex.excludedUrl}`);
+      if (ex.urlExcluded) {
+        console.log(`  URL: ${ex.urlExcluded}`);
       }
       if (ex.reason) {
         console.log(`  Reason: ${ex.reason}`);
@@ -308,7 +317,7 @@ program
       console.log(`Query ${qi + 1}/${results.length}: ${query.firstName} ${query.lastName}`);
       if (query.city || query.state) console.log(`  Location: ${query.city || '?'}, ${query.state || '?'}`);
       if (query.apxAge) console.log(`  Age: ${query.apxAge}`);
-      console.log(`  Search Key: ${queryResult.searchKey}`);
+      console.log(`  Search Key: ${queryResult.keySearch}`);
       console.log(`  Results: ${queryResult.resultCount}`);
       console.log(`========================================`);
 
@@ -321,8 +330,8 @@ program
         const result = queryResult.results[ri];
 
         console.log(`\n--- Result ${ri + 1} (Rank #${result.rank}) ---`);
-        console.log(`  Name: ${result.fullName}`);
-        console.log(`  Score: ${result.finalScore}/${result.maxPossible}`);
+        console.log(`  Name: ${result.nameFull}`);
+        console.log(`  Score: ${result.scoreFinal}/${result.scoreMax}`);
         if (result.ageYears) console.log(`  Age: ${result.ageYears}`);
         if (result.city || result.state) console.log(`  Location: ${result.city || '?'}, ${result.state || '?'}`);
         console.log(`  URL: ${result.url}`);
@@ -355,10 +364,10 @@ program
           const reason = await ask('  Reason (optional): ');
 
           const { exclusion, isNew } = await exclusionStore.add({
-            searchKey: queryResult.searchKey,
-            excludedFingerprint: result.fingerprint,
-            excludedUrl: result.url,
-            excludedName: result.fullName,
+            keySearch: queryResult.keySearch,
+            fingerprintExcluded: result.fingerprint,
+            urlExcluded: result.url,
+            nameExcluded: result.nameFull,
             reason: reason.trim() || 'false positive',
             scope: isGlobal ? 'global' : 'per-query'
           });
@@ -410,8 +419,8 @@ program
 
     for (const person of people) {
       // Validate required fields
-      if (!person.firstName || !person.lastName) {
-        console.error(`Skipping invalid entry (missing firstName or lastName): ${JSON.stringify(person)}`);
+      if ((!person.firstName && !person.nickname) || !person.lastName) {
+        console.error(`Skipping invalid entry (missing firstName/nickname or lastName): ${JSON.stringify(person)}`);
         continue;
       }
 
@@ -419,22 +428,26 @@ program
         firstName: person.firstName,
         lastName: person.lastName,
         middleName: person.middleName,
+        nickname: person.nickname,
         city: person.city,
         state: person.state,
-        age: person.apxAge  // Map apxAge to age
+        age: person.apxAge,  // Map apxAge to age
+        keyWords: person.keyWords
       };
 
       try {
-        const { results, searchKey } = await searchObits(query);
+        const { results, keySearch } = await searchObits(query);
 
-        await batchStore.addQuery(batch.id, person, searchKey, results, null);
+        await batchStore.addQuery(batch.id, person, keySearch, results, null);
 
         processed++;
         if (results.length > 0) found++;
 
-        console.error(`  [${processed}/${people.length}] ${person.firstName} ${person.lastName}: ${results.length} results`);
+        const displayFirst = person.firstName || person.nickname;
+        console.error(`  [${processed}/${people.length}] ${displayFirst} ${person.lastName}: ${results.length} results`);
       } catch (err) {
-        console.error(`  Error searching for ${person.firstName} ${person.lastName}: ${err.message}`);
+        const displayFirst = person.firstName || person.nickname;
+        console.error(`  Error searching for ${displayFirst} ${person.lastName}: ${err.message}`);
         await batchStore.addQuery(batch.id, person, '', [], err.message);
         processed++;
       }

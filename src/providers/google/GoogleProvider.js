@@ -86,8 +86,8 @@ class GoogleProvider {
 
     // Generate fingerprint with available data
     const fingerprint = generateFingerprint({
-      lastName: nameInfo.lastName || query.lastName,
-      firstName: nameInfo.firstName || query.firstName,
+      nameLast: nameInfo.nameLast || query.nameLast,
+      nameFirst: nameInfo.nameFirst || query.nameFirst,
       city: locationInfo.city,
       state: locationInfo.state,
       dod: undefined  // Usually not extractable from snippets
@@ -95,9 +95,9 @@ class GoogleProvider {
 
     return {
       id: uuidv4(),
-      fullName: nameInfo.fullName || result.title.split(' - ')[0].split('|')[0].trim(),
-      firstName: nameInfo.firstName,
-      lastName: nameInfo.lastName,
+      nameFull: nameInfo.nameFull || result.title.split(' - ')[0].split('|')[0].trim(),
+      nameFirst: nameInfo.nameFirst,
+      nameLast: nameInfo.nameLast,
       ageYears: age,
       city: locationInfo.city,
       state: locationInfo.state,
@@ -107,7 +107,7 @@ class GoogleProvider {
       score: 0,
       reasons: [],
       fingerprint,
-      providerType: 'google'
+      typeProvider: 'google'
     };
   }
 
@@ -123,9 +123,9 @@ class GoogleProvider {
     const commaMatch = cleanTitle.match(/^([A-Z][a-z]+),\s+([A-Z][a-z]+)/);
     if (commaMatch) {
       return {
-        fullName: `${commaMatch[2]} ${commaMatch[1]}`,
-        firstName: commaMatch[2],
-        lastName: commaMatch[1]
+        nameFull: `${commaMatch[2]} ${commaMatch[1]}`,
+        nameFirst: commaMatch[2],
+        nameLast: commaMatch[1]
       };
     }
 
@@ -133,9 +133,9 @@ class GoogleProvider {
     const spaceMatch = cleanTitle.match(/^([A-Z][a-z]+)\s+(?:[A-Z]\.?\s+)?([A-Z][a-z]+)/);
     if (spaceMatch) {
       return {
-        fullName: cleanTitle.replace(/,.*$/, '').trim(),
-        firstName: spaceMatch[1],
-        lastName: spaceMatch[2]
+        nameFull: cleanTitle.replace(/,.*$/, '').trim(),
+        nameFirst: spaceMatch[1],
+        nameLast: spaceMatch[2]
       };
     }
 
@@ -146,14 +146,14 @@ class GoogleProvider {
       const parts = namePart.split(/\s+/);
       if (parts.length >= 2) {
         return {
-          fullName: namePart,
-          firstName: parts[0],
-          lastName: parts[parts.length - 1]
+          nameFull: namePart,
+          nameFirst: parts[0],
+          nameLast: parts[parts.length - 1]
         };
       }
     }
 
-    return { fullName: cleanTitle };
+    return { nameFull: cleanTitle };
   }
 
   _extractLocation(snippet, title) {

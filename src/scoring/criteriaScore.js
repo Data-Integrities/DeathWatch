@@ -77,11 +77,11 @@ function calculateCityScore(candidateCity, candidateState, queryCity, queryState
 /**
  * Calculate last name score using Levenshtein similarity
  */
-function calculateLastNameScore(candidateLastName, queryLastName) {
-  if (!candidateLastName || !queryLastName) return null;
+function calculateNameLastScore(candidateNameLast, queryNameLast) {
+  if (!candidateNameLast || !queryNameLast) return null;
 
-  const candNorm = normalizeName(candidateLastName);
-  const queryNorm = normalizeName(queryLastName);
+  const candNorm = normalizeName(candidateNameLast);
+  const queryNorm = normalizeName(queryNameLast);
 
   const similarity = stringSimilarity(candNorm, queryNorm);
   return similarityToScore(similarity);
@@ -92,11 +92,11 @@ function calculateLastNameScore(candidateLastName, queryLastName) {
  * Also considers nicknames, but exact matches have priority
  * Exact match = 100, Nickname/variant match = 85, Close spelling = up to 90, Different = 0
  */
-function calculateFirstNameScore(candidateFirstName, queryFirstName) {
-  if (!candidateFirstName || !queryFirstName) return null;
+function calculateNameFirstScore(candidateNameFirst, queryNameFirst) {
+  if (!candidateNameFirst || !queryNameFirst) return null;
 
-  const candNorm = normalizeName(candidateFirstName);
-  const queryNorm = normalizeName(queryFirstName);
+  const candNorm = normalizeName(candidateNameFirst);
+  const queryNorm = normalizeName(queryNameFirst);
 
   // Exact match gets 100
   if (candNorm === queryNorm) {
@@ -126,15 +126,32 @@ function calculateFirstNameScore(candidateFirstName, queryFirstName) {
 }
 
 /**
+ * Calculate keywords score
+ * Any keyword found in snippet+title = 100, none found = 0, not provided = null
+ */
+function calculateKeyWordsScore(candidate, queryKeyWords) {
+  if (!queryKeyWords || queryKeyWords.length === 0) return null;
+
+  const text = ((candidate.snippet || '') + ' ' + (candidate.title || '')).toLowerCase();
+
+  for (const kw of queryKeyWords) {
+    if (text.includes(kw)) return 100;
+  }
+
+  return 0;
+}
+
+/**
  * Calculate all criteria scores for a candidate
  */
 function calculateCriteriaScores(candidate, query) {
   const scores = {
-    lastName: calculateLastNameScore(candidate.lastName, query.lastName),
-    firstName: calculateFirstNameScore(candidate.firstName, query.firstName),
+    nameLast: calculateNameLastScore(candidate.nameLast, query.nameLast),
+    nameFirst: calculateNameFirstScore(candidate.nameFirst, query.nameFirst),
     state: calculateStateScore(candidate.state, query.state),
     city: calculateCityScore(candidate.city, candidate.state, query.city, query.state),
-    age: calculateAgeScore(candidate.ageYears, query.age, query.inputDate)
+    age: calculateAgeScore(candidate.ageYears, query.age, query.inputDate),
+    keyWords: calculateKeyWordsScore(candidate, query.keyWords)
   };
 
   return scores;
@@ -143,11 +160,11 @@ function calculateCriteriaScores(candidate, query) {
 /**
  * Calculate final score (sum of all non-null criteria)
  */
-function calculateFinalScore(criteriaScores) {
+function calculateScoreFinal(scoresCriteria) {
   let total = 0;
   let count = 0;
 
-  for (const [key, value] of Object.entries(criteriaScores)) {
+  for (const [key, value] of Object.entries(scoresCriteria)) {
     if (value !== null) {
       total += value;
       count++;
@@ -155,9 +172,9 @@ function calculateFinalScore(criteriaScores) {
   }
 
   return {
-    finalScore: total,
-    maxPossible: count * 100,
-    criteriaCount: count
+    scoreFinal: total,
+    scoreMax: count * 100,
+    criteriaCnt: count
   };
 }
 
@@ -165,15 +182,15 @@ function calculateFinalScore(criteriaScores) {
  * Score a single candidate with criteria scores, final score
  */
 function scoreCandidateWithCriteria(candidate, query) {
-  const criteriaScores = calculateCriteriaScores(candidate, query);
-  const { finalScore, maxPossible, criteriaCount } = calculateFinalScore(criteriaScores);
+  const scoresCriteria = calculateCriteriaScores(candidate, query);
+  const { scoreFinal, scoreMax, criteriaCnt } = calculateScoreFinal(scoresCriteria);
 
   return {
     ...candidate,
-    criteriaScores,
-    finalScore,
-    maxPossible,
-    criteriaCount
+    scoresCriteria,
+    scoreFinal,
+    scoreMax,
+    criteriaCnt
   };
 }
 
@@ -194,8 +211,8 @@ function isRecentDod(dod, daysWindow = 14) {
 /**
  * Score all candidates and assign ranks
  * Recent DODs (within 14 days) are grouped first, then older/unknown DODs
- * Within each group, sorted by finalScore descending
- * Candidates with firstName score of 0 are excluded (different name = not a match)
+ * Within each group, sorted by scoreFinal descending
+ * Candidates with nameFirst score of 0 are excluded (different name = not a match)
  */
 function scoreAndRankCandidates(candidates, query, recentDaysWindow = 14) {
   // Score all candidates
@@ -204,16 +221,16 @@ function scoreAndRankCandidates(candidates, query, recentDaysWindow = 14) {
   // Filter out candidates with first name score of 0 (completely different name)
   // These should never be a best guess - would cause false alerts
   const validCandidates = scored.filter(c =>
-    c.criteriaScores.firstName === null || c.criteriaScores.firstName > 0
+    c.scoresCriteria.nameFirst === null || c.scoresCriteria.nameFirst > 0
   );
 
   // Separate into recent DOD and other
   const recentDod = validCandidates.filter(c => isRecentDod(c.dod, recentDaysWindow));
   const otherDod = validCandidates.filter(c => !isRecentDod(c.dod, recentDaysWindow));
 
-  // Sort each group by finalScore descending
-  recentDod.sort((a, b) => b.finalScore - a.finalScore);
-  otherDod.sort((a, b) => b.finalScore - a.finalScore);
+  // Sort each group by scoreFinal descending
+  recentDod.sort((a, b) => b.scoreFinal - a.scoreFinal);
+  otherDod.sort((a, b) => b.scoreFinal - a.scoreFinal);
 
   // Combine: recent first, then others
   const combined = [...recentDod, ...otherDod];
@@ -223,7 +240,7 @@ function scoreAndRankCandidates(candidates, query, recentDaysWindow = 14) {
   for (let i = 0; i < combined.length; i++) {
     if (i > 0 && (
       // New rank if score changed OR if we crossed from recent to non-recent
-      combined[i].finalScore < combined[i - 1].finalScore ||
+      combined[i].scoreFinal < combined[i - 1].scoreFinal ||
       (isRecentDod(combined[i - 1].dod, recentDaysWindow) && !isRecentDod(combined[i].dod, recentDaysWindow))
     )) {
       currentRank = i + 1;
@@ -238,10 +255,11 @@ module.exports = {
   calculateAgeScore,
   calculateStateScore,
   calculateCityScore,
-  calculateLastNameScore,
-  calculateFirstNameScore,
+  calculateNameLastScore,
+  calculateNameFirstScore,
+  calculateKeyWordsScore,
   calculateCriteriaScores,
-  calculateFinalScore,
+  calculateScoreFinal,
   scoreCandidateWithCriteria,
   scoreAndRankCandidates,
   isRecentDod
