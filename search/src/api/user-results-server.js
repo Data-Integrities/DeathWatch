@@ -8,8 +8,8 @@ const PORT = 3001;
 const app = express();
 app.use(express.json());
 
-// Serve static files from obit-client1
-app.use(express.static(path.resolve(__dirname, '../../../obit-clients/obit-client1/public')));
+// Serve static files from client-user
+app.use(express.static(path.resolve(__dirname, '../../../client-user/public')));
 
 // Get results in the format the viewer expects
 app.get('/api/results', async (req, res) => {

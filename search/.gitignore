@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment variables - committed intentionally for backup
+# .env
+
+# Results and data files
+data/results-*.json
+data/exclusions.json
+data/cache/
+data/query_metrics_*.json
+
+# Generated tracker files
+search_test_data/track-data.json
+search_test_data/track-report.html
+search_test_data/track-log.txt
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+
+# Claude Code context
+.claude/

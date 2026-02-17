@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../search/.env') });
 const express = require('express');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -33,7 +33,7 @@ function killProcessOnPort(port) {
 killProcessOnPort(PORT);
 
 // Load obit-engine modules
-const obitEnginePath = path.resolve(__dirname, '../..');
+const obitEnginePath = path.resolve(__dirname, '../search');
 const { pool } = require(path.join(obitEnginePath, 'src/db/pool'));
 const { exclusionStore } = require(path.join(obitEnginePath, 'src/data/ExclusionStore'));
 

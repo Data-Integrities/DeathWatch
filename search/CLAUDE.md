@@ -26,49 +26,51 @@ Node.js obituary search engine that searches Google for obituaries based on user
 
 ## Project Structure
 ```
-DeathWatch/
-├── src/
-│   ├── index.js              # Main search orchestrator
-│   ├── config.js             # Settings & provider config
-│   ├── cli/search.js         # CLI interface (commander.js)
-│   ├── api/server.js         # Express HTTP API (port 3000)
-│   ├── utils/                # logger, cache
-│   ├── normalize/            # name, nicknames, nameExtract, location, age, dod, serviceDates, enrichPage
+obit-person/                     # Mono-repo root
+├── search/                      # Search engine
+│   ├── src/
+│   │   ├── index.js             # Main search orchestrator
+│   │   ├── config.js            # Settings & provider config
+│   │   ├── cli/search.js        # CLI interface (commander.js)
+│   │   ├── api/server.js        # Express HTTP API (port 3000)
+│   │   ├── utils/               # logger, cache
+│   │   ├── normalize/           # name, nicknames, nameExtract, location, age, dod, serviceDates, enrichPage
+│   │   ├── data/
+│   │   │   └── ExclusionStore.js # Per-query & global exclusions (PostgreSQL)
+│   │   ├── db/
+│   │   │   ├── pool.js          # pg.Pool singleton
+│   │   │   ├── migrate.js       # Database migration runner
+│   │   │   ├── import-legacy.js # Import exclusions.json into DB
+│   │   │   ├── BatchStore.js    # Batch/query/results CRUD
+│   │   │   └── migrations/
+│   │   │       └── 001_initial_schema.sql
+│   │   ├── providers/
+│   │   │   ├── google/          # GoogleProvider (requires CSE setup)
+│   │   │   ├── serper/          # SerperProvider (recommended)
+│   │   │   └── serpapi/         # SerpApiProvider
+│   │   ├── scoring/
+│   │   │   ├── criteriaScore.js # 0-100 scoring per criteria
+│   │   │   ├── levenshtein.js   # Fuzzy string matching
+│   │   │   ├── score.js         # Legacy scoring
+│   │   │   └── explain.js       # Result formatting
+│   │   ├── dedupe/              # fingerprint, dedupe
+│   │   └── __tests__/           # Jest tests
+│   ├── search_test_data/
+│   │   ├── scrape.js            # Scrape funeral home sites for ground-truth test data
+│   │   ├── track.js             # Daily rank-1 tracker & report generator
+│   │   ├── test-input-*.json    # Ground-truth records from funeral home scrapes
+│   │   ├── track-data.json      # Generated: metrics JSON
+│   │   └── track-report.html    # Generated: Chart.js dashboard
 │   ├── data/
-│   │   └── ExclusionStore.js # Per-query & global exclusions (PostgreSQL)
-│   ├── db/
-│   │   ├── pool.js           # pg.Pool singleton
-│   │   ├── migrate.js        # Database migration runner
-│   │   ├── import-legacy.js  # Import exclusions.json into DB
-│   │   ├── BatchStore.js     # Batch/query/results CRUD
-│   │   └── migrations/
-│   │       └── 001_initial_schema.sql
-│   ├── providers/
-│   │   ├── google/           # GoogleProvider (requires CSE setup)
-│   │   ├── serper/           # SerperProvider (recommended)
-│   │   └── serpapi/          # SerpApiProvider
-│   ├── scoring/
-│   │   ├── criteriaScore.js  # 0-100 scoring per criteria
-│   │   ├── levenshtein.js    # Fuzzy string matching
-│   │   ├── score.js          # Legacy scoring
-│   │   └── explain.js        # Result formatting
-│   ├── dedupe/               # fingerprint, dedupe
-│   └── __tests__/            # Jest tests (167 tests, 8 suites)
-├── search_test_data/
-│   ├── scrape.js             # Scrape funeral home sites for ground-truth test data
-│   ├── track.js              # Daily rank-1 tracker & report generator
-│   ├── test-input-2026-02-10.json  # 100 ground-truth records from funeral home scrapes
-│   ├── track-data.json       # Generated: metrics JSON
-│   └── track-report.html     # Generated: Chart.js dashboard
-├── clients/
-│   └── obit-client1/         # Web UI for reviewing results
-│       ├── server.js         # Express server (port 3001)
-│       └── public/index.html # Single-page UI
-├── data/
-│   ├── search-input.json     # User-supplied search input
-│   ├── exclusions.json       # Legacy exclusions (imported to DB)
-│   └── cache/                # Stub data for offline testing
-└── package.json
+│   │   ├── search-input.json    # User-supplied search input
+│   │   ├── exclusions.json      # Legacy exclusions (imported to DB)
+│   │   └── cache/               # Stub data for offline testing
+│   └── package.json
+├── client-user/                 # Web UI for reviewing results (port 3001)
+│   ├── server.js
+│   └── public/index.html
+├── client-admin/                # Admin UI (placeholder)
+└── .gitignore
 ```
 
 ## Input/Output Files
@@ -143,11 +145,10 @@ node src/cli/search.js review --file data/results-20260204-031939.json
 # Commands: [y]es/correct, [n]o/exclude, [g]lobal exclude, [s]kip, [q]uit
 ```
 
-### Web UI - obit-client1
+### Web UI - client-user
 ```bash
-cd clients/obit-client1 && npm install
-node server.js                    # Serves latest batch from DB
-node server.js --batch <batch-id> # Serves specific batch
+cd client-user && npm install
+node server.js                    # Serves latest run from DB
 # Open http://localhost:3001
 ```
 

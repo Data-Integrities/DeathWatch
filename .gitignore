@@ -1,13 +1,8 @@
 # Dependencies
 node_modules/
 
-# Environment variables - committed intentionally for backup
-# .env
-
-# Results and data files
-data/results-*.json
-data/exclusions.json
-data/cache/
+# Claude Code context
+.claude/
 
 # Logs
 *.log
@@ -22,9 +17,3 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
-
-# Test coverage
-coverage/
-
-# Claude Code context
-.claude/
