@@ -120,8 +120,8 @@ function extractNameFromTitle(title) {
       nameLast = parts[parts.length - 2];
     }
 
-    // Clean up trailing punctuation
-    nameLast = nameLast.replace(/[.,;:!?]+$/, '');
+    // Clean up trailing punctuation and possessive 's
+    nameLast = nameLast.replace(/'s$/i, '').replace(/[.,;:!?]+$/, '');
 
     // Validate the parsed name
     if (!isValidParsedName(nameFirst, nameLast)) {
