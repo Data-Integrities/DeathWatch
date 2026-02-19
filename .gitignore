@@ -12,6 +12,14 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Environment
+.env
+
+# Build artifacts
+dist/
+web-build/
+.expo/
+
 # IDE
 .idea/
 .vscode/

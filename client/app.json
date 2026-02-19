@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "ObitNOTE",
+    "slug": "obit-note",
+    "version": "1.0.0",
+    "scheme": "obitnote",
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -177,7 +177,8 @@ class SerperProvider {
     ]);
 
     // Pattern: "City, ST" or "of City, State"
-    const statePattern = /(?:of\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?),\s*([A-Z]{2})\b/;
+    // Handles abbreviated prefixes like "St.", "Ft.", "Mt.", "Pt." and multi-word cities
+    const statePattern = /(?:of\s+)?((?:(?:St|Ft|Mt|Pt)\.\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*([A-Z]{2})\b/;
     const match = text.match(statePattern);
 
     if (match && validStateCodes.has(match[2])) {
@@ -188,7 +189,7 @@ class SerperProvider {
     }
 
     // Try "City, State" with full state name
-    const fullStatePattern = /(?:of\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?),\s*(Ohio|California|Florida|Texas|New York)/i;
+    const fullStatePattern = /(?:of\s+)?((?:(?:St|Ft|Mt|Pt)\.\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*(Ohio|California|Florida|Texas|New York)/i;
     const fullMatch = text.match(fullStatePattern);
 
     if (fullMatch) {

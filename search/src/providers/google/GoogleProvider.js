@@ -160,7 +160,8 @@ class GoogleProvider {
     const combined = `${title} ${snippet}`;
 
     // Pattern: "City, ST" or "City, State"
-    const statePattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?),\s*([A-Z]{2})\b/;
+    // Handles abbreviated prefixes like "St.", "Ft.", "Mt.", "Pt." and multi-word cities
+    const statePattern = /\b((?:(?:St|Ft|Mt|Pt)\.\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*([A-Z]{2})\b/;
     const match = combined.match(statePattern);
 
     if (match) {
