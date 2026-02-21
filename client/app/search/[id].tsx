@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '../../src/services/api/client';
+import { AppHeader } from '../../src/components/AppHeader';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
 import { TextField } from '../../src/components/TextField';
 import { Button } from '../../src/components/Button';
@@ -100,8 +101,9 @@ export default function EditSearchScreen() {
 
   if (search?.confirmed) {
     return (
+      <View style={{ flex: 1 }}>
+      <AppHeader />
       <ScreenContainer>
-        <Button title="Home" variant="ghost" onPress={() => router.replace('/matches')} style={styles.homeButton} />
         <Text style={styles.title}>Search Complete</Text>
         <Text style={styles.subtitle}>
           This search has been confirmed — the person was found. No further edits are possible.
@@ -109,29 +111,32 @@ export default function EditSearchScreen() {
         <Button title="View Matches" onPress={() => router.push(`/matches/${id}`)} />
         <Button title="Back" onPress={() => router.back()} variant="ghost" style={styles.backButton} />
       </ScreenContainer>
+      </View>
     );
   }
 
   return (
+    <View style={{ flex: 1 }}>
+    <AppHeader />
     <ScreenContainer>
-      <Button title="Home" variant="ghost" onPress={() => router.replace('/matches')} style={styles.homeButton} />
       <Text style={styles.title}>Edit Search</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TextField label="First Name" value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" helperText="Required unless nickname is provided" />
+      <TextField label="First Name" value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" />
       <TextField label="Last Name" value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
-      <TextField label="Nickname" value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" helperText="Examples: Butch, Bud, Snake, Buster" />
+      <TextField label="Nickname" value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" />
       <TextField label="Middle Name or Initial" value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" />
-      <TextField label="Approximate Age" value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" helperText="Most people don't know the exact age. That's fine." />
-      <TextField label="City" value={city} onChangeText={setCity} autoCapitalize="words" helperText="Last known city" />
+      <TextField label="Approximate Age" value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" />
+      <TextField label="Last known city" value={city} onChangeText={setCity} autoCapitalize="words" />
       <StatePicker value={state} onChange={setState} />
-      <TextField label="Keywords" value={keyWords} onChangeText={setKeyWords} helperText="Optional: comma-separated keywords" />
+      <TextField label="Keywords" value={keyWords} onChangeText={setKeyWords} />
 
-      <Button title="Save Changes" onPress={handleSave} loading={saving} style={styles.saveButton} />
-      <Button title="View Matches" onPress={() => router.push(`/matches/${id}`)} variant="secondary" style={styles.matchesButton} />
-      <Button title="Delete Search" onPress={() => setDeleteConfirm(true)} variant="danger" style={styles.deleteButton} />
-      <Button title="Cancel" onPress={() => router.back()} variant="ghost" />
+      <View style={styles.buttonRow}>
+        <Button title="Save" onPress={handleSave} loading={saving} style={styles.rowButton} />
+        <Button title="Delete" onPress={() => setDeleteConfirm(true)} variant="danger" style={styles.rowButton} />
+        <Button title="Cancel" onPress={() => router.back()} variant="secondary" style={styles.rowButton} />
+      </View>
 
       <ConfirmDialog
         visible={deleteConfirm}
@@ -143,6 +148,7 @@ export default function EditSearchScreen() {
         onCancel={() => setDeleteConfirm(false)}
       />
     </ScreenContainer>
+    </View>
   );
 }
 
@@ -167,19 +173,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: spacing.md,
   },
-  homeButton: {
-    alignSelf: 'flex-start' as const,
-    marginBottom: spacing.sm,
-  },
-  saveButton: {
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
     marginTop: spacing.md,
-    marginBottom: spacing.sm,
   },
-  matchesButton: {
-    marginBottom: spacing.sm,
-  },
-  deleteButton: {
-    marginBottom: spacing.sm,
+  rowButton: {
+    flex: 1,
   },
   backButton: {
     marginTop: spacing.sm,

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+
+const PAGE_BG = '#f8faf9';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -33,7 +35,7 @@ export function ScreenContainer({ children, scroll = true, style }: ScreenContai
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: PAGE_BG,
   },
   flexFill: {
     flex: 1,

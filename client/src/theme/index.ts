@@ -1,8 +1,8 @@
 export const colors = {
   // Primary palette
-  green: '#2E7D32',
-  greenLight: '#4CAF50',
-  greenDark: '#1B5E20',
+  green: '#059669',
+  greenLight: '#34d399',
+  greenDark: '#064e3b',
   purple: '#6A1B9A',
   purpleLight: '#9C27B0',
   purpleDark: '#4A148C',
@@ -13,14 +13,14 @@ export const colors = {
   surface: '#FFFFFF',
   textPrimary: '#212121',
   textSecondary: '#616161',
-  textMuted: '#9E9E9E',
+  textMuted: '#757575',
   border: '#E0E0E0',
   divider: '#EEEEEE',
 
   // Semantic
-  error: '#D32F2F',
+  error: '#DC4545',
   errorLight: '#FFEBEE',
-  success: '#2E7D32',
+  success: '#059669',
   successLight: '#E8F5E9',
   warning: '#F57F17',
   warningLight: '#FFFDE7',

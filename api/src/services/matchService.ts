@@ -45,6 +45,7 @@ export async function getSummaries(userId: string): Promise<MatchSummary[]> {
      LEFT JOIN user_result ur ON ur.user_query_id = uq.id
      WHERE uq.login_id = $1 AND uq.disabled = false
      GROUP BY uq.id, uq.name_last, uq.name_first, uq.confirmed
+     HAVING COUNT(ur.id) > 0
      ORDER BY match_cnt_new DESC, uq.name_last`,
     [userId]
   );
@@ -218,6 +219,22 @@ export async function restoreResult(userId: string, searchId: string, resultId: 
       console.error('Failed to remove exclusion from search engine:', err);
     }
   }
+}
+
+export async function deleteResultsForSearch(userId: string, searchId: string): Promise<number> {
+  const { rows: ownership } = await pool.query(
+    'SELECT id FROM user_query WHERE id = $1 AND login_id = $2',
+    [searchId, userId]
+  );
+  if (ownership.length === 0) {
+    throw Object.assign(new Error('Search not found'), { status: 404 });
+  }
+
+  const result = await pool.query(
+    'DELETE FROM user_result WHERE user_query_id = $1',
+    [searchId]
+  );
+  return result.rowCount || 0;
 }
 
 export async function markRead(userId: string, searchId: string): Promise<number> {

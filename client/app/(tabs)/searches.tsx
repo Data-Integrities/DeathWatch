@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, StyleSheet, RefreshControl } from 'react-native';
+import { View, FlatList, Text, StyleSheet, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../src/services/api/client';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
@@ -7,7 +7,7 @@ import { SearchCard } from '../../src/components/SearchCard';
 import { EmptyState } from '../../src/components/EmptyState';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { Button } from '../../src/components/Button';
-import { colors, spacing } from '../../src/theme';
+import { colors, fontSize, spacing } from '../../src/theme';
 import type { SearchQuery } from '../../src/types';
 
 export default function SearchesScreen() {
@@ -56,10 +56,12 @@ export default function SearchesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerActions}>
-        <Button
-          title="New Search"
-          onPress={() => router.push('/search/new')}
-        />
+        <Text style={styles.title}>Searches</Text>
+        <View style={styles.headerButtons}>
+          <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
+          <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
+          <Button title="New Search" onPress={() => router.push('/search/new')} style={styles.headerButton} />
+        </View>
       </View>
       <FlatList
         data={searches}
@@ -83,13 +85,27 @@ export default function SearchesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#f8faf9',
   },
   headerActions: {
     padding: spacing.md,
     maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
+  },
+  title: {
+    fontSize: fontSize.xl,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  headerButton: {
+    alignSelf: 'flex-start',
   },
   list: {
     paddingHorizontal: spacing.md,

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, Platform, Pressable, Linking } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, Platform, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '../../../src/services/api/client';
+import { AppHeader } from '../../../src/components/AppHeader';
 import { Button } from '../../../src/components/Button';
 import { ConfirmDialog } from '../../../src/components/ConfirmDialog';
 import { LoadingOverlay } from '../../../src/components/LoadingOverlay';
@@ -13,6 +14,8 @@ function formatDate(iso: string): string {
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
+
+const MAIN_WIDTH = 600;
 
 function extractDomain(url: string): string {
   try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
@@ -85,17 +88,10 @@ export default function ObitViewerScreen() {
   const domain = extractDomain(result.url);
 
   return (
-    <View style={[styles.container, Platform.OS === 'web' && { height: '100vh' as any }]}>
-      {/* Title bar */}
-      <View style={styles.titleBar}>
-        <Pressable onPress={() => router.replace('/matches')} accessibilityRole="link" accessibilityLabel="Home" style={styles.homeButton}>
-          <Text style={styles.homeButtonText}>Home</Text>
-        </Pressable>
-        <Text style={styles.titleText}>Obit View</Text>
-        <View style={styles.homeButton} />
-      </View>
+    <View style={[styles.outer, Platform.OS === 'web' && { height: '100vh' as any }]}>
+      <AppHeader />
 
-      {/* Scrollable content */}
+      {/* Scrollable content — constrained */}
       <ScrollView
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
@@ -110,7 +106,13 @@ export default function ObitViewerScreen() {
         )}
 
         {/* Name */}
-        <Text style={styles.name}>{displayName}</Text>
+        <Text
+          style={styles.name}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {displayName}
+        </Text>
 
         {/* Details row */}
         <View style={styles.detailsRow}>
@@ -154,39 +156,38 @@ export default function ObitViewerScreen() {
         )}
 
         {/* View original link */}
-        <Pressable
+        <Button
+          title={`View on ${domain}`}
           onPress={openOriginal}
-          accessibilityRole="link"
+          variant="secondaryPurple"
+          style={styles.actionButton}
           accessibilityLabel={`View original obituary on ${domain}`}
-          style={({ pressed }) => [styles.viewOriginal, pressed && styles.viewOriginalPressed]}
-        >
-          <Text style={styles.viewOriginalText}>View on {domain}</Text>
-        </Pressable>
-      </ScrollView>
+        />
 
-      {/* Action bar */}
-      <View style={styles.actions}>
-        <Button
-          title="Back"
-          variant="ghost"
-          onPress={() => router.back()}
-          style={styles.actionButton}
-        />
-        <Button
-          title="Wrong Person"
-          variant="danger"
-          onPress={() => setConfirmDialog('wrong')}
-          loading={actionLoading}
-          style={styles.actionButton}
-        />
-        <Button
-          title="Right Person"
-          variant="primary"
-          onPress={() => setConfirmDialog('right')}
-          loading={actionLoading}
-          style={styles.actionButton}
-        />
-      </View>
+        {/* Action bar */}
+        <View style={styles.actions}>
+          <Button
+            title="Back"
+            variant="secondary"
+            onPress={() => router.back()}
+            style={styles.actionButton}
+          />
+          <Button
+            title="Wrong Person"
+            variant="danger"
+            onPress={() => setConfirmDialog('wrong')}
+            loading={actionLoading}
+            style={styles.actionButton}
+          />
+          <Button
+            title="Right Person"
+            variant="primary"
+            onPress={() => setConfirmDialog('right')}
+            loading={actionLoading}
+            style={styles.actionButton}
+          />
+        </View>
+      </ScrollView>
 
       <ConfirmDialog
         visible={confirmDialog === 'right'}
@@ -210,39 +211,11 @@ export default function ObitViewerScreen() {
   );
 }
 
-const ACTION_BAR_HEIGHT = 88;
-
 const styles = StyleSheet.create({
-  container: {
+  outer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#f8faf9',
     ...(Platform.OS === 'web' ? { display: 'flex' as any, flexDirection: 'column' as any } : {}),
-  },
-  titleBar: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  titleText: {
-    fontSize: fontSize.lg,
-    fontWeight: '700' as const,
-    color: colors.textPrimary,
-    textAlign: 'center' as const,
-  },
-  homeButton: {
-    width: 60,
-    minHeight: 44,
-    justifyContent: 'center' as const,
-  },
-  homeButtonText: {
-    fontSize: fontSize.base,
-    fontWeight: '600' as const,
-    color: colors.green,
   },
   scrollArea: {
     flex: 1,
@@ -250,8 +223,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: spacing.lg,
     paddingBottom: spacing.xl,
-    maxWidth: 600,
-    width: '100%',
+    maxWidth: MAIN_WIDTH,
+    width: '100%' as any,
     alignSelf: 'center' as const,
   },
   photo: {
@@ -266,9 +239,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: fontSize.xxl,
     fontWeight: '700' as const,
-    color: colors.textPrimary,
+    color: '#1e293b',
     textAlign: 'center' as const,
     marginBottom: spacing.sm,
+    alignSelf: 'center' as const,
+    maxWidth: '80%' as any,
+    ...(Platform.OS === 'web' ? { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'clip', fontSize: 'clamp(16px, 6vw, 34px)' } as any : {}),
   },
   detailsRow: {
     flexDirection: 'row' as const,
@@ -279,12 +255,8 @@ const styles = StyleSheet.create({
   },
   detailChip: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden' as const,
+    fontWeight: '600' as const,
+    color: '#475569',
   },
   divider: {
     width: 60,
@@ -296,7 +268,7 @@ const styles = StyleSheet.create({
   },
   snippet: {
     fontSize: fontSize.base,
-    color: colors.textPrimary,
+    color: '#1e293b',
     lineHeight: 30,
     marginBottom: spacing.lg,
   },
@@ -321,37 +293,17 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: fontSize.base,
     fontWeight: '600' as const,
-    color: colors.textSecondary,
+    color: '#475569',
   },
   dateValue: {
     fontSize: fontSize.base,
-    color: colors.textPrimary,
-  },
-  viewOriginal: {
-    backgroundColor: colors.purple,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center' as const,
-    minHeight: minTouchTarget,
-    justifyContent: 'center' as const,
-  },
-  viewOriginalPressed: {
-    opacity: 0.85,
-  },
-  viewOriginalText: {
-    fontSize: fontSize.lg,
-    fontWeight: '700' as const,
-    color: colors.white,
+    color: '#1e293b',
   },
   actions: {
     flexDirection: 'row' as const,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
+    marginTop: spacing.lg,
     gap: spacing.sm,
-    height: ACTION_BAR_HEIGHT,
-    alignItems: 'center' as const,
+    alignItems: 'stretch' as const,
   },
   actionButton: {
     flex: 1,

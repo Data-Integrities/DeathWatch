@@ -42,10 +42,6 @@ export function MatchCard({ result, href, dismissed, onRestore }: MatchCardProps
         )}
       </View>
 
-      {result.source && (
-        <Text style={[styles.source, dismissed && styles.dismissedText]} numberOfLines={1}>{result.source}</Text>
-      )}
-
       {result.status === 'confirmed' && (
         <View style={styles.confirmedBadge}>
           <Text style={styles.confirmedText}>Confirmed</Text>
@@ -95,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.lg,
     ...shadows.card,
   },
   unread: {
@@ -112,8 +108,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   name: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontSize: fontSize.base,
+    fontWeight: '600',
     color: colors.textPrimary,
     flex: 1,
   },

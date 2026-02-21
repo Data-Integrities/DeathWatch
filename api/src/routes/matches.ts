@@ -23,6 +23,15 @@ router.get('/:searchId', async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/:searchId', async (req: Request, res: Response) => {
+  try {
+    const deleted = await matchService.deleteResultsForSearch(req.userId!, req.params.searchId);
+    res.json({ deleted });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 router.get('/:searchId/:resultId', async (req: Request, res: Response) => {
   try {
     const result = await matchService.getResult(req.userId!, req.params.searchId, req.params.resultId);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
-import { colors, fontSize, spacing, borderRadius, minTouchTarget } from '../theme';
+import { colors, fontSize, spacing, borderRadius } from '../theme';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
@@ -11,17 +11,19 @@ interface TextFieldProps extends TextInputProps {
 export function TextField({ label, error, helperText, style, ...props }: TextFieldProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[
-          styles.input,
-          error ? styles.inputError : undefined,
-          style,
-        ]}
-        placeholderTextColor={colors.textMuted}
-        accessibilityLabel={label}
-        {...props}
-      />
+      <View style={styles.row}>
+        <Text style={styles.label}>{label}</Text>
+        <TextInput
+          style={[
+            styles.input,
+            error ? styles.inputError : undefined,
+            style,
+          ]}
+          placeholderTextColor={colors.textMuted}
+          accessibilityLabel={label}
+          {...props}
+        />
+      </View>
       {error ? (
         <Text style={styles.error}>{error}</Text>
       ) : helperText ? (
@@ -33,16 +35,21 @@ export function TextField({ label, error, helperText, style, ...props }: TextFie
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   label: {
-    fontSize: fontSize.base,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    width: 100,
+    flexShrink: 0,
   },
   input: {
-    minHeight: minTouchTarget,
+    flex: 1,
+    minHeight: 40,
     fontSize: fontSize.base,
     color: colors.textPrimary,
     backgroundColor: colors.white,
@@ -50,7 +57,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: borderRadius.sm,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   inputError: {
     borderColor: colors.error,
@@ -59,11 +66,13 @@ const styles = StyleSheet.create({
   error: {
     fontSize: fontSize.sm,
     color: colors.error,
-    marginTop: spacing.xs,
+    marginTop: 2,
+    marginLeft: 100,
   },
   helper: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 2,
+    marginLeft: 100,
   },
 });

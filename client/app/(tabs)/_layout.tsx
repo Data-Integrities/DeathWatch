@@ -1,7 +1,8 @@
 import { Tabs, Redirect } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
-import { colors, fontSize } from '../../src/theme';
+import { AppHeader } from '../../src/components/AppHeader';
+import { colors } from '../../src/theme';
 
 export default function TabsLayout() {
   const { user, isLoading } = useAuth();
@@ -19,51 +20,19 @@ export default function TabsLayout() {
   }
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.green,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: {
-          fontSize: fontSize.sm,
-          fontWeight: '600',
-        },
-        tabBarStyle: {
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        headerStyle: {
-          backgroundColor: colors.white,
-        },
-        headerTitleStyle: {
-          fontSize: fontSize.lg,
-          fontWeight: '700',
-          color: colors.textPrimary,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="matches"
-        options={{
-          title: 'Matches',
-          tabBarLabel: 'Matches',
+    <View style={styles.container}>
+      <AppHeader />
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
         }}
-      />
-      <Tabs.Screen
-        name="searches"
-        options={{
-          title: 'My Searches',
-          tabBarLabel: 'Searches',
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarLabel: 'Settings',
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen name="matches" />
+        <Tabs.Screen name="searches" />
+        <Tabs.Screen name="settings" />
+      </Tabs>
+    </View>
   );
 }
 
@@ -72,6 +41,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: '#f8faf9',
+  },
+  container: {
+    flex: 1,
   },
 });

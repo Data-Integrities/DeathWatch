@@ -26,10 +26,11 @@ interface StatePickerProps {
   value: string | null;
   onChange: (code: string | null) => void;
   label?: string;
+  hideLabel?: boolean;
   error?: string;
 }
 
-export function StatePicker({ value, onChange, label = 'State', error }: StatePickerProps) {
+export function StatePicker({ value, onChange, label = 'State', hideLabel, error }: StatePickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -46,17 +47,19 @@ export function StatePicker({ value, onChange, label = 'State', error }: StatePi
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <Pressable
-        onPress={() => setOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={`Select ${label}`}
-        style={[styles.trigger, error ? styles.triggerError : undefined]}
-      >
-        <Text style={[styles.triggerText, !value && styles.placeholder]}>
-          {displayText || 'Select a state'}
-        </Text>
-      </Pressable>
+      <View style={hideLabel ? undefined : styles.row}>
+        {!hideLabel && <Text style={styles.label}>{label}</Text>}
+        <Pressable
+          onPress={() => setOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Select ${label}`}
+          style={[styles.trigger, hideLabel ? undefined : styles.triggerFlex, error ? styles.triggerError : undefined]}
+        >
+          <Text style={[styles.triggerText, !value && styles.placeholder]}>
+            {displayText || 'Select a state'}
+          </Text>
+        </Pressable>
+      </View>
       {error && <Text style={styles.error}>{error}</Text>}
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
@@ -111,16 +114,23 @@ export function StatePicker({ value, onChange, label = 'State', error }: StatePi
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   label: {
-    fontSize: fontSize.base,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    width: 100,
+    flexShrink: 0,
   },
   trigger: {
-    minHeight: minTouchTarget,
+    minHeight: 40,
+  },
+  triggerFlex: {
+    flex: 1,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
@@ -147,13 +157,16 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
   },
   modal: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: borderRadius.lg,
-    borderTopRightRadius: borderRadius.lg,
+    borderRadius: borderRadius.lg,
     maxHeight: '80%',
+    maxWidth: 300,
+    width: '100%',
     paddingBottom: spacing.xl,
   },
   modalHeader: {

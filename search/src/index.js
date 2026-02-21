@@ -160,13 +160,29 @@ async function searchObits(query) {
   const deduplicated = deduplicateCandidates(allCandidates);
   logger.info(`After deduplication: ${deduplicated.length} candidates`);
 
+  // 3b. Filter out blocked domains (e.g. .gov — never contain obituaries)
+  const beforeDomainFilter = deduplicated.length;
+  const domainFiltered = deduplicated.filter(c => {
+    if (!c.url) return true;
+    try {
+      const hostname = new URL(c.url).hostname.toLowerCase();
+      return !config.domainsBlocked.some(d => hostname.endsWith(d));
+    } catch {
+      return true;
+    }
+  });
+  const domainBlockedCnt = beforeDomainFilter - domainFiltered.length;
+  if (domainBlockedCnt > 0) {
+    logger.info(`Filtered out ${domainBlockedCnt} results from blocked domains`);
+  }
+
   // 4. Filter out excluded candidates
   // - Fingerprint with DOD: fingerprint match alone excludes (same person, high confidence)
   // - Fingerprint without DOD ("unknown"): too coarse, require URL match as well
   // - URL match: always excludes (exact same page)
   const fingerprintsExcluded = await exclusionStore.getFingerprintsExcluded(normalizedQuery.keySearch);
   const urlsExcluded = await exclusionStore.getUrlsExcluded(normalizedQuery.keySearch);
-  const filtered = deduplicated.filter(c => {
+  const filtered = domainFiltered.filter(c => {
     const urlNorm = c.url ? exclusionStore._normalizeUrl(c.url) : null;
     const urlMatched = urlNorm && urlsExcluded.has(urlNorm);
 
@@ -182,7 +198,7 @@ async function searchObits(query) {
     return true;
   });
 
-  const excludedCnt = deduplicated.length - filtered.length;
+  const excludedCnt = domainFiltered.length - filtered.length;
   if (excludedCnt > 0) {
     logger.info(`Filtered out ${excludedCnt} excluded results`);
   }

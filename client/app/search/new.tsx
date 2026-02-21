@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../src/services/api/client';
+import { AppHeader } from '../../src/components/AppHeader';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
 import { TextField } from '../../src/components/TextField';
 import { Button } from '../../src/components/Button';
@@ -64,20 +65,12 @@ export default function NewSearchScreen() {
   };
 
   return (
+    <View style={{ flex: 1 }}>
+    <AppHeader />
     <ScreenContainer>
       <LoadingOverlay visible={loading} message="Searching..." />
 
-      <Button
-        title="Home"
-        variant="ghost"
-        onPress={() => router.replace('/matches')}
-        style={styles.homeButton}
-      />
-
       <Text style={styles.title}>New Search</Text>
-      <Text style={styles.subtitle}>
-        Enter information about the person you're looking for.
-      </Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -86,7 +79,7 @@ export default function NewSearchScreen() {
         value={nameFirst}
         onChangeText={setNameFirst}
         autoCapitalize="words"
-        helperText="Required unless nickname is provided"
+        autoFocus
       />
 
       <TextField
@@ -101,7 +94,6 @@ export default function NewSearchScreen() {
         value={nameNickname}
         onChangeText={setNameNickname}
         autoCapitalize="words"
-        helperText="Examples: Butch, Bud, Snake, Buster"
       />
 
       <TextField
@@ -116,27 +108,25 @@ export default function NewSearchScreen() {
         value={ageApx}
         onChangeText={setAgeApx}
         keyboardType="numeric"
-        helperText="Most people don't know the exact age. That's fine."
       />
 
       <TextField
-        label="City"
+        label="Last known city"
         value={city}
         onChangeText={setCity}
         autoCapitalize="words"
-        helperText="Last known city"
       />
 
       <StatePicker
         value={state}
         onChange={setState}
+        hideLabel
       />
 
       <TextField
         label="Keywords"
         value={keyWords}
         onChangeText={setKeyWords}
-        helperText="Optional: comma-separated keywords"
       />
 
       <Button
@@ -152,6 +142,7 @@ export default function NewSearchScreen() {
         variant="ghost"
       />
     </ScreenContainer>
+    </View>
   );
 }
 
@@ -160,13 +151,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: fontSize.base,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-    lineHeight: 26,
+    marginBottom: spacing.sm,
   },
   error: {
     fontSize: fontSize.base,
@@ -175,10 +160,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: 8,
     marginBottom: spacing.md,
-  },
-  homeButton: {
-    alignSelf: 'flex-start' as const,
-    marginBottom: spacing.sm,
   },
   submitButton: {
     marginTop: spacing.md,

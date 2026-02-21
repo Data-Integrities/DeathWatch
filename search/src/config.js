@@ -38,6 +38,11 @@ const config = {
     timeoutMs: 8000     // per-page fetch timeout
   },
 
+  // Domains that never contain obituaries — results from these are dropped before scoring
+  domainsBlocked: [
+    '.gov',
+  ],
+
   db: {
     connectionString: process.env.DATABASE_URL || null,
     host: process.env.PG_HOST || 'localhost',
