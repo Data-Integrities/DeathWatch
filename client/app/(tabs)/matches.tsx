@@ -81,7 +81,7 @@ export default function HomeScreen() {
         {/* Matches section */}
         {matchesWithResults.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Matches</Text>
+            <Text style={styles.sectionTitle}>Matches <Text style={styles.sectionSubtitle}>Searches found</Text></Text>
             {matchesWithResults.map(item => {
               const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
               return (
@@ -106,7 +106,7 @@ export default function HomeScreen() {
         {/* Searches section */}
         {hasSearches && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Searches</Text>
+            <Text style={styles.sectionTitle}>Searches <Text style={styles.sectionSubtitle}>Obits you're looking for</Text></Text>
             {searches.map(item => {
               const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
               return (
@@ -131,7 +131,7 @@ export default function HomeScreen() {
         <Pressable style={styles.disclaimerOverlay} onPress={() => setDisclaimerVisible(false)}>
           <View style={styles.disclaimerCard}>
             <Text style={styles.disclaimerText}>
-              ObitNOTE will check your list every day for new obituaries in the <Text style={styles.boldText}>United States</Text>, <Text style={styles.boldText}>Canada</Text>, and <Text style={styles.boldText}>Mexico</Text>.
+              <Text style={styles.brandText}>ObitNOTE</Text> will check your list every day for new obituaries in the <Text style={styles.boldText}>United States</Text>, <Text style={styles.boldText}>Canada</Text>, and <Text style={styles.boldText}>Mexico</Text>.
             </Text>
             <Text style={styles.disclaimerText}>
               We are very accurate, but two things can still happen:
@@ -142,7 +142,7 @@ export default function HomeScreen() {
             <Text style={styles.disclaimerText}>
               We will try to <Text style={styles.boldText}>email you</Text>, but the email might not reach you (for example, it could be blocked or filtered).
             </Text>
-            <Button title="Close" variant="ghost" onPress={() => setDisclaimerVisible(false)} />
+            <Button title="Close" variant="secondary" onPress={() => setDisclaimerVisible(false)} />
           </View>
         </Pressable>
       </Modal>
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   brandText: {
     fontWeight: '700',
-    color: colors.purple,
+    color: colors.brand,
   },
   disclaimerLinkWrap: {
     display: 'inline' as any,
@@ -198,6 +198,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: spacing.sm,
+  },
+  sectionSubtitle: {
+    fontSize: fontSize.sm,
+    fontWeight: '400',
+    color: colors.textSecondary,
   },
   listItem: {
     backgroundColor: colors.surface,

@@ -35,7 +35,7 @@ export function AppHeader() {
 const styles = StyleSheet.create({
   headerBar: {
     paddingVertical: spacing.md,
-    backgroundColor: '#663399',
+    backgroundColor: colors.brand,
     ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px rgba(0,0,0,0.12)' } as any : shadows.card),
   },
   barContent: {

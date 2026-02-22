@@ -122,7 +122,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    fontWeight: '600',
+    color: colors.textPrimary,
     width: 100,
     flexShrink: 0,
   },

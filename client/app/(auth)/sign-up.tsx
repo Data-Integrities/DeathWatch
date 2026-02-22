@@ -98,11 +98,20 @@ export default function SignUpScreen() {
         textContentType="newPassword"
       />
 
-      <Button
-        title="Create Account"
-        onPress={handleSignUp}
-        loading={loading}
-      />
+      <View style={styles.buttons}>
+        <Button
+          title="Cancel"
+          variant="secondary"
+          onPress={() => router.back()}
+          style={styles.cancelButton}
+        />
+        <Button
+          title="Create Account"
+          onPress={handleSignUp}
+          loading={loading}
+          style={styles.button}
+        />
+      </View>
 
       <View style={styles.links}>
         <Link href="/sign-in" asChild>
@@ -124,7 +133,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xxl,
     fontWeight: '700',
-    color: colors.green,
+    color: colors.brand,
     marginBottom: spacing.xs,
   },
   subtitle: {
@@ -139,6 +148,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: spacing.md,
     textAlign: 'center',
+  },
+  buttons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'stretch',
+  },
+  button: {
+    flex: 1,
+  },
+  cancelButton: {
+    paddingHorizontal: 20,
   },
   links: {
     marginTop: spacing.lg,

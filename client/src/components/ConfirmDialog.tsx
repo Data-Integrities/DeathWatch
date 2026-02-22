@@ -38,7 +38,7 @@ export function ConfirmDialog({
           <View style={styles.actions}>
             <Button
               title={cancelLabel}
-              variant="ghost"
+              variant="secondary"
               onPress={onCancel}
               style={styles.actionButton}
             />
@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: spacing.sm,
+    alignItems: 'stretch',
   },
   actionButton: {
     minWidth: 120,

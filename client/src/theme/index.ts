@@ -3,6 +3,7 @@ export const colors = {
   green: '#059669',
   greenLight: '#34d399',
   greenDark: '#064e3b',
+  brand: '#663399',
   purple: '#6A1B9A',
   purpleLight: '#9C27B0',
   purpleDark: '#4A148C',

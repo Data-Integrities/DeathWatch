@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../theme';
 import { Badge } from './Badge';
 import type { MatchResult } from '../types';
@@ -23,31 +23,26 @@ export function MatchCard({ result, href, dismissed, onRestore }: MatchCardProps
   const locationParts = [result.city, result.state].filter(Boolean);
   const location = locationParts.length > 0 ? locationParts.join(', ') : null;
 
+  const detailParts = [
+    result.ageYears ? `Age ${result.ageYears}` : null,
+    location,
+    result.dod ? `DOD: ${formatDate(result.dod)}` : null,
+  ].filter(Boolean);
+
   const cardContent = (
-    <>
-      <View style={styles.header}>
+    <View style={styles.row}>
+      <View style={styles.info}>
         <Text style={[styles.name, dismissed && styles.dismissedText]} numberOfLines={1}>{displayName}</Text>
-        {!dismissed && !result.isRead && <Badge count={1} />}
-      </View>
-
-      <View style={styles.details}>
-        {result.ageYears && (
-          <Text style={[styles.detail, dismissed && styles.dismissedText]}>Age {result.ageYears}</Text>
-        )}
-        {location && (
-          <Text style={[styles.detail, dismissed && styles.dismissedText]}>{location}</Text>
-        )}
-        {result.dod && (
-          <Text style={[styles.detail, dismissed && styles.dismissedText]}>DOD: {formatDate(result.dod)}</Text>
+        {detailParts.length > 0 && (
+          <Text style={[styles.detail, dismissed && styles.dismissedText]} numberOfLines={1}>
+            {detailParts.join('  ·  ')}
+          </Text>
         )}
       </View>
-
       {result.status === 'confirmed' && (
-        <View style={styles.confirmedBadge}>
-          <Text style={styles.confirmedText}>Confirmed</Text>
-        </View>
+        <Text style={styles.confirmedText}>Confirmed</Text>
       )}
-
+      {!dismissed && !result.isRead && <Badge count={1} />}
       {dismissed && (
         <Pressable
           onPress={onRestore}
@@ -58,7 +53,7 @@ export function MatchCard({ result, href, dismissed, onRestore }: MatchCardProps
           <Text style={styles.restoreButtonText}>Restore</Text>
         </Pressable>
       )}
-    </>
+    </View>
   );
 
   if (dismissed) {
@@ -70,19 +65,18 @@ export function MatchCard({ result, href, dismissed, onRestore }: MatchCardProps
   }
 
   return (
-    <Link href={href as any} asChild>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={`View obituary for ${displayName}`}
-        style={({ pressed }) => [
-          styles.card,
-          !result.isRead && styles.unread,
-          pressed && styles.pressed,
-        ]}
-      >
-        {cardContent}
-      </Pressable>
-    </Link>
+    <Pressable
+      onPress={() => href && router.push(href as any)}
+      accessibilityRole="link"
+      accessibilityLabel={`View obituary for ${displayName}`}
+      style={({ pressed }) => [
+        styles.card,
+        !result.isRead && styles.unread,
+        pressed && styles.pressed,
+      ]}
+    >
+      {cardContent}
+    </Pressable>
   );
 }
 
@@ -91,7 +85,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
     ...shadows.card,
   },
   unread: {
@@ -101,39 +97,24 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.9,
   },
-  header: {
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    gap: spacing.sm,
+    flex: 1,
+  },
+  info: {
+    flex: 1,
   },
   name: {
     fontSize: fontSize.base,
     fontWeight: '600',
     color: colors.textPrimary,
-    flex: 1,
-  },
-  details: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
   },
   detail: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-  },
-  source: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-  },
-  confirmedBadge: {
-    backgroundColor: colors.successLight,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
   confirmedText: {
     fontSize: fontSize.sm,

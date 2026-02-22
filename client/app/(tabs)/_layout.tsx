@@ -30,6 +30,7 @@ export default function TabsLayout() {
       >
         <Tabs.Screen name="matches" />
         <Tabs.Screen name="searches" />
+        <Tabs.Screen name="help" />
         <Tabs.Screen name="settings" />
       </Tabs>
     </View>
