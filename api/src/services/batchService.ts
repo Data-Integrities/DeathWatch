@@ -7,12 +7,17 @@ export async function runBatch() {
   const ranDt = new Date();
   console.log(`[Batch] Starting batch run at ${ranDt.toISOString()}`);
 
-  // Load all active (non-disabled, non-confirmed) user queries
+  // Load active queries that have no pending (unreviewed) results
   const { rows: queries } = await pool.query(
     `SELECT id, login_id, name_first, name_middle, name_last, name_nickname, age_apx, city, state, key_words, key_search
-     FROM user_query
-     WHERE disabled = false AND confirmed = false
-     ORDER BY name_last, name_first`
+     FROM user_query uq
+     WHERE uq.disabled = false
+       AND uq.confirmed = false
+       AND NOT EXISTS (
+         SELECT 1 FROM user_result ur
+         WHERE ur.user_query_id = uq.id AND ur.status = 'pending'
+       )
+     ORDER BY uq.name_last, uq.name_first`
   );
 
   console.log(`[Batch] Found ${queries.length} active queries`);

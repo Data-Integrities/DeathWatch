@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 let authToken: string | null = null;
+let onUnauthorized: (() => void) | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
@@ -10,6 +11,10 @@ export function setAuthToken(token: string | null) {
 
 export function getAuthToken(): string | null {
   return authToken;
+}
+
+export function setOnUnauthorized(callback: (() => void) | null) {
+  onUnauthorized = callback;
 }
 
 async function request<T>(
@@ -35,6 +40,14 @@ async function request<T>(
   const json = await res.json();
 
   if (!res.ok) {
+    if (
+      res.status === 401 &&
+      onUnauthorized &&
+      path !== '/api/auth/login' &&
+      path !== '/api/auth/register'
+    ) {
+      onUnauthorized();
+    }
     const error = new Error(json.error || 'Request failed') as any;
     error.status = res.status;
     throw error;

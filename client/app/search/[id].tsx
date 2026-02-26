@@ -129,7 +129,7 @@ export default function EditSearchScreen() {
       <TextField label="Middle Name or Initial" value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" />
       <TextField label="Approximate Age" value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" />
       <TextField label="Last known city" value={city} onChangeText={setCity} autoCapitalize="words" />
-      <StatePicker value={state} onChange={setState} />
+      <StatePicker value={state} onChange={setState} openOnFocus />
       <TextField label="Keywords" value={keyWords} onChangeText={setKeyWords} />
 
       <View style={styles.buttonRow}>

@@ -4,15 +4,16 @@ import { colors, fontSize, spacing, borderRadius } from '../theme';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
+  labelWidth?: number;
   error?: string;
   helperText?: string;
 }
 
-export function TextField({ label, error, helperText, style, ...props }: TextFieldProps) {
+export function TextField({ label, labelWidth, error, helperText, style, ...props }: TextFieldProps) {
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, labelWidth ? { width: labelWidth } : undefined]}>{label}</Text>
         <TextInput
           style={[
             styles.input,
@@ -40,12 +41,12 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
   },
   label: {
     fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.textPrimary,
-    width: 100,
     flexShrink: 0,
   },
   input: {
@@ -68,12 +69,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.error,
     marginTop: 2,
-    marginLeft: 100,
   },
   helper: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginTop: 2,
-    marginLeft: 100,
   },
 });

@@ -37,17 +37,19 @@ export function ConfirmDialog({
           <Text style={styles.body}>{body}</Text>
           <View style={styles.actions}>
             <Button
-              title={cancelLabel}
-              variant="secondary"
-              onPress={onCancel}
-              style={styles.actionButton}
-            />
-            <Button
               title={confirmLabel}
               variant={confirmVariant}
               onPress={onConfirm}
               style={styles.actionButton}
             />
+            {cancelLabel ? (
+              <Button
+                title={cancelLabel}
+                variant="secondary"
+                onPress={onCancel}
+                style={styles.actionButton}
+              />
+            ) : null}
           </View>
         </Pressable>
       </Pressable>
@@ -84,12 +86,12 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
     gap: spacing.sm,
-    alignItems: 'stretch',
   },
   actionButton: {
     minWidth: 120,
+    flexGrow: 1,
   },
 });

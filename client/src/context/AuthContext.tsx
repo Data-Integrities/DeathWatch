@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
-import { api, setAuthToken } from '../services/api/client';
+import { api, setAuthToken, setOnUnauthorized } from '../services/api/client';
 import type { UserProfile, LoginResponse } from '../types';
 
 interface AuthContextType {
@@ -9,6 +9,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -77,8 +78,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const { user } = await api.get<{ user: UserProfile }>('/api/auth/me');
+    setUser(user);
+  }, []);
+
+  useEffect(() => {
+    setOnUnauthorized(signOut);
+    return () => setOnUnauthorized(null);
+  }, [signOut]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

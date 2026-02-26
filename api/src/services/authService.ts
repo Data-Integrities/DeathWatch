@@ -114,6 +114,34 @@ export async function resetPassword(token: string, password: string) {
   );
 }
 
+export async function changeEmail(userId: string, newEmail: string, currentPassword: string) {
+  const { rows } = await pool.query(
+    'SELECT password_hash FROM dw_user WHERE login_id = $1',
+    [userId]
+  );
+  if (rows.length === 0) {
+    throw Object.assign(new Error('User not found'), { status: 404 });
+  }
+
+  const valid = await bcrypt.compare(currentPassword, rows[0].password_hash);
+  if (!valid) {
+    throw Object.assign(new Error('Current password is incorrect'), { status: 401 });
+  }
+
+  const existing = await pool.query(
+    'SELECT login_id FROM dw_user WHERE email = $1 AND login_id != $2',
+    [newEmail.toLowerCase(), userId]
+  );
+  if (existing.rows.length > 0) {
+    throw Object.assign(new Error('Email already in use'), { status: 409 });
+  }
+
+  await pool.query(
+    'UPDATE dw_user SET email = $1, updated_at = NOW() WHERE login_id = $2',
+    [newEmail.toLowerCase(), userId]
+  );
+}
+
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
   const { rows } = await pool.query(
     'SELECT password_hash FROM dw_user WHERE login_id = $1',

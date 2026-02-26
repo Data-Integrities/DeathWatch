@@ -1,0 +1,10 @@
+{
+  "name": "obitnote",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n search,api,client -c blue,green,magenta \"cd search && npm start\" \"cd api && npm run dev\" \"cd client && npx expo start --web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

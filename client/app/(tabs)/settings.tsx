@@ -9,13 +9,43 @@ import { Card } from '../../src/components/Card';
 import { colors, fontSize, spacing } from '../../src/theme';
 
 export default function SettingsScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  const handleChangeEmail = async () => {
+    setEmailError('');
+    setEmailMessage('');
+    if (!newEmail || !emailPassword) {
+      setEmailError('Please fill in all fields.');
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      await api.post('/api/auth/change-email', {
+        emailNew: newEmail,
+        passwordCurrent: emailPassword,
+      });
+      await refreshUser();
+      setEmailMessage('Email changed successfully.');
+      setNewEmail('');
+      setEmailPassword('');
+    } catch (err: any) {
+      setEmailError(err.message || 'Failed to change email.');
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   const handleChangePassword = async () => {
     setError('');
@@ -55,6 +85,34 @@ export default function SettingsScreen() {
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <Text style={styles.email}>{user?.email}</Text>
+      </Card>
+
+      <Card style={styles.section}>
+        <Text style={styles.sectionTitle}>Change Email</Text>
+
+        {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
+        {emailMessage ? <Text style={styles.success}>{emailMessage}</Text> : null}
+
+        <TextField
+          label="New Email"
+          value={newEmail}
+          onChangeText={setNewEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+        />
+        <TextField
+          label="Current Password"
+          value={emailPassword}
+          onChangeText={setEmailPassword}
+          secureTextEntry
+        />
+        <Button
+          title="Change Email"
+          onPress={handleChangeEmail}
+          loading={emailLoading}
+          variant="secondary"
+        />
       </Card>
 
       <Card style={styles.section}>

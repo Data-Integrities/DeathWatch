@@ -105,6 +105,23 @@ router.post('/change-password', authMiddleware, async (req: Request, res: Respon
   }
 });
 
+router.post('/change-email', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const data = z.object({
+      emailNew: z.string().email('Valid email is required'),
+      passwordCurrent: z.string().min(1),
+    }).parse(req.body);
+    await authService.changeEmail(req.userId!, data.emailNew, data.passwordCurrent);
+    res.json({ message: 'Email changed successfully.' });
+  } catch (err: any) {
+    if (err.name === 'ZodError') {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = await authService.getMe(req.userId!);

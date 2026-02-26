@@ -120,6 +120,7 @@ export default function NewSearchScreen() {
       <StatePicker
         value={state}
         onChange={setState}
+        openOnFocus
       />
 
       <TextField

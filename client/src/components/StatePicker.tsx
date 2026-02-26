@@ -26,11 +26,13 @@ interface StatePickerProps {
   value: string | null;
   onChange: (code: string | null) => void;
   label?: string;
+  labelWidth?: number;
   hideLabel?: boolean;
   error?: string;
+  openOnFocus?: boolean;
 }
 
-export function StatePicker({ value, onChange, label = 'State', hideLabel, error }: StatePickerProps) {
+export function StatePicker({ value, onChange, label = 'State', labelWidth, hideLabel, error, openOnFocus }: StatePickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -48,9 +50,10 @@ export function StatePicker({ value, onChange, label = 'State', hideLabel, error
   return (
     <View style={styles.container}>
       <View style={hideLabel ? undefined : styles.row}>
-        {!hideLabel && <Text style={styles.label}>{label}</Text>}
+        {!hideLabel && <Text style={[styles.label, labelWidth ? { width: labelWidth } : undefined]}>{label}</Text>}
         <Pressable
           onPress={() => setOpen(true)}
+          onFocus={openOnFocus ? () => setOpen(true) : undefined}
           accessibilityRole="button"
           accessibilityLabel={`Select ${label}`}
           style={[styles.trigger, hideLabel ? undefined : styles.triggerFlex, error ? styles.triggerError : undefined]}
@@ -119,12 +122,12 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
   },
   label: {
     fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.textPrimary,
-    width: 100,
     flexShrink: 0,
   },
   trigger: {
