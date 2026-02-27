@@ -73,3 +73,9 @@ export const shadows = {
 };
 
 export const minTouchTarget = 56;
+
+export const heading = {
+  fontSize: Math.round(fontSize.sm * 1.3),
+  fontWeight: '600' as const,
+  color: colors.textPrimary,
+};

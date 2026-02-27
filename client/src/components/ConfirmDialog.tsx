@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   },
   body: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
     marginBottom: spacing.lg,
     lineHeight: 26,
   },

@@ -32,7 +32,7 @@ export function MatchCard({ result, href, dismissed, onRestore }: MatchCardProps
   const cardContent = (
     <View style={styles.row}>
       <View style={styles.info}>
-        <Text style={[styles.name, dismissed && styles.dismissedText]} numberOfLines={1}>{displayName}</Text>
+        <Text style={[styles.name, dismissed && styles.dismissedText]} numberOfLines={2}>{displayName}</Text>
         {detailParts.length > 0 && (
           <Text style={[styles.detail, dismissed && styles.dismissedText]} numberOfLines={1}>
             {detailParts.join('  ·  ')}

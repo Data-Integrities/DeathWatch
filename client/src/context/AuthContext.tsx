@@ -63,6 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(res.token);
     storeToken(res.token);
     setUser(res.user);
+    if (Platform.OS === 'web') {
+      try { localStorage.setItem('obitnote_returning', '1'); } catch {}
+    }
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string) => {

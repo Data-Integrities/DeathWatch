@@ -25,6 +25,7 @@ export default function ObitViewerScreen() {
   const { searchId, resultId } = useLocalSearchParams<{ searchId: string; resultId: string }>();
   const [result, setResult] = useState<MatchResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<'right' | 'wrong' | null>(null);
 
@@ -36,8 +37,9 @@ export default function ObitViewerScreen() {
     try {
       const res = await api.get<{ result: MatchResult }>(`/api/matches/${searchId}/${resultId}`);
       setResult(res.result);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load result:', err);
+      setError(err.message || 'Failed to load obituary.');
     } finally {
       setLoading(false);
     }
@@ -78,8 +80,20 @@ export default function ObitViewerScreen() {
     }
   };
 
-  if (loading || !result) {
+  if (loading) {
     return <LoadingOverlay visible message="Loading obituary..." />;
+  }
+
+  if (!result) {
+    return (
+      <View style={styles.outer}>
+        <AppHeader />
+        <View style={styles.scrollContent}>
+          <Text style={styles.noSnippet}>{error || 'Obituary not found.'}</Text>
+          <Button title="Back" variant="secondary" onPress={() => router.back()} />
+        </View>
+      </View>
+    );
   }
 
   const displayName = result.nameFull || [result.nameFirst, result.nameLast].filter(Boolean).join(' ') || 'Unknown';
@@ -243,8 +257,7 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     marginBottom: spacing.sm,
     alignSelf: 'center' as const,
-    maxWidth: '80%' as any,
-    ...(Platform.OS === 'web' ? { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'clip', fontSize: 'clamp(16px, 6vw, 34px)' } as any : {}),
+    ...(Platform.OS === 'web' ? { fontSize: 'clamp(16px, 5vw, 34px)' } as any : {}),
   },
   detailsRow: {
     flexDirection: 'row' as const,

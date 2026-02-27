@@ -7,6 +7,7 @@ import { MatchCard } from '../../../src/components/MatchCard';
 import { EmptyState } from '../../../src/components/EmptyState';
 import { LoadingOverlay } from '../../../src/components/LoadingOverlay';
 import { Button } from '../../../src/components/Button';
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog';
 import { colors, fontSize, spacing } from '../../../src/theme';
 import type { MatchResult, SearchQuery } from '../../../src/types';
 
@@ -17,6 +18,7 @@ export default function SearchMatchesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const activeResults = useMemo(() => results.filter(r => r.status !== 'rejected'), [results]);
   const dismissedResults = useMemo(() => results.filter(r => r.status === 'rejected'), [results]);
@@ -48,6 +50,16 @@ export default function SearchMatchesScreen() {
     setRefreshing(true);
     loadResults();
   }, [loadResults]);
+
+  const handleDelete = useCallback(async () => {
+    setDeleteConfirm(false);
+    try {
+      await api.delete(`/api/searches/${searchId}`);
+      router.replace('/matches');
+    } catch (err) {
+      console.error('Failed to delete search:', err);
+    }
+  }, [searchId]);
 
   const handleRestore = useCallback(async (resultId: string) => {
     setRestoringId(resultId);
@@ -94,8 +106,18 @@ export default function SearchMatchesScreen() {
           <View style={styles.emptyButtons}>
             <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.emptyButton} />
             <Button title="Edit Search" variant="secondary" onPress={() => router.push(`/search/${searchId}`)} style={styles.emptyButton} />
+            <Button title="Delete" variant="danger" onPress={() => setDeleteConfirm(true)} style={styles.emptyButton} />
           </View>
         </View>
+        <ConfirmDialog
+          visible={deleteConfirm}
+          title="Delete Search"
+          body={`Are you sure you want to delete ${displayName}? This will stop monitoring for this person.`}
+          confirmLabel="Delete"
+          confirmVariant="danger"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteConfirm(false)}
+        />
       </View>
     );
   }
@@ -111,6 +133,7 @@ export default function SearchMatchesScreen() {
             <View style={styles.headerButtons}>
               <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
               <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
+              <Text style={styles.headerHint}>Tap name to open.</Text>
             </View>
           </View>
         }
@@ -173,6 +196,11 @@ const styles = StyleSheet.create({
   headerButton: {
     alignSelf: 'flex-start',
   },
+  headerHint: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    alignSelf: 'center',
+  },
   dismissedSection: {
     marginTop: spacing.lg,
     borderTopWidth: 1,
@@ -207,12 +235,12 @@ const styles = StyleSheet.create({
   },
   detailItem: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
     lineHeight: 26,
   },
   emptySubtitle: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
     marginBottom: spacing.lg,
     lineHeight: 26,
   },

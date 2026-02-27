@@ -76,6 +76,7 @@ export default function NewSearchScreen() {
 
       <TextField
         label="First Name"
+        labelWidth={90}
         value={nameFirst}
         onChangeText={setNameFirst}
         autoCapitalize="words"
@@ -84,6 +85,7 @@ export default function NewSearchScreen() {
 
       <TextField
         label="Last Name"
+        labelWidth={90}
         value={nameLast}
         onChangeText={setNameLast}
         autoCapitalize="words"
@@ -91,56 +93,69 @@ export default function NewSearchScreen() {
 
       <TextField
         label="Nickname"
+        labelWidth={90}
         value={nameNickname}
         onChangeText={setNameNickname}
         autoCapitalize="words"
+        placeholder="Optional"
       />
 
       <TextField
-        label="Middle Name or Initial"
+        label="Middle"
+        labelWidth={90}
         value={nameMiddle}
         onChangeText={setNameMiddle}
         autoCapitalize="words"
+        placeholder="Optional"
       />
 
       <TextField
-        label="Approximate Age"
+        label="Apx Age"
+        labelWidth={90}
         value={ageApx}
         onChangeText={setAgeApx}
         keyboardType="numeric"
+        placeholder="Best guess of current age"
       />
 
       <TextField
-        label="Last known city"
+        label="City"
+        labelWidth={90}
         value={city}
         onChangeText={setCity}
         autoCapitalize="words"
+        placeholder="Best guess or nearest larger city"
       />
 
       <StatePicker
         value={state}
         onChange={setState}
+        labelWidth={90}
         openOnFocus
       />
 
       <TextField
         label="Keywords"
+        labelWidth={90}
         value={keyWords}
         onChangeText={setKeyWords}
+        placeholder="Optional (e.g. Air Force, teacher, etc.)"
       />
 
-      <Button
-        title="Search Now"
-        onPress={handleCreate}
-        disabled={loading}
-        style={styles.submitButton}
-      />
-
-      <Button
-        title="Cancel"
-        onPress={() => router.back()}
-        variant="ghost"
-      />
+      <View style={styles.buttons}>
+        <Button
+          title="Cancel"
+          variant="secondary"
+          onPress={() => router.back()}
+          style={styles.cancelButton}
+        />
+        <Button
+          title="Search Now"
+          onPress={handleCreate}
+          disabled={loading}
+          style={styles.submitButton}
+        />
+      </View>
     </ScreenContainer>
     </View>
   );
@@ -161,8 +176,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: spacing.md,
   },
-  submitButton: {
+  buttons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'stretch',
     marginTop: spacing.md,
-    marginBottom: spacing.sm,
+  },
+  cancelButton: {
+    paddingHorizontal: 20,
+  },
+  submitButton: {
+    flex: 1,
   },
 });

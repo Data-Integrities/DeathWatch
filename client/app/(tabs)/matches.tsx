@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, Text, StyleSheet, RefreshControl, Pressable, Modal } from 'react-native';
 import { router } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { api } from '../../src/services/api/client';
 import { Badge } from '../../src/components/Badge';
 import { Button } from '../../src/components/Button';
+import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import type { MatchSummary, SearchQuery } from '../../src/types';
@@ -14,6 +16,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -39,6 +42,18 @@ export default function HomeScreen() {
     setRefreshing(true);
     loadData();
   }, [loadData]);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/api/searches/${deleteTarget.id}`);
+      setDeleteTarget(null);
+      loadData();
+    } catch (err) {
+      console.error('Failed to delete search:', err);
+      setDeleteTarget(null);
+    }
+  };
 
   if (loading) {
     return <LoadingOverlay visible message="Loading..." />;
@@ -81,7 +96,7 @@ export default function HomeScreen() {
         {/* Matches section */}
         {matchesWithResults.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Matches <Text style={styles.sectionSubtitle}>Searches found</Text></Text>
+            <Text style={styles.sectionTitle}>Matches  <Text style={styles.sectionSubtitle}>Searches found.  Tap name to open.</Text></Text>
             {matchesWithResults.map(item => {
               const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
               return (
@@ -106,7 +121,7 @@ export default function HomeScreen() {
         {/* Searches section */}
         {hasSearches && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Searches <Text style={styles.sectionSubtitle}>Obits you're looking for</Text></Text>
+            <Text style={styles.sectionTitle}>Searches  <Text style={styles.sectionSubtitle}>Obits you're looking for.  Tap name to open.</Text></Text>
             {searches.map(item => {
               const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
               return (
@@ -118,6 +133,22 @@ export default function HomeScreen() {
                   style={({ pressed }) => [styles.listItem, pressed && styles.pressed]}
                 >
                   <Text style={styles.listName}>{displayName}</Text>
+                  <Pressable
+                    onPress={(e) => { e.stopPropagation(); router.push(`/search/${item.id}` as any); }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit ${displayName}`}
+                    style={styles.iconButton}
+                  >
+                    <FontAwesome name="pencil" size={18} color={colors.green} />
+                  </Pressable>
+                  <Pressable
+                    onPress={(e) => { e.stopPropagation(); setDeleteTarget({ id: item.id, name: displayName }); }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${displayName}`}
+                    style={styles.iconButton}
+                  >
+                    <FontAwesome name="trash" size={18} color={colors.error} />
+                  </Pressable>
                 </Pressable>
               );
             })}
@@ -125,6 +156,15 @@ export default function HomeScreen() {
         )}
 
       </ScrollView>
+
+      <ConfirmDialog
+        visible={!!deleteTarget}
+        title="Delete Search"
+        body={`Are you sure you want to delete ${deleteTarget?.name}? This will stop monitoring for this person.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Disclaimer modal */}
       <Modal visible={disclaimerVisible} transparent animationType="fade" onRequestClose={() => setDisclaimerVisible(false)}>
@@ -223,6 +263,9 @@ const styles = StyleSheet.create({
   matchCount: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+  },
+  iconButton: {
+    padding: spacing.xs,
   },
   pressed: {
     opacity: 0.9,

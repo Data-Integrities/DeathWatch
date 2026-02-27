@@ -98,6 +98,9 @@ function extractNameFromTitle(title) {
     .replace(/\.{2,}$/g, '')                               // trailing "..." or ".."
     .trim();
 
+  // Strip trailing possessive 's from the full name (but not internal like O'Reilly)
+  cleanTitle = cleanTitle.replace(/'s\s*$/i, '').trim();
+
   // Strip quoted nicknames for cleaner part splitting, but keep them in nameFull
   const nameFullWithNicknames = cleanTitle;
   const forParsing = cleanTitle.replace(/\s*"[^"]*"\s*/g, ' ').replace(/\s+/g, ' ').trim();

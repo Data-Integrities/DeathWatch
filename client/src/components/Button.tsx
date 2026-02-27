@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
 import { colors, fontSize, spacing, borderRadius, minTouchTarget } from '../theme';
 
-type ButtonVariant = 'primary' | 'secondary' | 'secondaryPurple' | 'danger' | 'ghost';
+type ButtonVariant = 'primary' | 'primaryLight' | 'secondary' | 'secondaryPurple' | 'danger' | 'ghost';
 
 interface ButtonProps {
   title: string;
@@ -16,6 +16,7 @@ interface ButtonProps {
 
 const variantStyles: Record<ButtonVariant, { bg: string; text: string; border?: string }> = {
   primary: { bg: colors.green, text: colors.white },
+  primaryLight: { bg: '#BDBDBD', text: colors.white },
   secondary: { bg: colors.white, text: colors.green, border: colors.green },
   secondaryPurple: { bg: colors.white, text: colors.purple, border: colors.purple },
   danger: { bg: colors.error, text: colors.white },

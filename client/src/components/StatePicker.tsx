@@ -152,6 +152,8 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
   },
   error: {
     fontSize: fontSize.sm,

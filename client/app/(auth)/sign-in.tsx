@@ -47,8 +47,10 @@ export default function SignInScreen() {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <Text style={styles.title}>ObitNOTE</Text>
-
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>ObitNOTE</Text>
+          <Text style={styles.tm}>{'\u2122'}</Text>
+        </View>
       </View>
 
       {showIntro && (
@@ -145,6 +147,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.brand,
     marginBottom: spacing.xs,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  tm: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.brand,
+    marginTop: 5,
   },
 
   error: {
