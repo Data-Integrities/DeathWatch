@@ -1,24 +1,32 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
+import { Button } from '../../src/components/Button';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 
 export default function HelpScreen() {
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Help</Text>
+      <Button
+        title="Back"
+        variant="secondary"
+        onPress={() => router.back()}
+        style={styles.backButton}
+      />
       <View style={styles.card}>
-        <Text style={styles.body}>This is where the excellent help will be.</Text>
+        <Text style={styles.heading}>Contact us</Text>
+        <Text style={styles.body}>
+          support@obitnote.com{'\n'}or{'\n'}(800) 588-1950{'\n\n'}Thank you <Image source={require('../../assets/smile.jpg')} style={{ width: 20, height: 20, top: 4 }} />
+        </Text>
       </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.textPrimary,
+  backButton: {
+    alignSelf: 'flex-start',
     marginBottom: spacing.md,
   },
   card: {
@@ -26,6 +34,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     ...shadows.card,
+  },
+  heading: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   body: {
     fontSize: fontSize.base,

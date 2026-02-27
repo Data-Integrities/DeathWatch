@@ -1,0 +1,1 @@
+ALTER TABLE dw_user ADD COLUMN IF NOT EXISTS skip_matches_info_card BOOLEAN NOT NULL DEFAULT false;

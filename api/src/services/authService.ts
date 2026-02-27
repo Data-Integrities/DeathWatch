@@ -20,6 +20,7 @@ function rowToUser(row: any): UserProfile {
     lastName: row.last_name,
     isAdmin: row.is_admin || false,
     emailVerified: row.email_verified || false,
+    skipMatchesInfoCard: row.skip_matches_info_card || false,
   };
 }
 
@@ -200,6 +201,18 @@ export async function changeEmail(userId: string, newEmail: string, currentPassw
 
   // Send verification email to the new address
   sendVerificationEmail(newEmail, rows[0].first_name, token).catch(err => console.error('[Auth] Verification email failed:', err));
+}
+
+const ALLOWED_PREFERENCES = ['skip_matches_info_card'] as const;
+
+export async function updatePreference(userId: string, key: string, value: boolean) {
+  if (!ALLOWED_PREFERENCES.includes(key as any)) {
+    throw Object.assign(new Error('Invalid preference key'), { status: 400 });
+  }
+  await pool.query(
+    `UPDATE dw_user SET ${key} = $1, updated_at = NOW() WHERE login_id = $2`,
+    [value, userId]
+  );
 }
 
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {

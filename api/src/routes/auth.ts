@@ -124,6 +124,26 @@ router.post('/change-email', authMiddleware, async (req: Request, res: Response)
   }
 });
 
+router.patch('/preferences', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const data = z.object({
+      skipMatchesInfoCard: z.boolean().optional(),
+    }).parse(req.body);
+
+    if (data.skipMatchesInfoCard !== undefined) {
+      await authService.updatePreference(req.userId!, 'skip_matches_info_card', data.skipMatchesInfoCard);
+    }
+
+    res.json({ message: 'Preferences updated.' });
+  } catch (err: any) {
+    if (err.name === 'ZodError') {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = await authService.getMe(req.userId!);

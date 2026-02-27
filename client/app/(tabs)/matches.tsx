@@ -1,22 +1,52 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, ScrollView, Text, StyleSheet, RefreshControl, Pressable, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
 import { Badge } from '../../src/components/Badge';
 import { Button } from '../../src/components/Button';
+import { Checkbox } from '../../src/components/Checkbox';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import type { MatchSummary, SearchQuery } from '../../src/types';
 
+const TLD_TO_COUNTRY: Record<string, string> = {
+  us: 'the US',
+  ca: 'Canada',
+  uk: 'the UK',
+  au: 'Australia',
+  nz: 'New Zealand',
+};
+
+const DEFAULT_COUNTRIES = ['the US', 'Canada', 'the UK', 'Australia', 'New Zealand'];
+
+function getCountryList(email?: string): string[] {
+  const countries = [...DEFAULT_COUNTRIES];
+  if (!email) return countries;
+  const tld = email.split('@')[1]?.split('.').pop()?.toLowerCase() || '';
+  const userCountry = TLD_TO_COUNTRY[tld];
+  if (userCountry) {
+    const idx = countries.indexOf(userCountry);
+    if (idx > 0) {
+      countries.splice(idx, 1);
+      countries.unshift(userCountry);
+    }
+  }
+  return countries;
+}
+
 export default function HomeScreen() {
+  const { user, refreshUser } = useAuth();
   const [summaries, setSummaries] = useState<MatchSummary[]>([]);
   const [searches, setSearches] = useState<SearchQuery[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -60,6 +90,7 @@ export default function HomeScreen() {
   }
 
   const hasSearches = searches.length > 0;
+  const countries = getCountryList(user?.email);
   const matchesWithResults = summaries.filter(s => s.matchCntTotal > 0);
 
   return (
@@ -71,20 +102,29 @@ export default function HomeScreen() {
         }
       >
         {/* Intro card */}
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is an obituary notification service.
-          </Text>
-          <Text style={styles.welcomeText}>
-            Add a person to <Text style={styles.boldText}>Searches</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Pressable onPress={() => setDisclaimerVisible(true)} onHoverIn={() => setDisclaimerVisible(true)} accessibilityRole="button" accessibilityLabel="Disclaimer" style={styles.disclaimerLinkWrap}><Text style={styles.disclaimerLink}>alert you later</Text></Pressable> if an obituary for that person is published.
-          </Text>
-          <Text style={styles.welcomeText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is not for finding old obituaries. For older obituaries, you can use Google.
-          </Text>
-          <Text style={styles.welcomeText}>
-            To begin, click <Text style={styles.boldText}>New Search</Text>.
-          </Text>
-        </View>
+        {!user?.skipMatchesInfoCard && (
+          <View style={styles.welcomeCard}>
+            <Text style={styles.welcomeText}>
+              <Text style={styles.brandText}>ObitNOTE</Text> is an obituary notification service.
+            </Text>
+            <Text style={styles.welcomeText}>
+              <Text style={styles.boldText}>Add a person</Text> to New Search, and <Text style={styles.brandText}>ObitNOTE</Text> will <Pressable onPress={() => setDisclaimerVisible(true)} onHoverIn={() => { hoverTimer.current = setTimeout(() => setDisclaimerVisible(true), 100); }} onHoverOut={() => { if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; } }} accessibilityRole="button" accessibilityLabel="Disclaimer" style={styles.disclaimerLinkWrap}><Text style={styles.disclaimerLink}>alert you</Text></Pressable> later if an obituary for that person is published in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', and '}{country}</React.Fragment>))}.
+            </Text>
+            <Text style={styles.welcomeText}>
+              <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
+            </Text>
+            <Text style={styles.welcomeText}>
+              To begin, click <Text style={styles.boldText}>New Search</Text>.
+            </Text>
+            <View style={styles.skipCheckboxRow}>
+              <Checkbox
+                checked={false}
+                onToggle={() => setSkipConfirmVisible(true)}
+                label="Skip this info in the future."
+              />
+            </View>
+          </View>
+        )}
 
         {/* New Search button */}
         <Button
@@ -139,7 +179,7 @@ export default function HomeScreen() {
                     accessibilityLabel={`Edit ${displayName}`}
                     style={styles.iconButton}
                   >
-                    <FontAwesome name="pencil" size={18} color={colors.green} />
+                    <FontAwesome name="pencil" size={36} color={colors.green} />
                   </Pressable>
                   <Pressable
                     onPress={(e) => { e.stopPropagation(); setDeleteTarget({ id: item.id, name: displayName }); }}
@@ -147,7 +187,7 @@ export default function HomeScreen() {
                     accessibilityLabel={`Delete ${displayName}`}
                     style={styles.iconButton}
                   >
-                    <FontAwesome name="trash" size={18} color={colors.error} />
+                    <FontAwesome name="trash" size={36} color={colors.error} />
                   </Pressable>
                 </Pressable>
               );
@@ -166,21 +206,39 @@ export default function HomeScreen() {
         onCancel={() => setDeleteTarget(null)}
       />
 
+      <ConfirmDialog
+        visible={skipConfirmVisible}
+        title="Info Card Hidden"
+        body="You can bring this info back in Settings."
+        confirmLabel="OK"
+        cancelLabel=""
+        onConfirm={async () => {
+          setSkipConfirmVisible(false);
+          try {
+            await api.patch('/api/auth/preferences', { skipMatchesInfoCard: true });
+            await refreshUser();
+          } catch (err) {
+            console.error('Failed to update preference:', err);
+          }
+        }}
+        onCancel={() => setSkipConfirmVisible(false)}
+      />
+
       {/* Disclaimer modal */}
       <Modal visible={disclaimerVisible} transparent animationType="fade" onRequestClose={() => setDisclaimerVisible(false)}>
         <Pressable style={styles.disclaimerOverlay} onPress={() => setDisclaimerVisible(false)}>
           <View style={styles.disclaimerCard}>
             <Text style={styles.disclaimerText}>
-              <Text style={styles.brandText}>ObitNOTE</Text> will check your list every day for new obituaries in the <Text style={styles.boldText}>United States</Text>, <Text style={styles.boldText}>Canada</Text>, and <Text style={styles.boldText}>Mexico</Text>.
+              <Text style={styles.brandText}>ObitNOTE</Text> will check your list every day for new obituaries.
             </Text>
             <Text style={styles.disclaimerText}>
-              We are very accurate, but two things can still happen:
+              We are accurate, but two things can still happen:
             </Text>
             <Text style={styles.disclaimerText}>
               We might <Text style={styles.boldText}>miss an obituary</Text> sometimes.
             </Text>
             <Text style={styles.disclaimerText}>
-              We will try to <Text style={styles.boldText}>email you</Text>, but the email might not reach you (for example, it could be blocked or filtered).
+              We will try to email you, but the <Text style={styles.boldText}>email might not reach you</Text> (for example, it could be blocked, filtered, or in spam).
             </Text>
             <Button title="Close" variant="secondary" onPress={() => setDisclaimerVisible(false)} />
           </View>
@@ -193,7 +251,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8faf9',
+    backgroundColor: '#f5f0fa',
   },
   scrollContent: {
     padding: spacing.md,
@@ -221,6 +279,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.brand,
   },
+  skipCheckboxRow: {
+    alignItems: 'flex-end',
+    marginTop: spacing.xs - 1,
+  },
   disclaimerLinkWrap: {
     display: 'inline' as any,
   },
@@ -236,7 +298,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#444444',
     marginBottom: spacing.sm,
   },
   sectionSubtitle: {
@@ -257,7 +319,7 @@ const styles = StyleSheet.create({
   listName: {
     fontSize: fontSize.base,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: colors.green,
     flex: 1,
   },
   matchCount: {

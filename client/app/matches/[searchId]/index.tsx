@@ -8,6 +8,7 @@ import { EmptyState } from '../../../src/components/EmptyState';
 import { LoadingOverlay } from '../../../src/components/LoadingOverlay';
 import { Button } from '../../../src/components/Button';
 import { ConfirmDialog } from '../../../src/components/ConfirmDialog';
+import { Card } from '../../../src/components/Card';
 import { colors, fontSize, spacing } from '../../../src/theme';
 import type { MatchResult, SearchQuery } from '../../../src/types';
 
@@ -82,27 +83,32 @@ export default function SearchMatchesScreen() {
 
   if (results.length === 0) {
     const displayName = search ? [search.nameFirst, search.nameLast].filter(Boolean).join(' ') : '';
-    const details: string[] = [];
-    if (search?.nameNickname) details.push(`Nickname: ${search.nameNickname}`);
-    if (search?.nameMiddle) details.push(`Middle: ${search.nameMiddle}`);
-    if (search?.ageApx) details.push(`Age: ${search.ageApx}`);
-    if (search?.city) details.push(`City: ${search.city}`);
-    if (search?.state) details.push(`State: ${search.state}`);
-    if (search?.keyWords) details.push(`Keywords: ${search.keyWords}`);
+    const details: { label: string; value: string }[] = [];
+    if (search?.nameNickname) details.push({ label: 'Nickname', value: search.nameNickname });
+    if (search?.nameMiddle) details.push({ label: 'Middle', value: search.nameMiddle });
+    if (search?.ageApx) details.push({ label: 'Age', value: `around ${search.ageApx}` });
+    if (search?.city) details.push({ label: 'City', value: search.city });
+    if (search?.state) details.push({ label: 'State', value: search.state });
+    if (search?.keyWords) details.push({ label: 'Keywords', value: search.keyWords });
 
     return (
       <View style={styles.container}>
         <AppHeader />
         <View style={styles.emptyContent}>
-          <Text style={styles.emptyTitle}>No matches found for {displayName}</Text>
-          {details.length > 0 && (
-            <View style={styles.detailsList}>
-              {details.map((d, i) => (
-                <Text key={i} style={styles.detailItem}>{d}</Text>
-              ))}
-            </View>
-          )}
-          <Text style={styles.emptySubtitle}>We'll keep searching. You'll be notified when new matches are found.</Text>
+          <Card>
+            <Text style={styles.emptyTitle}>No matches found for {displayName}</Text>
+            {details.length > 0 && (
+              <View style={styles.detailsList}>
+                {details.map((d, i) => (
+                  <View key={i} style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{d.label}</Text>
+                    <Text style={styles.detailValue}>{d.value}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            <Text style={styles.emptySubtitle}>We'll keep searching.  You'll be notified when new matches are found.</Text>
+          </Card>
           <View style={styles.emptyButtons}>
             <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.emptyButton} />
             <Button title="Edit Search" variant="secondary" onPress={() => router.push(`/search/${searchId}`)} style={styles.emptyButton} />
@@ -172,7 +178,7 @@ export default function SearchMatchesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8faf9',
+    backgroundColor: '#f5f0fa',
   },
   list: {
     padding: spacing.md,
@@ -233,20 +239,33 @@ const styles = StyleSheet.create({
   detailsList: {
     marginBottom: spacing.md,
   },
-  detailItem: {
-    fontSize: fontSize.base,
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  detailLabel: {
+    width: 90,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
     color: colors.textPrimary,
-    lineHeight: 26,
+    flexShrink: 0,
+  },
+  detailValue: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
   },
   emptySubtitle: {
     fontSize: fontSize.base,
     color: colors.textPrimary,
-    marginBottom: spacing.lg,
     lineHeight: 26,
   },
   emptyButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
+    marginTop: spacing.lg,
   },
   emptyButton: {
     alignSelf: 'flex-start',

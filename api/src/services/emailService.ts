@@ -6,6 +6,7 @@ const SMTP_USER = process.env.ZOHO_SMTP_USER || '';
 const SMTP_PASSWORD = process.env.ZOHO_SMTP_PASSWORD || '';
 const FROM_EMAIL = SMTP_USER || 'support@obitnote.com';
 const APP_URL = process.env.APP_URL || 'http://localhost:8081';
+const API_URL = process.env.API_URL || 'http://localhost:3001';
 
 const isDev = !SMTP_PASSWORD;
 
@@ -73,7 +74,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 export async function sendWelcomeEmail(toEmail: string, firstName: string, verificationToken: string) {
-  const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${verificationToken}`;
+  const verifyUrl = `${API_URL}/api/auth/verify-email?token=${verificationToken}`;
   const html = wrapHtml(`
     <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">Welcome to ObitNOTE, ${escapeHtml(firstName)}!</h2>
     <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
@@ -96,7 +97,7 @@ export async function sendWelcomeEmail(toEmail: string, firstName: string, verif
 }
 
 export async function sendVerificationEmail(toEmail: string, firstName: string, token: string) {
-  const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${token}`;
+  const verifyUrl = `${API_URL}/api/auth/verify-email?token=${token}`;
   const html = wrapHtml(`
     <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">Verify Your Email</h2>
     <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">

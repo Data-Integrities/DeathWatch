@@ -6,7 +6,7 @@ import { Button } from './Button';
 interface ConfirmDialogProps {
   visible: boolean;
   title: string;
-  body: string;
+  body: React.ReactNode;
   confirmLabel: string;
   confirmVariant?: 'primary' | 'danger';
   cancelLabel?: string;

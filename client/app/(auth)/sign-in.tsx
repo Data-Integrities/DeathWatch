@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import { View, Text, Image, StyleSheet, Platform, Pressable } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
 import { TextField } from '../../src/components/TextField';
 import { Button } from '../../src/components/Button';
+import { Checkbox } from '../../src/components/Checkbox';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
-
-function isReturningUser(): boolean {
-  if (Platform.OS === 'web') {
-    try { return localStorage.getItem('obitnote_returning') !== null; } catch {}
-  }
-  return false;
-}
 
 export default function SignInScreen() {
   const { signIn } = useAuth();
@@ -21,8 +15,12 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('obitnote1');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [supportVisible, setSupportVisible] = useState(false);
-  const showIntro = !isReturningUser();
+
+  const isReturning = Platform.OS === 'web' && (() => {
+    try { return localStorage.getItem('obitnote_returning') === '1'; } catch { return false; }
+  })();
 
   const handleSignIn = async () => {
     setError('');
@@ -32,7 +30,7 @@ export default function SignInScreen() {
     }
     setLoading(true);
     try {
-      await signIn(email, password);
+      await signIn(email, password, rememberMe);
       router.replace('/matches');
     } catch (err: any) {
       const msg = err.message === 'Failed to fetch'
@@ -53,19 +51,19 @@ export default function SignInScreen() {
         </View>
       </View>
 
-      {showIntro && (
+      {!isReturning && (
         <View style={styles.introCard}>
           <Text style={styles.introText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is an obituary notification service.
+            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary notification service</Text>.
           </Text>
           <Text style={styles.introText}>
-            We alert you if an obituary for someone is published in the future.
+            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>alert you</Text> later if an obituary for that person is published in the US, Canada, the UK, Australia, and New Zealand.
           </Text>
           <Text style={styles.introText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is not for finding old obituaries. For older obituaries, use Google or another search engine.
+            <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
           </Text>
           <Text style={[styles.introText, { marginBottom: 0 }]}>
-            To begin, click <Text style={styles.boldText}>Create an Account</Text> or <Text style={styles.boldText}>Sign In</Text>.
+            To begin, tap <Text style={styles.boldText}>Create an Account</Text> (or <Text style={styles.boldText}>Sign In</Text>).
           </Text>
         </View>
       )}
@@ -89,9 +87,19 @@ export default function SignInScreen() {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        showPasswordToggle
         autoComplete="password"
         textContentType="password"
       />
+
+      <View>
+        <Checkbox
+          checked={rememberMe}
+          onToggle={setRememberMe}
+          label="Remember Me"
+        />
+        <Text style={styles.rememberHint}>(Do not use Remember Me on a public device.)</Text>
+      </View>
 
       <Button
         title="Sign In"
@@ -121,8 +129,8 @@ export default function SignInScreen() {
 
       <ConfirmDialog
         visible={supportVisible}
-        title="Contact Support"
-        body="Please call us at (800) 588-1950"
+        title="Contact us"
+        body={<>{"support@obitnote.com\nor\n(800) 588-1950\n\nThank you "}<Image source={require('../../assets/smile.jpg')} style={{ width: 20, height: 20, top: 4 }} /></>}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setSupportVisible(false)}
@@ -156,7 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: colors.brand,
-    marginTop: 5,
+    marginTop: 8,
   },
 
   error: {
@@ -187,6 +195,12 @@ const styles = StyleSheet.create({
   },
   boldText: {
     fontWeight: '700',
+  },
+  rememberHint: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
+    marginLeft: 24,
   },
   signIn: {
     marginTop: spacing.md,

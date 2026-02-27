@@ -123,14 +123,14 @@ export default function EditSearchScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TextField label="First Name" value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" />
-      <TextField label="Last Name" value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
-      <TextField label="Nickname" value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" />
-      <TextField label="Middle Name or Initial" value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" />
-      <TextField label="Approximate Age" value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" />
-      <TextField label="Last known city" value={city} onChangeText={setCity} autoCapitalize="words" />
-      <StatePicker value={state} onChange={setState} openOnFocus />
-      <TextField label="Keywords" value={keyWords} onChangeText={setKeyWords} />
+      <TextField label="First Name" labelWidth={90} value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" />
+      <TextField label="Last Name" labelWidth={90} value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
+      <TextField label="Nickname" labelWidth={90} value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" />
+      <TextField label="Middle" labelWidth={90} value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" />
+      <TextField label="Apx Age" labelWidth={90} value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" />
+      <TextField label="City" labelWidth={90} value={city} onChangeText={setCity} autoCapitalize="words" />
+      <StatePicker value={state} onChange={setState} labelWidth={90} openOnFocus />
+      <TextField label="Keywords" labelWidth={90} value={keyWords} onChangeText={setKeyWords} />
 
       <View style={styles.buttonRow}>
         <Button title="Save" onPress={handleSave} loading={saving} style={styles.rowButton} />

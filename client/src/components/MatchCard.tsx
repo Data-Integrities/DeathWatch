@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: fontSize.base,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: colors.green,
   },
   detail: {
     fontSize: fontSize.sm,

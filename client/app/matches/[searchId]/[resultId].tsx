@@ -228,7 +228,7 @@ export default function ObitViewerScreen() {
 const styles = StyleSheet.create({
   outer: {
     flex: 1,
-    backgroundColor: '#f8faf9',
+    backgroundColor: '#f5f0fa',
     ...(Platform.OS === 'web' ? { display: 'flex' as any, flexDirection: 'column' as any } : {}),
   },
   scrollArea: {
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: fontSize.xxl,
     fontWeight: '700' as const,
-    color: '#1e293b',
+    color: colors.textPrimary,
     textAlign: 'center' as const,
     marginBottom: spacing.sm,
     alignSelf: 'center' as const,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   detailChip: {
     fontSize: fontSize.base,
     fontWeight: '600' as const,
-    color: '#475569',
+    color: colors.textPrimary,
   },
   divider: {
     width: 60,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   },
   snippet: {
     fontSize: fontSize.base,
-    color: '#1e293b',
+    color: colors.textPrimary,
     lineHeight: 30,
     marginBottom: spacing.lg,
   },
@@ -306,11 +306,11 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: fontSize.base,
     fontWeight: '600' as const,
-    color: '#475569',
+    color: colors.textPrimary,
   },
   dateValue: {
     fontSize: fontSize.base,
-    color: '#1e293b',
+    color: colors.textPrimary,
   },
   actions: {
     flexDirection: 'row' as const,

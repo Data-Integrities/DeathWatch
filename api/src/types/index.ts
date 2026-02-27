@@ -16,6 +16,7 @@ export interface UserProfile {
   lastName: string;
   isAdmin: boolean;
   emailVerified: boolean;
+  skipMatchesInfoCard: boolean;
 }
 
 export interface RegisterRequest {

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ScrollView, StyleSheet, ViewStyle } from 'react-native';
 import { spacing } from '../theme';
 
-const PAGE_BG = '#f8faf9';
+const PAGE_BG = '#f5f0fa';
 
 interface ScreenContainerProps {
   children: React.ReactNode;

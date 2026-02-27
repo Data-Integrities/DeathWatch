@@ -6,6 +6,7 @@ import { ScreenContainer } from '../../src/components/ScreenContainer';
 import { Button } from '../../src/components/Button';
 import { TextField } from '../../src/components/TextField';
 import { Card } from '../../src/components/Card';
+import { Checkbox } from '../../src/components/Checkbox';
 import { colors, fontSize, spacing } from '../../src/theme';
 
 export default function SettingsScreen() {
@@ -128,6 +129,7 @@ export default function SettingsScreen() {
 
         <TextField
           label="New Email"
+          labelWidth={90}
           value={newEmail}
           onChangeText={setNewEmail}
           keyboardType="email-address"
@@ -135,7 +137,8 @@ export default function SettingsScreen() {
           autoComplete="email"
         />
         <TextField
-          label="Current Password"
+          label="Password"
+          labelWidth={90}
           value={emailPassword}
           onChangeText={setEmailPassword}
           secureTextEntry
@@ -155,20 +158,23 @@ export default function SettingsScreen() {
         {message ? <Text style={styles.success}>{message}</Text> : null}
 
         <TextField
-          label="Current Password"
+          label="Current"
+          labelWidth={90}
           value={currentPassword}
           onChangeText={setCurrentPassword}
           secureTextEntry
         />
         <TextField
-          label="New Password"
+          label="New"
+          labelWidth={90}
           value={newPassword}
           onChangeText={setNewPassword}
           secureTextEntry
-          helperText="At least 8 characters"
+          placeholder="At least 8 characters"
         />
         <TextField
-          label="Confirm New Password"
+          label="Confirm"
+          labelWidth={90}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
@@ -181,12 +187,32 @@ export default function SettingsScreen() {
         />
       </Card>
 
+      <Card style={styles.section}>
+        <Text style={styles.sectionTitle}>Info Card</Text>
+        <Checkbox
+          checked={!user?.skipMatchesInfoCard}
+          onToggle={async (checked) => {
+            try {
+              await api.patch('/api/auth/preferences', { skipMatchesInfoCard: !checked });
+              await refreshUser();
+            } catch (err) {
+              console.error('Failed to update preference:', err);
+            }
+          }}
+          label="Include info card on Matches page"
+        />
+      </Card>
+
       <Button
         title="Sign Out"
         onPress={signOut}
         variant="danger"
         style={styles.signOut}
       />
+
+      <Text style={styles.footer}>
+        Copyright © 2009-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
+      </Text>
     </ScreenContainer>
   );
 }
@@ -252,5 +278,12 @@ const styles = StyleSheet.create({
   },
   signOut: {
     marginTop: spacing.lg,
+  },
+  footer: {
+    marginTop: spacing.xl,
+    paddingBottom: spacing.md,
+    textAlign: 'center',
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
 });

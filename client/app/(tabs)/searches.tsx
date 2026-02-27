@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { api } from '../../src/services/api/client';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
 import { SearchCard } from '../../src/components/SearchCard';
+import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { EmptyState } from '../../src/components/EmptyState';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { Button } from '../../src/components/Button';
@@ -14,6 +15,7 @@ export default function SearchesScreen() {
   const [searches, setSearches] = useState<SearchQuery[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const loadSearches = useCallback(async () => {
     try {
@@ -35,6 +37,18 @@ export default function SearchesScreen() {
     setRefreshing(true);
     loadSearches();
   }, [loadSearches]);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/api/searches/${deleteTarget.id}`);
+      setDeleteTarget(null);
+      loadSearches();
+    } catch (err) {
+      console.error('Failed to delete search:', err);
+      setDeleteTarget(null);
+    }
+  };
 
   if (loading) {
     return <LoadingOverlay visible message="Loading searches..." />;
@@ -70,13 +84,26 @@ export default function SearchesScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green} />
         }
-        renderItem={({ item }) => (
-          <SearchCard
-            search={item}
-            onPress={() => router.push(`/search/${item.id}`)}
-            onViewMatches={() => router.push(`/matches/${item.id}`)}
-          />
-        )}
+        renderItem={({ item }) => {
+          const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
+          return (
+            <SearchCard
+              search={item}
+              onPress={() => router.push(`/matches/${item.id}`)}
+              onEdit={() => router.push(`/search/${item.id}`)}
+              onDelete={() => setDeleteTarget({ id: item.id, name: displayName })}
+            />
+          );
+        }}
+      />
+
+      <ConfirmDialog
+        visible={!!deleteTarget}
+        title="Delete Search"
+        body={`Are you sure you want to delete ${deleteTarget?.name}? This will stop monitoring for this person.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </View>
   );
@@ -85,7 +112,7 @@ export default function SearchesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8faf9',
+    backgroundColor: '#f5f0fa',
   },
   headerActions: {
     padding: spacing.md,
@@ -96,7 +123,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xl,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#444444',
     marginBottom: spacing.sm,
   },
   headerButtons: {

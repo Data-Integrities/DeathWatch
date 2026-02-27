@@ -6,7 +6,7 @@ import type { UserProfile, LoginResponse } from '../types';
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, remember?: boolean) => Promise<void>;
   signUp: (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => void;
   refreshUser: () => Promise<void>;
@@ -18,16 +18,28 @@ const TOKEN_KEY = 'obitnote_token_v3';
 
 function getStoredToken(): string | null {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try {
+      return sessionStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(TOKEN_KEY);
+    } catch { return null; }
   }
   return null;
 }
 
-function storeToken(token: string | null) {
+function storeToken(token: string | null, remember?: boolean) {
   if (Platform.OS === 'web') {
     try {
-      if (token) localStorage.setItem(TOKEN_KEY, token);
-      else localStorage.removeItem(TOKEN_KEY);
+      if (token) {
+        if (remember) {
+          localStorage.setItem(TOKEN_KEY, token);
+          sessionStorage.removeItem(TOKEN_KEY);
+        } else {
+          sessionStorage.setItem(TOKEN_KEY, token);
+          localStorage.removeItem(TOKEN_KEY);
+        }
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+      }
     } catch {}
   }
 }
@@ -58,10 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string, remember?: boolean) => {
     const res = await api.post<LoginResponse>('/api/auth/login', { email, password });
     setAuthToken(res.token);
-    storeToken(res.token);
+    storeToken(res.token, remember);
     setUser(res.user);
     if (Platform.OS === 'web') {
       try { localStorage.setItem('obitnote_returning', '1'); } catch {}
