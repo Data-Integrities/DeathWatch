@@ -10,6 +10,28 @@ import { runBatch, getUsersWithNewResults } from './services/batchService';
 import { sendMatchNotification } from './services/emailService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 
+// Validate required env vars in production
+if (process.env.NODE_ENV === 'production') {
+  const required: Record<string, string | undefined> = {
+    APP_URL: process.env.APP_URL,
+    API_URL: process.env.API_URL,
+    JWT_SECRET: process.env.JWT_SECRET,
+    DATABASE_URL: process.env.DATABASE_URL,
+  };
+  const missing = Object.entries(required).filter(([, v]) => !v).map(([k]) => k);
+  if (missing.length > 0) {
+    console.error(`[FATAL] Missing required env vars: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+  const localhostVars = Object.entries(required)
+    .filter(([k]) => ['APP_URL', 'API_URL'].includes(k))
+    .filter(([, v]) => v!.includes('localhost'));
+  if (localhostVars.length > 0) {
+    console.error(`[FATAL] Production env vars contain localhost: ${localhostVars.map(([k]) => k).join(', ')}`);
+    process.exit(1);
+  }
+}
+
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
