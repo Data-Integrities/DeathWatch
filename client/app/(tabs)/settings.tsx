@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
@@ -23,6 +23,9 @@ export default function SettingsScreen() {
   const [emailError, setEmailError] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
 
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+
   const handleChangeEmail = async () => {
     setEmailError('');
     setEmailMessage('');
@@ -32,12 +35,12 @@ export default function SettingsScreen() {
     }
     setEmailLoading(true);
     try {
-      await api.post('/api/auth/change-email', {
+      const res = await api.post<{ message: string }>('/api/auth/change-email', {
         emailNew: newEmail,
         passwordCurrent: emailPassword,
       });
       await refreshUser();
-      setEmailMessage('Email changed successfully.');
+      setEmailMessage(res.message || 'Email changed successfully.');
       setNewEmail('');
       setEmailPassword('');
     } catch (err: any) {
@@ -80,11 +83,41 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    setResendMessage('');
+    try {
+      await api.post('/api/auth/resend-verification');
+      setResendMessage('Verification email sent!');
+    } catch (err: any) {
+      setResendMessage(err.message || 'Failed to resend.');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <ScreenContainer>
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <Text style={styles.email}>{user?.email}</Text>
+        {user && user.emailVerified === false && (
+          <View style={styles.verificationRow}>
+            <Text style={styles.unverifiedText}>Email not verified</Text>
+            {resendMessage ? (
+              <Text style={styles.resendFeedback}>{resendMessage}</Text>
+            ) : (
+              <Pressable onPress={handleResendVerification} disabled={resendLoading}>
+                <Text style={styles.resendLink}>
+                  {resendLoading ? 'Sending...' : 'Resend verification'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+        {user && user.emailVerified === true && (
+          <Text style={styles.verifiedText}>Verified</Text>
+        )}
       </Card>
 
       <Card style={styles.section}>
@@ -171,6 +204,35 @@ const styles = StyleSheet.create({
   email: {
     fontSize: fontSize.base,
     color: colors.textSecondary,
+  },
+  verificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    flexWrap: 'wrap',
+  },
+  unverifiedText: {
+    fontSize: fontSize.sm,
+    color: colors.warning,
+    fontWeight: '600',
+  },
+  verifiedText: {
+    fontSize: fontSize.sm,
+    color: colors.success,
+    fontWeight: '600',
+    marginTop: spacing.xs,
+  },
+  resendLink: {
+    fontSize: fontSize.sm,
+    color: colors.green,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  resendFeedback: {
+    fontSize: fontSize.sm,
+    color: colors.success,
+    fontWeight: '600',
   },
   error: {
     fontSize: fontSize.sm,

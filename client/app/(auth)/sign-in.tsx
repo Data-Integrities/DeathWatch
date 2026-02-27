@@ -10,7 +10,7 @@ import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/them
 
 function isReturningUser(): boolean {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem('obitnote_token_v3') !== null; } catch {}
+    try { return localStorage.getItem('obitnote_returning') !== null; } catch {}
   }
   return false;
 }
@@ -48,7 +48,7 @@ export default function SignInScreen() {
     <ScreenContainer>
       <View style={styles.header}>
         <Text style={styles.title}>ObitNOTE</Text>
-        {!showIntro && <Text style={styles.subtitle}>Sign in to your account</Text>}
+
       </View>
 
       {showIntro && (
@@ -111,7 +111,7 @@ export default function SignInScreen() {
             <Text style={styles.link}>Forgot password?</Text>
           </Pressable>
         </Link>
-
+        <Text style={styles.linkSpacer}>{'     '}</Text>
         <Pressable onPress={() => setSupportVisible(true)}>
           <Text style={styles.link}>Contact support</Text>
         </Pressable>
@@ -126,6 +126,10 @@ export default function SignInScreen() {
         onConfirm={() => setSupportVisible(false)}
         onCancel={() => setSupportVisible(false)}
       />
+
+      <Text style={styles.footer}>
+        Copyright &copy; 2009-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
+      </Text>
     </ScreenContainer>
   );
 }
@@ -142,10 +146,7 @@ const styles = StyleSheet.create({
     color: colors.brand,
     marginBottom: spacing.xs,
   },
-  subtitle: {
-    fontSize: fontSize.base,
-    color: colors.textSecondary,
-  },
+
   error: {
     fontSize: fontSize.base,
     color: colors.error,
@@ -183,12 +184,24 @@ const styles = StyleSheet.create({
   },
   links: {
     marginTop: spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.md,
   },
   link: {
-    fontSize: fontSize.base,
-    color: colors.purple,
+    fontSize: fontSize.sm,
+    color: colors.green,
     fontWeight: '600',
+  },
+  linkSpacer: {
+    fontSize: fontSize.base,
+  },
+  footer: {
+    marginTop: 'auto' as any,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    textAlign: 'center',
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
 });

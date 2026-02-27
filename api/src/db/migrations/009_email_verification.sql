@@ -1,0 +1,3 @@
+ALTER TABLE dw_user ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE dw_user ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255);
+ALTER TABLE dw_user ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMP;

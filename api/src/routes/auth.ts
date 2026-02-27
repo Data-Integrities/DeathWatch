@@ -5,6 +5,8 @@ import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
+const APP_URL = process.env.APP_URL || 'http://localhost:8081';
+
 const registerSchema = z.object({
   email: z.string().email('Valid email is required'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -112,7 +114,7 @@ router.post('/change-email', authMiddleware, async (req: Request, res: Response)
       passwordCurrent: z.string().min(1),
     }).parse(req.body);
     await authService.changeEmail(req.userId!, data.emailNew, data.passwordCurrent);
-    res.json({ message: 'Email changed successfully.' });
+    res.json({ message: 'Email changed successfully. A verification email has been sent to your new address.' });
   } catch (err: any) {
     if (err.name === 'ZodError') {
       res.status(400).json({ error: err.errors[0].message });
@@ -126,6 +128,30 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = await authService.getMe(req.userId!);
     res.json({ user });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.get('/verify-email', async (req: Request, res: Response) => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      res.redirect(`${APP_URL}/verify-email?status=error&message=${encodeURIComponent('Missing verification token.')}`);
+      return;
+    }
+    await authService.verifyEmail(token);
+    res.redirect(`${APP_URL}/verify-email?status=success&message=${encodeURIComponent('Your email has been verified!')}`);
+  } catch (err: any) {
+    const message = err.message || 'Verification failed.';
+    res.redirect(`${APP_URL}/verify-email?status=error&message=${encodeURIComponent(message)}`);
+  }
+});
+
+router.post('/resend-verification', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    await authService.resendVerification(req.userId!);
+    res.json({ message: 'Verification email sent.' });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
   }
