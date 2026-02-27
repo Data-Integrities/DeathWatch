@@ -4,9 +4,9 @@ export const colors = {
   greenLight: '#34d399',
   greenDark: '#064e3b',
   brand: '#663399',
-  purple: '#6A1B9A',
-  purpleLight: '#9C27B0',
-  purpleDark: '#4A148C',
+  purple: '#663399',
+  purpleLight: '#663399',
+  purpleDark: '#663399',
 
   // Neutrals
   white: '#FFFFFF',

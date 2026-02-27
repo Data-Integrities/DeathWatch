@@ -33,9 +33,10 @@ export default function SignInScreen() {
       await signIn(email, password, rememberMe);
       router.replace('/matches');
     } catch (err: any) {
-      const msg = err.message === 'Failed to fetch'
-        ? 'Something wrong. Please contact support.'
-        : err.message || 'Sign in failed. Please try again.';
+      const isNetworkError = err.message === 'Failed to fetch' || err.message === 'Load failed';
+      const msg = isNetworkError
+        ? 'Something wrong.  Please contact support.'
+        : err.message || 'Sign in failed.  Please try again.';
       setError(msg);
     } finally {
       setLoading(false);

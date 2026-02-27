@@ -26,7 +26,7 @@ function wrapHtml(body: string): string {
 <body style="margin: 0; padding: 0; background-color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF;">
     <tr>
-      <td style="padding: 32px 24px; text-align: center; background-color: #6A1B9A;">
+      <td style="padding: 32px 24px; text-align: center; background-color: #663399;">
         <h1 style="margin: 0; color: #FFFFFF; font-size: 28px;">ObitNOTE<span style="font-size: 14px; font-weight: 400; vertical-align: top; line-height: 1;">&trade;</span></h1>
       </td>
     </tr>
