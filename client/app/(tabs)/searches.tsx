@@ -70,7 +70,7 @@ export default function SearchesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerActions}>
-        <Text style={styles.title}>Searches</Text>
+        <Text style={styles.title}>Searches <Text style={styles.titleSubtext}>for obituaries</Text></Text>
         <View style={styles.headerButtons}>
           <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
           <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
@@ -125,6 +125,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#444444',
     marginBottom: spacing.sm,
+  },
+  titleSubtext: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginLeft: -3,
   },
   headerButtons: {
     flexDirection: 'row',

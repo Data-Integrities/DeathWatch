@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../theme';
 import { Badge } from './Badge';
 import type { MatchResult } from '../types';
@@ -16,9 +17,10 @@ interface MatchCardProps {
   href?: string;
   dismissed?: boolean;
   onRestore?: () => void;
+  onDelete?: () => void;
 }
 
-export function MatchCard({ result, href, dismissed, onRestore }: MatchCardProps) {
+export function MatchCard({ result, href, dismissed, onRestore, onDelete }: MatchCardProps) {
   const displayName = result.nameFull || [result.nameFirst, result.nameLast].filter(Boolean).join(' ') || 'Unknown';
   const locationParts = [result.city, result.state].filter(Boolean);
   const location = locationParts.length > 0 ? locationParts.join(', ') : null;
@@ -42,7 +44,17 @@ export function MatchCard({ result, href, dismissed, onRestore }: MatchCardProps
       {result.status === 'confirmed' && (
         <Text style={styles.confirmedText}>Confirmed</Text>
       )}
-      {!dismissed && !result.isRead && <Badge count={1} />}
+      {false && !dismissed && !result.isRead && <Badge count={1} />}
+      {!dismissed && onDelete && (
+        <Pressable
+          onPress={(e) => { e.stopPropagation(); onDelete(); }}
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${displayName}`}
+          style={styles.deleteButton}
+        >
+          <FontAwesome name="trash" size={24} color={colors.error} />
+        </Pressable>
+      )}
       {dismissed && (
         <Pressable
           onPress={onRestore}
@@ -91,8 +103,6 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   unread: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.green,
   },
   pressed: {
     opacity: 0.9,
@@ -113,13 +123,23 @@ const styles = StyleSheet.create({
   },
   detail: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    fontWeight: '700',
+    color: '#444444',
     marginTop: 2,
   },
   confirmedText: {
     fontSize: fontSize.sm,
     color: colors.success,
     fontWeight: '600',
+  },
+  deleteButton: {
+    padding: spacing.xs,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -5,
+    marginLeft: -5,
   },
   dismissedCard: {
     borderLeftWidth: 4,

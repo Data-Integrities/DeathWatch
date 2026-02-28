@@ -81,13 +81,13 @@ export default function SignUpScreen() {
         <ScreenContainer style={styles.content}>
           <View style={styles.checkEmailCard}>
             <Text style={styles.checkEmailTitle}>Check Your Email</Text>
-            <Text style={styles.checkEmailBody}>
-              We sent a verification email to{'\n'}
-              <Text style={styles.checkEmailAddress}>{email}</Text>
+            <Text style={styles.checkEmailSent}>
+              We sent a verification email to
             </Text>
+            <Text style={styles.checkEmailAddress}>{email}</Text>
             <Text style={styles.checkEmailNote}>
-              Click the link in the email to verify your account. You can still use ObitNOTE while you wait.
-              {'\n\n'}Don't see it? Check your spam folder.
+              <Text style={styles.checkEmailBold}>Click the link in the email to verify your account.</Text>  You can still use ObitNOTE while you wait.
+              {'\n\n'}<Text style={styles.checkEmailBold}>Don't see it?</Text>  Check your spam folder.
             </Text>
             <Button
               title="Continue to ObitNOTE"
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     textAlign: 'center',
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    color: '#444444',
   },
   checkEmailCard: {
     backgroundColor: colors.white,
@@ -289,16 +289,29 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     marginBottom: spacing.md,
   },
+  checkEmailSent: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: '#444444',
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
   checkEmailAddress: {
+    fontSize: fontSize.base,
     fontWeight: '700',
     color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   checkEmailNote: {
     fontSize: fontSize.sm,
-    color: colors.textMuted,
+    color: '#444444',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: spacing.lg,
+  },
+  checkEmailBold: {
+    fontWeight: '700',
   },
   continueButton: {
     minWidth: 200,

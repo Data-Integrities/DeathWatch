@@ -59,7 +59,7 @@ export function TextField({ label, labelWidth, error, helperText, showPasswordTo
               accessibilityRole="button"
               accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
             >
-              <FontAwesome name={passwordVisible ? 'eye' : 'eye-slash'} size={18} color={colors.textSecondary} />
+              <FontAwesome name={passwordVisible ? 'eye' : 'eye-slash'} size={18} color={'#444444'} />
             </Pressable>
           )}
         </View>
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   helper: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    color: '#444444',
     marginTop: 2,
   },
 });

@@ -34,6 +34,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: '#444444',
   },
 });

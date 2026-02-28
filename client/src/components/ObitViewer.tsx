@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: fontSize.base,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: '#444444',
     width: 130,
   },
   detailValue: {
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   snippet: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: '#444444',
     lineHeight: 26,
     marginBottom: spacing.lg,
   },

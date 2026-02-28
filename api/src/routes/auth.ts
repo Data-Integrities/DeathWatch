@@ -40,7 +40,7 @@ router.post('/register', async (req: Request, res: Response) => {
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const data = loginSchema.parse(req.body);
-    const result = await authService.login(data.email, data.password);
+    const result = await authService.login(data.email, data.password, req.ip);
     res.json(result);
   } catch (err: any) {
     if (err.name === 'ZodError') {

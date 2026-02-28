@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   noSnippet: {
     fontSize: fontSize.base,
-    color: colors.textMuted,
+    color: '#444444',
     textAlign: 'center' as const,
     marginBottom: spacing.lg,
   },

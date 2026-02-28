@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, ScrollView, Text, StyleSheet, RefreshControl, Pressable, Modal } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
@@ -44,9 +44,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [deleteQueryId, setDeleteQueryId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -64,26 +64,28 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadData();
   }, [loadData]);
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDeleteResults = useCallback(async () => {
+    if (!deleteQueryId) return;
+    const id = deleteQueryId;
+    setDeleteQueryId(null);
     try {
-      await api.delete(`/api/searches/${deleteTarget.id}`);
-      setDeleteTarget(null);
-      loadData();
+      await api.delete(`/api/matches/${id}`);
+      setSummaries(prev => prev.filter(s => s.userQueryId !== id));
     } catch (err) {
-      console.error('Failed to delete search:', err);
-      setDeleteTarget(null);
+      console.error('Failed to delete results:', err);
     }
-  };
+  }, [deleteQueryId]);
 
   if (loading) {
     return <LoadingOverlay visible message="Loading..." />;
@@ -105,10 +107,10 @@ export default function HomeScreen() {
         {!user?.skipMatchesInfoCard && (
           <View style={styles.welcomeCard}>
             <Text style={styles.welcomeText}>
-              <Text style={styles.brandText}>ObitNOTE</Text> is an obituary notification service.
+              <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary notification service</Text>.
             </Text>
             <Text style={styles.welcomeText}>
-              <Text style={styles.boldText}>Add a person</Text> to New Search, and <Text style={styles.brandText}>ObitNOTE</Text> will <Pressable onPress={() => setDisclaimerVisible(true)} onHoverIn={() => { hoverTimer.current = setTimeout(() => setDisclaimerVisible(true), 100); }} onHoverOut={() => { if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; } }} accessibilityRole="button" accessibilityLabel="Disclaimer" style={styles.disclaimerLinkWrap}><Text style={styles.disclaimerLink}>alert you</Text></Pressable> later if an obituary for that person is published in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', and '}{country}</React.Fragment>))}.
+              <Text style={styles.boldText}>Add a person</Text> to <Text style={styles.boldText}>New Search</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Pressable onPress={() => setDisclaimerVisible(true)} onHoverIn={() => { hoverTimer.current = setTimeout(() => setDisclaimerVisible(true), 100); }} onHoverOut={() => { if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; } }} accessibilityRole="button" accessibilityLabel="Disclaimer" style={styles.disclaimerLinkWrap}><Text style={styles.disclaimerLink}>alert you</Text></Pressable> later when an obituary for that person is published in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', and '}{country}</React.Fragment>))}.
             </Text>
             <Text style={styles.welcomeText}>
               <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
@@ -134,9 +136,9 @@ export default function HomeScreen() {
         />
 
         {/* Matches section */}
-        {matchesWithResults.length > 0 && (
+        {matchesWithResults.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Matches  <Text style={styles.sectionSubtitle}>Searches found.  Tap name to open.</Text></Text>
+            <Text style={styles.sectionTitle}>Obituaries found  <Text style={styles.sectionSubtitle}>Tap name to view</Text></Text>
             {matchesWithResults.map(item => {
               const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
               return (
@@ -147,64 +149,39 @@ export default function HomeScreen() {
                   accessibilityLabel={`${displayName}: ${item.matchCntTotal} matches`}
                   style={({ pressed }) => [styles.listItem, pressed && styles.pressed]}
                 >
+                  <FontAwesome name="check" size={16} color={colors.green} />
                   <Text style={styles.listName}>{displayName}</Text>
                   <Text style={styles.matchCount}>
-                    {item.matchCntTotal} match{item.matchCntTotal !== 1 ? 'es' : ''}
+                    {item.matchCntTotal} found
                   </Text>
                   {item.matchCntNew > 0 && <Badge count={item.matchCntNew} />}
+                  <Pressable
+                    onPress={(e) => { e.stopPropagation(); setDeleteQueryId(item.userQueryId); }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete results for ${displayName}`}
+                    style={styles.deleteIcon}
+                  >
+                    <FontAwesome name="trash" size={24} color={colors.error} />
+                  </Pressable>
                 </Pressable>
               );
             })}
           </View>
-        )}
+        ) : hasSearches ? (
+          <Text style={styles.noMatchesText}>No obituaries currently.</Text>
+        ) : null}
 
-        {/* Searches section */}
+        {/* View Searches button */}
         {hasSearches && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Searches  <Text style={styles.sectionSubtitle}>Obits you're looking for.  Tap name to open.</Text></Text>
-            {searches.map(item => {
-              const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
-              return (
-                <Pressable
-                  key={item.id}
-                  onPress={() => router.push(`/matches/${item.id}` as any)}
-                  accessibilityRole="link"
-                  accessibilityLabel={displayName}
-                  style={({ pressed }) => [styles.listItem, pressed && styles.pressed]}
-                >
-                  <Text style={styles.listName}>{displayName}</Text>
-                  <Pressable
-                    onPress={(e) => { e.stopPropagation(); router.push(`/search/${item.id}` as any); }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Edit ${displayName}`}
-                    style={styles.iconButton}
-                  >
-                    <FontAwesome name="pencil" size={36} color={colors.green} />
-                  </Pressable>
-                  <Pressable
-                    onPress={(e) => { e.stopPropagation(); setDeleteTarget({ id: item.id, name: displayName }); }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Delete ${displayName}`}
-                    style={styles.iconButton}
-                  >
-                    <FontAwesome name="trash" size={36} color={colors.error} />
-                  </Pressable>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Button
+            title="View Searches"
+            onPress={() => router.push('/searches' as any)}
+            variant="primary"
+            style={styles.viewSearchesButton}
+          />
         )}
 
       </ScrollView>
-
-      <ConfirmDialog
-        visible={!!deleteTarget}
-        title="Delete Search"
-        body={`Are you sure you want to delete ${deleteTarget?.name}? This will stop monitoring for this person.`}
-        confirmLabel="Delete"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
 
       <ConfirmDialog
         visible={skipConfirmVisible}
@@ -222,6 +199,16 @@ export default function HomeScreen() {
           }
         }}
         onCancel={() => setSkipConfirmVisible(false)}
+      />
+
+      <ConfirmDialog
+        visible={!!deleteQueryId}
+        title="Delete Obituaries"
+        body="Are you sure you want to delete all obituary results for this person?  This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDeleteResults}
+        onCancel={() => setDeleteQueryId(null)}
       />
 
       {/* Disclaimer modal */}
@@ -303,13 +290,14 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: fontSize.sm,
-    fontWeight: '400',
-    color: colors.textSecondary,
+    fontWeight: '700',
+    color: '#444444',
   },
   listItem: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md - 7,
     marginBottom: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
@@ -324,10 +312,25 @@ const styles = StyleSheet.create({
   },
   matchCount: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    fontWeight: '700',
+    color: '#444444',
   },
-  iconButton: {
+  deleteIcon: {
     padding: spacing.xs,
+    minWidth: 44,
+    minHeight: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -5,
+    marginLeft: -5,
+  },
+  noMatchesText: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    marginTop: spacing.md,
+  },
+  viewSearchesButton: {
+    marginTop: spacing.md,
   },
   pressed: {
     opacity: 0.9,

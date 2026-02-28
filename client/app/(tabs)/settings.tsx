@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
@@ -99,6 +100,21 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer>
+      {user?.isAdmin && (
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Admin</Text>
+          <Pressable onPress={() => router.push('/admin/activity')} style={styles.adminRow}>
+            <Text style={styles.adminRowText}>User Activity (24h)</Text>
+            <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+          </Pressable>
+          <View style={styles.adminDivider} />
+          <Pressable onPress={() => router.push('/admin/users')} style={styles.adminRow}>
+            <Text style={styles.adminRowText}>Users</Text>
+            <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+          </Pressable>
+        </Card>
+      )}
+
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <Text style={styles.email}>{user?.email}</Text>
@@ -199,7 +215,7 @@ export default function SettingsScreen() {
               console.error('Failed to update preference:', err);
             }
           }}
-          label="Include info card on Matches page"
+          label="Include info card on Obituaries page"
         />
       </Card>
 
@@ -224,12 +240,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#444444',
     marginBottom: spacing.sm,
   },
   email: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: '#444444',
   },
   verificationRow: {
     flexDirection: 'row',
@@ -276,6 +292,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: spacing.md,
   },
+  adminRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  adminRowText: {
+    fontSize: fontSize.base,
+    color: colors.purple,
+    fontWeight: '600',
+  },
+  adminRowArrow: {
+    fontSize: fontSize.lg,
+    color: '#444444',
+  },
+  adminDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
   signOut: {
     marginTop: spacing.lg,
   },
@@ -284,6 +319,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     textAlign: 'center',
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    color: '#444444',
   },
 });

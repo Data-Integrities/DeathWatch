@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { pool } from '../db/pool';
 import type { UserProfile } from '../types';
 import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from './emailService';
+import { lookupGeo } from './geoService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const SALT_ROUNDS = 10;
@@ -58,7 +59,7 @@ export async function register(email: string, password: string, firstName: strin
   return { token: jwtToken, user };
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, clientIp?: string) {
   const { rows } = await pool.query(
     'SELECT * FROM dw_user WHERE email = $1',
     [email.toLowerCase()]
@@ -75,6 +76,19 @@ export async function login(email: string, password: string) {
 
   const user = rowToUser(row);
   const token = makeToken(user.id);
+
+  // Record login history with geo data (non-blocking)
+  try {
+    const geo = lookupGeo(clientIp);
+    pool.query(
+      `INSERT INTO login_history (login_id, geo_city, geo_region, geo_country, geo_lat, geo_lon)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [user.id, geo?.city || null, geo?.region || null, geo?.country || null, geo?.lat || null, geo?.lon || null]
+    ).catch(err => console.error('[Auth] login_history insert failed:', err.message));
+  } catch (err: any) {
+    console.error('[Auth] Geo lookup failed:', err.message);
+  }
+
   return { token, user };
 }
 

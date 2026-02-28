@@ -27,7 +27,7 @@ export function AppHeader({ minimal, onHelp }: AppHeaderProps = {}) {
               <Text style={styles.navText}>Searches</Text>
             </Pressable>
             <Pressable onPress={() => router.replace('/matches')} accessibilityRole="link" style={styles.navItem}>
-              <Text style={styles.navText}>Matches</Text>
+              <Text style={styles.navText}>Obituaries</Text>
             </Pressable>
             <Pressable onPress={() => router.replace('/help' as any)} accessibilityRole="link" accessibilityLabel="Help" style={styles.navItem}>
               <FontAwesome name="question-circle" size={20} color={colors.white} />

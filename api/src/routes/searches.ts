@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import * as searchService from '../services/searchService';
+import { logActivity, buildFingerprint } from '../services/activityService';
 
 const router = Router();
 router.use(authMiddleware);
@@ -40,6 +41,7 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const data = searchCreateSchema.parse(req.body);
     const result = await searchService.createSearch(req.userId!, data);
+    logActivity(req.userId!, 'New Search', buildFingerprint(data));
     res.status(201).json(result);
   } catch (err: any) {
     if (err.name === 'ZodError') {
@@ -53,6 +55,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const search = await searchService.getSearch(req.userId!, req.params.id);
+    logActivity(req.userId!, 'Search', buildFingerprint(search));
     res.json({ search });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
@@ -62,6 +65,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const result = await searchService.updateSearch(req.userId!, req.params.id, req.body);
+    logActivity(req.userId!, 'Search Edit', buildFingerprint(result.search));
     res.json(result);
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
@@ -70,7 +74,9 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    const search = await searchService.getSearch(req.userId!, req.params.id);
     await searchService.deleteSearch(req.userId!, req.params.id);
+    logActivity(req.userId!, 'Search Delete', buildFingerprint(search));
     res.json({ success: true });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });

@@ -58,7 +58,7 @@ export default function SignInScreen() {
             <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary notification service</Text>.
           </Text>
           <Text style={styles.introText}>
-            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>alert you</Text> later if an obituary for that person is published in the US, Canada, the UK, Australia, and New Zealand.
+            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>alert you</Text> later when an obituary for that person is published in the US, Canada, the UK, Australia, and New Zealand.
           </Text>
           <Text style={styles.introText}>
             <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   introText: {
     fontSize: fontSize.base,
-    color: colors.textPrimary,
+    color: '#444444',
     lineHeight: 26,
     marginBottom: spacing.md,
   },
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   rememberHint: {
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
+    color: '#444444',
     marginTop: 2,
     marginLeft: 24,
   },
@@ -229,6 +229,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     textAlign: 'center',
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    color: '#444444',
   },
 });

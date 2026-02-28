@@ -38,12 +38,12 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: fontSize.lg,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#444444',
     marginBottom: spacing.sm,
   },
   body: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: '#444444',
     lineHeight: 26,
   },
 });

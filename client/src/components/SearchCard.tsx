@@ -31,6 +31,7 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
       <View style={styles.cardRow}>
         <View style={styles.content}>
           <View style={styles.nameRow}>
+            <FontAwesome name="search" size={14} color="#444444" />
             <Text style={styles.name}>{displayName}</Text>
             {search.matchCntNew > 0 && <Badge count={search.matchCntNew} />}
           </View>
@@ -61,9 +62,9 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
                 onPress={(e) => { e.stopPropagation(); onEdit(); }}
                 accessibilityRole="button"
                 accessibilityLabel={`Edit ${displayName}`}
-                style={styles.iconButton}
+                style={[styles.iconButton, styles.editButton]}
               >
-                <FontAwesome name="pencil" size={36} color={colors.green} />
+                <FontAwesome name="pencil" size={24} color={colors.green} />
               </Pressable>
             )}
             {onDelete && (
@@ -73,7 +74,7 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
                 accessibilityLabel={`Delete ${displayName}`}
                 style={styles.iconButton}
               >
-                <FontAwesome name="trash" size={36} color={colors.error} />
+                <FontAwesome name="trash" size={24} color={colors.error} />
               </Pressable>
             )}
           </View>
@@ -87,7 +88,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md - 4,
     marginBottom: spacing.sm,
     ...shadows.card,
   },
@@ -108,27 +110,33 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   name: {
-    fontSize: fontSize.lg,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.green,
   },
   icons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginLeft: spacing.sm,
+    gap: 2,
+    marginLeft: 2,
+    marginRight: -5,
   },
   iconButton: {
-    padding: spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    padding: 2,
+    minWidth: 34,
+    minHeight: 34,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  editButton: {
+    marginLeft: 1,
   },
   details: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    marginLeft: 22,
+    marginRight: 1,
   },
   detail: {
     fontSize: fontSize.sm,

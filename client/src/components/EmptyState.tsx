@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: fontSize.base,
-    color: colors.textSecondary,
+    color: '#444444',
     textAlign: 'center',
     marginBottom: spacing.lg,
     lineHeight: 26,

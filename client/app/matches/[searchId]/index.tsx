@@ -20,6 +20,7 @@ export default function SearchMatchesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
 
   const activeResults = useMemo(() => results.filter(r => r.status !== 'rejected'), [results]);
   const dismissedResults = useMemo(() => results.filter(r => r.status === 'rejected'), [results]);
@@ -76,6 +77,18 @@ export default function SearchMatchesScreen() {
       setRestoringId(null);
     }
   }, [searchId]);
+
+  const handleDeleteResult = useCallback(async () => {
+    if (!deleteResultId) return;
+    const id = deleteResultId;
+    setDeleteResultId(null);
+    try {
+      await api.delete(`/api/matches/${searchId}/${id}`);
+      setResults(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      console.error('Failed to delete result:', err);
+    }
+  }, [searchId, deleteResultId]);
 
   if (loading) {
     return <LoadingOverlay visible message="Loading results..." />;
@@ -135,11 +148,11 @@ export default function SearchMatchesScreen() {
         data={activeResults}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Obit Matches</Text>
+            <Text style={styles.title}>Obituaries found</Text>
             <View style={styles.headerButtons}>
               <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
               <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
-              <Text style={styles.headerHint}>Tap name to open.</Text>
+              <Text style={styles.headerHint}>Tap name to open</Text>
             </View>
           </View>
         }
@@ -152,6 +165,7 @@ export default function SearchMatchesScreen() {
           <MatchCard
             result={item}
             href={`/matches/${searchId}/${item.id}`}
+            onDelete={() => setDeleteResultId(item.id)}
           />
         )}
         ListFooterComponent={dismissedResults.length > 0 ? (
@@ -170,6 +184,15 @@ export default function SearchMatchesScreen() {
             ))}
           </View>
         ) : null}
+      />
+      <ConfirmDialog
+        visible={!!deleteResultId}
+        title="Delete Obituary"
+        body="Are you sure you want to delete this obituary record?  This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDeleteResult}
+        onCancel={() => setDeleteResultId(null)}
       />
     </View>
   );
@@ -204,7 +227,8 @@ const styles = StyleSheet.create({
   },
   headerHint: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    fontWeight: '700',
+    color: '#444444',
     alignSelf: 'center',
   },
   dismissedSection: {
@@ -216,12 +240,12 @@ const styles = StyleSheet.create({
   dismissedHeader: {
     fontSize: fontSize.lg,
     fontWeight: '700',
-    color: colors.textSecondary,
+    color: '#444444',
     marginBottom: spacing.xs,
   },
   dismissedSubtext: {
     fontSize: fontSize.sm,
-    color: colors.textMuted,
+    color: '#444444',
     marginBottom: spacing.md,
   },
   emptyContent: {

@@ -6,6 +6,7 @@ import authRoutes from './routes/auth';
 import searchRoutes from './routes/searches';
 import matchRoutes from './routes/matches';
 import notificationRoutes from './routes/notifications';
+import adminRoutes from './routes/admin';
 import { runBatch, getUsersWithNewResults } from './services/batchService';
 import { sendMatchNotification } from './services/emailService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
@@ -35,6 +36,7 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
@@ -43,6 +45,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/searches', searchRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Proxy: serves obituary pages in an iframe-friendly way.
 // If the real page can be fetched, serve it with headers stripped.

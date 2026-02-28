@@ -43,7 +43,7 @@ export async function getSummaries(userId: string): Promise<MatchSummary[]> {
        COUNT(ur.id) FILTER (WHERE ur.status = 'rejected')::int AS match_cnt_dismissed
      FROM user_query uq
      LEFT JOIN user_result ur ON ur.user_query_id = uq.id
-     WHERE uq.login_id = $1 AND uq.disabled = false
+     WHERE uq.login_id = $1 AND (uq.disabled = false OR uq.confirmed = true)
      GROUP BY uq.id, uq.name_last, uq.name_first, uq.confirmed
      HAVING COUNT(ur.id) > 0
      ORDER BY match_cnt_new DESC, uq.name_last`,
@@ -221,6 +221,24 @@ export async function restoreResult(userId: string, searchId: string, resultId: 
   }
 }
 
+export async function deleteResult(userId: string, searchId: string, resultId: string): Promise<void> {
+  const { rows: ownership } = await pool.query(
+    'SELECT id FROM user_query WHERE id = $1 AND login_id = $2',
+    [searchId, userId]
+  );
+  if (ownership.length === 0) {
+    throw Object.assign(new Error('Search not found'), { status: 404 });
+  }
+
+  const { rowCount } = await pool.query(
+    'DELETE FROM user_result WHERE id = $1 AND user_query_id = $2',
+    [resultId, searchId]
+  );
+  if (!rowCount) {
+    throw Object.assign(new Error('Result not found'), { status: 404 });
+  }
+}
+
 export async function deleteResultsForSearch(userId: string, searchId: string): Promise<number> {
   const { rows: ownership } = await pool.query(
     'SELECT id FROM user_query WHERE id = $1 AND login_id = $2',
@@ -260,7 +278,7 @@ export async function getNotificationBadge(userId: string): Promise<Notification
        COUNT(DISTINCT CASE WHEN ur.is_read = false AND ur.status = 'pending' THEN uq.id END)::int AS searches_cnt_with_new
      FROM user_query uq
      LEFT JOIN user_result ur ON ur.user_query_id = uq.id
-     WHERE uq.login_id = $1 AND uq.disabled = false`,
+     WHERE uq.login_id = $1 AND (uq.disabled = false OR uq.confirmed = true)`,
     [userId]
   );
 

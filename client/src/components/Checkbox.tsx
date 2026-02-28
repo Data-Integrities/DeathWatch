@@ -21,7 +21,7 @@ export function Checkbox({ checked, onToggle, label }: CheckboxProps) {
       <FontAwesome
         name={checked ? 'check-square' : 'square-o'}
         size={20}
-        color={checked ? colors.green : colors.textSecondary}
+        color={checked ? colors.green : '#444444'}
         style={styles.icon}
       />
       <Text style={styles.label}>{label}</Text>
@@ -40,6 +40,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    color: '#444444',
   },
 });
