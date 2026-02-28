@@ -25,3 +25,9 @@ web-build/
 .vscode/
 *.swp
 *.swo
+
+# Scratch/test files
+*.PNG
+*.jpg
+proxy_test.*
+*_test.png
