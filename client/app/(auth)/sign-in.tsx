@@ -11,8 +11,8 @@ import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/them
 
 export default function SignInScreen() {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState('jimjones1000@gmail.com');
-  const [password, setPassword] = useState('obitnote1');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
