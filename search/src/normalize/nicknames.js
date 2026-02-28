@@ -17,6 +17,7 @@ const nicknameGroups = [
   ['daniel', 'dan', 'danny'],
   ['matthew', 'matt', 'matty'],
   ['anthony', 'tony'],
+  ['douglas', 'doug', 'dougie'],
   ['donald', 'don', 'donnie'],
   ['steven', 'steve', 'stephen'],
   ['edward', 'ed', 'eddie', 'ted', 'teddy'],

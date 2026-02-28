@@ -211,7 +211,77 @@ export async function updateSearch(userId: string, searchId: string, data: Parti
     values
   );
 
-  return { search: rowToSearch({ ...rows[0], match_cnt_new: 0 }) };
+  const updated = rows[0];
+
+  // Clear old pending results and re-run search with updated criteria
+  await pool.query(
+    "DELETE FROM user_result WHERE user_query_id = $1 AND status = 'pending'",
+    [searchId]
+  );
+
+  const params = new URLSearchParams();
+  params.set('lastName', updated.name_last);
+  if (updated.name_first) params.set('firstName', updated.name_first);
+  if (updated.name_nickname) params.set('nickname', updated.name_nickname);
+  if (updated.name_middle) params.set('middleName', updated.name_middle);
+  if (updated.age_apx) params.set('age', updated.age_apx.toString());
+  if (updated.city) params.set('city', updated.city);
+  if (updated.state) params.set('state', updated.state);
+  if (updated.key_words) params.set('keyWords', updated.key_words);
+
+  try {
+    const resp = await fetch(`${SEARCH_ENGINE_URL}/search?${params.toString()}`);
+    const json = await resp.json() as any;
+
+    if (json.keySearch) {
+      await pool.query(
+        'UPDATE user_query SET key_search = $1, updated_at = NOW() WHERE id = $2',
+        [json.keySearch, searchId]
+      );
+    }
+
+    // Get existing fingerprints (from confirmed/rejected results) to avoid re-inserting
+    const { rows: existingRows } = await pool.query(
+      'SELECT fingerprint FROM user_result WHERE user_query_id = $1 AND fingerprint IS NOT NULL',
+      [searchId]
+    );
+    const existingFingerprints = new Set(existingRows.map((r: any) => r.fingerprint));
+
+    const ranDt = new Date();
+    for (const r of json.results || []) {
+      if (r.fingerprint && existingFingerprints.has(r.fingerprint)) continue;
+
+      const resultId = uuidv4();
+      await pool.query(
+        `INSERT INTO user_result (
+          id, user_query_id, ran_dt, name_full, name_first, name_last, age_years,
+          dod, date_visitation, date_funeral, city, state, source, url, snippet,
+          score, reasons, fingerprint, type_provider, also_found_at,
+          scores_criteria, score_final, score_max, criteria_cnt, rank, url_image,
+          is_read, status
+        ) VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28
+        )`,
+        [
+          resultId, searchId, ranDt,
+          r.nameFull || null, r.nameFirst || null, r.nameLast || null, r.ageYears || null,
+          r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
+          r.city || null, r.state || null, r.source || null, r.url || null, r.snippet || null,
+          r.score || 0, JSON.stringify(r.reasons || []),
+          r.fingerprint || null, r.typeProvider || null,
+          r.alsoFoundAt ? JSON.stringify(r.alsoFoundAt) : null,
+          r.scoresCriteria ? JSON.stringify(r.scoresCriteria) : null,
+          r.scoreFinal || null, r.scoreMax || null, r.criteriaCnt || null, r.rank || null,
+          r.urlImage || null,
+          false, 'pending'
+        ]
+      );
+    }
+  } catch (err) {
+    console.error('[Search] Re-search after edit failed:', err);
+  }
+
+  return { search: rowToSearch({ ...updated, match_cnt_new: 0 }) };
 }
 
 export async function deleteSearch(userId: string, searchId: string) {
