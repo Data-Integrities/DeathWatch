@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, FlatList, Text, StyleSheet, RefreshControl } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { api } from '../../../src/services/api/client';
 import { AppHeader } from '../../../src/components/AppHeader';
 import { MatchCard } from '../../../src/components/MatchCard';
@@ -44,9 +44,11 @@ export default function SearchMatchesScreen() {
     }
   }, [searchId]);
 
-  useEffect(() => {
-    loadResults();
-  }, [loadResults]);
+  useFocusEffect(
+    useCallback(() => {
+      loadResults();
+    }, [loadResults])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -141,6 +143,24 @@ export default function SearchMatchesScreen() {
     );
   }
 
+  // Dismissed Results section - commented out for potential future use
+  // ListFooterComponent={dismissedResults.length > 0 ? (
+  //   <View style={styles.dismissedSection}>
+  //     <Text style={styles.dismissedHeader}>Dismissed Results</Text>
+  //     <Text style={styles.dismissedSubtext}>
+  //       These results were marked "Wrong Person." Tap Restore to bring one back.
+  //     </Text>
+  //     {dismissedResults.map(item => (
+  //       <MatchCard
+  //         key={item.id}
+  //         result={item}
+  //         dismissed
+  //         onRestore={() => handleRestore(item.id)}
+  //       />
+  //     ))}
+  //   </View>
+  // ) : null}
+
   return (
     <View style={styles.container}>
       <AppHeader />
@@ -152,8 +172,11 @@ export default function SearchMatchesScreen() {
             <View style={styles.headerButtons}>
               <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
               <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
-              <Text style={styles.headerHint}>Tap name to open</Text>
+              {activeResults.length > 0 && <Text style={styles.headerHint}>Tap name to open</Text>}
             </View>
+            {activeResults.length === 0 && (
+              <Text style={styles.noResultsText}>No obituaries found today, but we'll search again tomorrow.</Text>
+            )}
           </View>
         }
         keyExtractor={item => item.id}
@@ -168,22 +191,6 @@ export default function SearchMatchesScreen() {
             onDelete={() => setDeleteResultId(item.id)}
           />
         )}
-        ListFooterComponent={dismissedResults.length > 0 ? (
-          <View style={styles.dismissedSection}>
-            <Text style={styles.dismissedHeader}>Dismissed Results</Text>
-            <Text style={styles.dismissedSubtext}>
-              These results were marked "Wrong Person." Tap Restore to bring one back.
-            </Text>
-            {dismissedResults.map(item => (
-              <MatchCard
-                key={item.id}
-                result={item}
-                dismissed
-                onRestore={() => handleRestore(item.id)}
-              />
-            ))}
-          </View>
-        ) : null}
       />
       <ConfirmDialog
         visible={!!deleteResultId}
@@ -224,6 +231,12 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     alignSelf: 'flex-start',
+  },
+  noResultsText: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    marginTop: spacing.md,
+    lineHeight: 26,
   },
   headerHint: {
     fontSize: fontSize.sm,
