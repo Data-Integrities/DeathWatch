@@ -27,7 +27,7 @@ function wrapHtml(body: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF;">
     <tr>
       <td style="padding: 32px 24px; text-align: center; background-color: #663399;">
-        <h1 style="margin: 0; color: #FFFFFF; font-size: 28px;">ObitNOTE<span style="font-size: 14px; font-weight: 400; position: relative; top: 2px; line-height: 1;">&trade;</span></h1>
+        <h1 style="margin: 0; color: #FFFFFF; font-size: 28px;">ObitNOTE<span style="font-size: 14px; font-weight: 400; vertical-align: super; line-height: 1;">&trade;</span></h1>
       </td>
     </tr>
     <tr>
@@ -76,15 +76,15 @@ async function sendEmail(to: string, subject: string, html: string) {
 export async function sendWelcomeEmail(toEmail: string, firstName: string, verificationToken: string) {
   const verifyUrl = `${API_URL}/api/auth/verify-email?token=${verificationToken}`;
   const html = wrapHtml(`
-    <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">Welcome to ObitNOTE, ${escapeHtml(firstName)}!</h2>
-    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Welcome to ObitNOTE, ${escapeHtml(firstName)}!</h2>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       Your account has been created. ObitNOTE monitors obituary listings and notifies you when potential matches are found for your searches.
     </p>
-    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       Please verify your email address to complete your setup:
     </p>
     ${ctaButton(verifyUrl, 'Verify Email')}
-    <p style="margin: 24px 0 0; color: #616161; font-size: 16px; line-height: 1.5;">
+    <p style="margin: 24px 0 0; color: #444444; font-size: 16px; line-height: 1.5;">
       Once verified, get started by creating your first search. You'll receive daily notifications when new matches are found.
     </p>
     <p style="margin: 24px 0 0; color: #9E9E9E; font-size: 14px; line-height: 1.5;">
@@ -99,11 +99,11 @@ export async function sendWelcomeEmail(toEmail: string, firstName: string, verif
 export async function sendVerificationEmail(toEmail: string, firstName: string, token: string) {
   const verifyUrl = `${API_URL}/api/auth/verify-email?token=${token}`;
   const html = wrapHtml(`
-    <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">Verify Your Email</h2>
-    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Verify Your Email</h2>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       Hi ${escapeHtml(firstName)}, please verify your email address by clicking the button below.
     </p>
-    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       This link will expire in 24 hours.
     </p>
     ${ctaButton(verifyUrl, 'Verify Email')}
@@ -119,11 +119,11 @@ export async function sendVerificationEmail(toEmail: string, firstName: string, 
 export async function sendPasswordResetEmail(toEmail: string, token: string) {
   const resetUrl = `${APP_URL}/reset-password?token=${token}`;
   const html = wrapHtml(`
-    <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">Reset Your Password</h2>
-    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Reset Your Password</h2>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       We received a request to reset your password. Click the button below to choose a new password.
     </p>
-    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.
     </p>
     ${ctaButton(resetUrl, 'Reset Password')}
@@ -138,8 +138,8 @@ export async function sendPasswordResetEmail(toEmail: string, token: string) {
 
 export async function sendMatchNotification(toEmail: string) {
   const html = wrapHtml(`
-    <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">New Obituary Found</h2>
-    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">New Obituary Found</h2>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       A new potential obituary match has been found for one of your searches.  Sign in to review the result.
     </p>
     ${ctaButton(`${APP_URL}/sign-in`, 'Sign In')}

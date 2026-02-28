@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#444444',
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   checkEmailAddress: {
     fontSize: fontSize.base,
