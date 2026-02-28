@@ -136,45 +136,16 @@ export async function sendPasswordResetEmail(toEmail: string, token: string) {
   await sendEmail(toEmail, 'ObitNOTE: Reset your password', html);
 }
 
-interface SearchSummary {
-  searchId: string;
-  name: string;
-  newCount: number;
-}
-
-export async function sendMatchNotification(
-  toEmail: string,
-  searches: SearchSummary[],
-  totalNew: number,
-) {
-  const subject = totalNew === 1
-    ? 'ObitNOTE: 1 new match found'
-    : `ObitNOTE: ${totalNew} new matches found`;
-
-  const searchLines = searches.map(s =>
-    `<tr>
-      <td style="padding: 12px 16px; border-bottom: 1px solid #E0E0E0;">
-        <a href="${APP_URL}/matches/${s.searchId}" style="color: #2E7D32; font-size: 18px; text-decoration: none; font-weight: 600;">
-          ${escapeHtml(s.name)}
-        </a>
-        <br />
-        <span style="color: #616161; font-size: 14px;">${s.newCount} new match${s.newCount !== 1 ? 'es' : ''}</span>
-      </td>
-    </tr>`
-  ).join('\n');
-
+export async function sendMatchNotification(toEmail: string) {
   const html = wrapHtml(`
-    <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">New Matches Found</h2>
-    <p style="margin: 0 0 24px; color: #616161; font-size: 18px; line-height: 1.5;">
-      We found ${totalNew} new potential match${totalNew !== 1 ? 'es' : ''} for your searches.
+    <h2 style="margin: 0 0 16px; color: #212121; font-size: 22px;">New Obituary Found</h2>
+    <p style="margin: 0 0 16px; color: #616161; font-size: 18px; line-height: 1.5;">
+      A new potential obituary match has been found for one of your searches.  Sign in to review the result.
     </p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #E0E0E0; border-radius: 8px; overflow: hidden;">
-      ${searchLines}
-    </table>
-    ${ctaButton(`${APP_URL}/matches`, 'View All Matches')}
+    ${ctaButton(`${APP_URL}/sign-in`, 'Sign In')}
   `);
 
-  await sendEmail(toEmail, subject, html);
+  await sendEmail(toEmail, 'ObitNOTE: New obituary found', html);
 }
 
 function escapeHtml(text: string): string {

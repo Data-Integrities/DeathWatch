@@ -243,12 +243,12 @@ cron.schedule('0 16 * * *', async () => {
   try {
     await runBatch();
 
-    // Send notifications
-    const users = await getUsersWithNewResults();
-    for (const u of users) {
-      await sendMatchNotification(u.email, u.searches, u.new_count);
+    // Send notifications to users with new batch results
+    const emails = await getUsersWithNewResults();
+    for (const email of emails) {
+      await sendMatchNotification(email);
     }
-    console.log(`[Cron] Sent notifications to ${users.length} users`);
+    console.log(`[Cron] Sent notifications to ${emails.length} users`);
   } catch (err) {
     console.error('[Cron] Batch failed:', err);
   }

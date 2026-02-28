@@ -72,9 +72,9 @@ export async function runBatch() {
             dod, date_visitation, date_funeral, city, state, source, url, snippet,
             score, reasons, fingerprint, type_provider, also_found_at,
             scores_criteria, score_final, score_max, criteria_cnt, rank, url_image,
-            is_read, status
+            is_read, status, source_type
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29
           )`,
           [
             resultId, q.id, ranDt,
@@ -87,7 +87,7 @@ export async function runBatch() {
             r.scoresCriteria ? JSON.stringify(r.scoresCriteria) : null,
             r.scoreFinal || null, r.scoreMax || null, r.criteriaCnt || null, r.rank || null,
             r.urlImage || null,
-            false, 'pending'
+            false, 'pending', 'batch'
           ]
         );
         newCount++;
@@ -105,30 +105,19 @@ export async function runBatch() {
 }
 
 /**
- * Get users who have new (unread) results for sending notification emails.
+ * Get emails of users who have new unread batch results (for notification emails).
+ * Only batch-discovered results trigger notifications — initial search results do not.
  */
-export async function getUsersWithNewResults() {
+export async function getUsersWithNewResults(): Promise<string[]> {
   const { rows } = await pool.query(
-    `SELECT
-       du.id AS user_id,
-       du.email,
-       COUNT(ur.id)::int AS new_count,
-       json_agg(json_build_object(
-         'searchId', uq.id,
-         'name', CONCAT(COALESCE(uq.name_first, uq.name_nickname, ''), ' ', uq.name_last),
-         'newCount', sub.cnt
-       )) AS searches
+    `SELECT DISTINCT du.email
      FROM dw_user du
      JOIN user_query uq ON uq.login_id = du.id AND uq.disabled = false
-     JOIN (
-       SELECT user_query_id, COUNT(*)::int AS cnt
-       FROM user_result
-       WHERE is_read = false AND status = 'pending'
-       GROUP BY user_query_id
-     ) sub ON sub.user_query_id = uq.id
-     JOIN user_result ur ON ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'
-     WHERE du.email IS NOT NULL
-     GROUP BY du.id, du.email`
+     JOIN user_result ur ON ur.user_query_id = uq.id
+       AND ur.is_read = false
+       AND ur.status = 'pending'
+       AND ur.source_type = 'batch'
+     WHERE du.email IS NOT NULL`
   );
-  return rows;
+  return rows.map((r: any) => r.email);
 }
