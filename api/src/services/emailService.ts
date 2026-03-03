@@ -148,6 +148,21 @@ export async function sendMatchNotification(toEmail: string) {
   await sendEmail(toEmail, 'ObitNOTE: New obituary found', html);
 }
 
+export async function sendSupportReply(toEmail: string, firstName: string, subject: string, originalBody: string, replyText: string) {
+  const emailSubject = `Support Response to ${subject}`;
+  const html = wrapHtml(`
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Hi ${escapeHtml(firstName)},</h2>
+    <p style="margin: 0 0 24px; color: #444444; font-size: 18px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(replyText)}</p>
+    <div style="margin: 24px 0; padding: 16px; background-color: #F5F5F5; border-left: 4px solid #BDBDBD; border-radius: 4px;">
+      <p style="margin: 0 0 4px; color: #9E9E9E; font-size: 13px; font-weight: 600;">Your original message:</p>
+      <p style="margin: 0; color: #616161; font-size: 15px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(originalBody)}</p>
+    </div>
+    ${ctaButton(`${APP_URL}/sign-in`, 'Sign In')}
+  `);
+
+  await sendEmail(toEmail, emailSubject, html);
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')

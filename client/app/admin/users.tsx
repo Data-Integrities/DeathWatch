@@ -9,6 +9,7 @@ import { colors, spacing } from '../../src/theme';
 interface UserRow {
   firstName: string;
   lastName: string;
+  location: string;
   email: string;
   isAdmin: boolean;
   createdAt: string;
@@ -21,7 +22,7 @@ interface UserRow {
   searchEditCount: number;
 }
 
-type SortKey = 'name' | 'email' | 'admin' | 'createdAt' | 'si' | 'se' | 'ma' | 'sd' | 'rp' | 'wp' | 'sedit';
+type SortKey = 'name' | 'location' | 'email' | 'admin' | 'createdAt' | 'si' | 'se' | 'ma' | 'sd' | 'rp' | 'wp' | 'sedit';
 type SortDir = 'asc' | 'desc';
 
 function formatDate(iso: string): string {
@@ -55,6 +56,8 @@ function sortRows(rows: UserRow[], sortKey: SortKey, sortDir: SortDir): UserRow[
         if (last !== 0) return last;
         return a.firstName.localeCompare(b.firstName) * dir;
       }
+      case 'location':
+        return a.location.localeCompare(b.location) * dir;
       case 'email':
         return a.email.localeCompare(b.email) * dir;
       case 'admin': {
@@ -71,17 +74,18 @@ function sortRows(rows: UserRow[], sortKey: SortKey, sortDir: SortDir): UserRow[
 }
 
 const COL_WIDTHS = {
-  name: 110,
-  email: 160,
-  admin: 36,
-  created: 62,
-  si: 28,
-  se: 28,
-  ma: 28,
-  sd: 28,
-  rp: 28,
-  wp: 28,
-  sedit: 28,
+  name: 140,
+  location: 120,
+  email: 190,
+  admin: 40,
+  created: 75,
+  si: 32,
+  se: 32,
+  ma: 32,
+  sd: 32,
+  rp: 32,
+  wp: 32,
+  sedit: 32,
 };
 
 export default function UsersScreen() {
@@ -123,10 +127,11 @@ export default function UsersScreen() {
     }
   };
 
-  const headerCell = (label: string, key: SortKey, width: number, center?: boolean) => (
+  const headerCell = (label: string, key: SortKey, width: number, center?: boolean, title?: string) => (
     <Pressable
       onPress={() => handleSort(key)}
       style={[styles.headerCell, { width }, center && styles.centerCell]}
+      {...(Platform.OS === 'web' && title ? { title } as any : {})}
     >
       <Text style={styles.headerText}>{label}</Text>
     </Pressable>
@@ -163,16 +168,17 @@ export default function UsersScreen() {
             {/* Frozen header row */}
             <View style={styles.headerRow}>
               {headerCell('Name', 'name', COL_WIDTHS.name)}
+              {headerCell('Location', 'location', COL_WIDTHS.location, false, 'IP defined at account creation')}
               {headerCell('Email', 'email', COL_WIDTHS.email)}
-              {headerCell('Adm', 'admin', COL_WIDTHS.admin, true)}
+              {headerCell('Adm', 'admin', COL_WIDTHS.admin, true, 'Administrator')}
               {headerCell('Created', 'createdAt', COL_WIDTHS.created)}
-              {headerCell('Si', 'si', COL_WIDTHS.si, true)}
-              {headerCell('Se', 'se', COL_WIDTHS.se, true)}
-              {headerCell('Ma', 'ma', COL_WIDTHS.ma, true)}
-              {headerCell('sd', 'sd', COL_WIDTHS.sd, true)}
-              {headerCell('rp', 'rp', COL_WIDTHS.rp, true)}
-              {headerCell('wp', 'wp', COL_WIDTHS.wp, true)}
-              {headerCell('se', 'sedit', COL_WIDTHS.sedit, true)}
+              {headerCell('Si', 'si', COL_WIDTHS.si, true, 'Sign In count')}
+              {headerCell('Se', 'se', COL_WIDTHS.se, true, 'Searches count')}
+              {headerCell('Ob', 'ma', COL_WIDTHS.ma, true, 'Obituaries found count')}
+              {headerCell('sd', 'sd', COL_WIDTHS.sd, true, 'Searches Deleted count')}
+              {headerCell('rp', 'rp', COL_WIDTHS.rp, true, 'Right Person count')}
+              {headerCell('wp', 'wp', COL_WIDTHS.wp, true, 'Wrong Person count')}
+              {headerCell('se', 'sedit', COL_WIDTHS.sedit, true, 'Search Edit count')}
             </View>
 
             {/* Scrollable data rows */}
@@ -186,6 +192,9 @@ export default function UsersScreen() {
                 <View key={i} style={[styles.dataRow, i % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
                   <Text style={[styles.cell, { width: COL_WIDTHS.name }]} numberOfLines={1}>
                     {row.lastName}, {row.firstName}
+                  </Text>
+                  <Text style={[styles.cell, { width: COL_WIDTHS.location }]} numberOfLines={1}>
+                    {row.location}
                   </Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.email }]} numberOfLines={1}>
                     {row.email}
@@ -233,8 +242,8 @@ export default function UsersScreen() {
   );
 }
 
-const monoFont = Platform.OS === 'web'
-  ? { fontFamily: "'Roboto Condensed', 'Arial Narrow', sans-serif" }
+const gridFont = Platform.OS === 'web'
+  ? { fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }
   : {};
 
 const styles = StyleSheet.create({
@@ -276,6 +285,8 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
+    maxWidth: 800,
+    width: '100%',
     alignSelf: 'center',
   },
   scrollOuter: {
@@ -299,9 +310,9 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: colors.white,
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
-    ...monoFont,
+    ...gridFont,
   },
   dataRow: {
     flexDirection: 'row',
@@ -317,10 +328,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#faf8fc',
   },
   cell: {
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textPrimary,
     paddingHorizontal: 4,
-    ...monoFont,
+    ...gridFont,
   },
   centerText: {
     textAlign: 'center',

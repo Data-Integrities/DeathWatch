@@ -112,10 +112,10 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
 }
 
 const COL_WIDTHS = {
-  location: 80,
-  name: 110,
-  dateTime: 95,
-  action: 75,
+  location: 110,
+  name: 140,
+  dateTime: 120,
+  action: 95,
 };
 
 export default function ActivityScreen() {
@@ -257,8 +257,8 @@ export default function ActivityScreen() {
   );
 }
 
-const monoFont = Platform.OS === 'web'
-  ? { fontFamily: "'Roboto Condensed', 'Arial Narrow', sans-serif" }
+const gridFont = Platform.OS === 'web'
+  ? { fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }
   : {};
 
 const styles = StyleSheet.create({
@@ -316,6 +316,8 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
+    maxWidth: 800,
+    width: '100%',
     alignSelf: 'center',
   },
   scrollOuter: {
@@ -336,9 +338,9 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: colors.white,
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
-    ...monoFont,
+    ...gridFont,
   },
   dataRow: {
     flexDirection: 'row',
@@ -354,10 +356,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#faf8fc',
   },
   cell: {
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textPrimary,
     paddingHorizontal: 4,
-    ...monoFont,
+    ...gridFont,
   },
   flexCell: {
     flex: 1,

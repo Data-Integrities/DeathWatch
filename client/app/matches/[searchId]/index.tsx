@@ -21,6 +21,8 @@ export default function SearchMatchesScreen() {
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
+  const [rightPersonId, setRightPersonId] = useState<string | null>(null);
+  const [wrongPersonId, setWrongPersonId] = useState<string | null>(null);
 
   const activeResults = useMemo(() => results.filter(r => r.status !== 'rejected'), [results]);
   const dismissedResults = useMemo(() => results.filter(r => r.status === 'rejected'), [results]);
@@ -36,6 +38,13 @@ export default function SearchMatchesScreen() {
 
       // Mark all as read
       api.post(`/api/matches/${searchId}/mark-read`).catch(() => {});
+
+      // Auto-skip to detail if exactly 1 active result
+      const active = matchRes.results.filter(r => r.status !== 'rejected');
+      if (active.length === 1) {
+        router.replace(`/matches/${searchId}/${active[0].id}` as any);
+        return;
+      }
     } catch (err) {
       console.error('Failed to load results:', err);
     } finally {
@@ -92,6 +101,32 @@ export default function SearchMatchesScreen() {
     }
   }, [searchId, deleteResultId]);
 
+  const handleRightPerson = useCallback(async () => {
+    if (!rightPersonId) return;
+    const id = rightPersonId;
+    setRightPersonId(null);
+    try {
+      await api.post(`/api/matches/${searchId}/${id}/confirm`);
+      router.replace('/matches');
+    } catch (err) {
+      console.error('Failed to confirm:', err);
+    }
+  }, [searchId, rightPersonId]);
+
+  const handleWrongPerson = useCallback(async () => {
+    if (!wrongPersonId) return;
+    const id = wrongPersonId;
+    setWrongPersonId(null);
+    try {
+      await api.post(`/api/matches/${searchId}/${id}/reject`);
+      setResults(prev => prev.map(r =>
+        r.id === id ? { ...r, status: 'rejected' as const } : r
+      ));
+    } catch (err) {
+      console.error('Failed to reject:', err);
+    }
+  }, [searchId, wrongPersonId]);
+
   if (loading) {
     return <LoadingOverlay visible message="Loading results..." />;
   }
@@ -143,24 +178,6 @@ export default function SearchMatchesScreen() {
     );
   }
 
-  // Dismissed Results section - commented out for potential future use
-  // ListFooterComponent={dismissedResults.length > 0 ? (
-  //   <View style={styles.dismissedSection}>
-  //     <Text style={styles.dismissedHeader}>Dismissed Results</Text>
-  //     <Text style={styles.dismissedSubtext}>
-  //       These results were marked "Wrong Person." Tap Restore to bring one back.
-  //     </Text>
-  //     {dismissedResults.map(item => (
-  //       <MatchCard
-  //         key={item.id}
-  //         result={item}
-  //         dismissed
-  //         onRestore={() => handleRestore(item.id)}
-  //       />
-  //     ))}
-  //   </View>
-  // ) : null}
-
   return (
     <View style={styles.container}>
       <AppHeader />
@@ -168,12 +185,21 @@ export default function SearchMatchesScreen() {
         data={activeResults}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Obituaries found</Text>
+            <Text style={styles.title}>{activeResults.length === 1 ? '1 Obituary' : `${activeResults.length} Obituaries`} found</Text>
+            {search && (
+              <Text style={styles.searchReminder}>
+                {[search.nameFirst, search.nameLast].filter(Boolean).join(' ')}
+                {search.city || search.state ? ` - ${[search.city, search.state].filter(Boolean).join(', ')}` : ''}
+                {search.ageApx ? `, age around ${search.ageApx}` : ''}
+              </Text>
+            )}
             <View style={styles.headerButtons}>
               <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
               <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
-              {activeResults.length > 0 && <Text style={styles.headerHint}>Tap name to open</Text>}
             </View>
+            {activeResults.length > 0 && (
+              <Text style={styles.headerHint}>Please choose Right or Wrong Person.</Text>
+            )}
             {activeResults.length === 0 && (
               <Text style={styles.noResultsText}>No obituaries found today, but we'll search again tomorrow.</Text>
             )}
@@ -188,18 +214,54 @@ export default function SearchMatchesScreen() {
           <MatchCard
             result={item}
             href={`/matches/${searchId}/${item.id}`}
-            onDelete={() => setDeleteResultId(item.id)}
+            onMoreInfo={() => router.push(`/matches/${searchId}/${item.id}` as any)}
+            onRight={() => setRightPersonId(item.id)}
+            onWrong={() => setWrongPersonId(item.id)}
           />
         )}
+        ListFooterComponent={dismissedResults.length > 0 ? (
+          <View style={styles.dismissedSection}>
+            <Text style={styles.dismissedHeader}>Dismissed Results</Text>
+            <Text style={styles.dismissedSubtext}>
+              These were marked "Wrong Person."  Tap Restore to bring one back.  Dismissed results are removed after seven days.
+            </Text>
+            {dismissedResults.map(item => (
+              <MatchCard
+                key={item.id}
+                result={item}
+                dismissed
+                onRestore={() => handleRestore(item.id)}
+              />
+            ))}
+          </View>
+        ) : null}
       />
       <ConfirmDialog
         visible={!!deleteResultId}
         title="Delete Obituary"
-        body="Are you sure you want to delete this obituary record?  This cannot be undone."
+        body={`Delete this obituary result for ${(() => { const r = results.find(r => r.id === deleteResultId); return r?.nameFull || [r?.nameFirst, r?.nameLast].filter(Boolean).join(' ') || 'this person'; })()}?  This cannot be undone.`}
         confirmLabel="Delete"
         confirmVariant="danger"
         onConfirm={handleDeleteResult}
         onCancel={() => setDeleteResultId(null)}
+      />
+      <ConfirmDialog
+        visible={!!rightPersonId}
+        title="Confirm: Right Person"
+        body={`Confirm this is the right person?  Searching for ${(() => { const r = results.find(r => r.id === rightPersonId); return r?.nameFull || [r?.nameFirst, r?.nameLast].filter(Boolean).join(' ') || 'this person'; })()} will stop.`}
+        confirmLabel="Yes, This Is Them"
+        confirmVariant="primary"
+        onConfirm={handleRightPerson}
+        onCancel={() => setRightPersonId(null)}
+      />
+      <ConfirmDialog
+        visible={!!wrongPersonId}
+        title="Wrong Person"
+        body="Mark as wrong person?  Result will be hidden, but you can undo later."
+        confirmLabel="Yes, Wrong Person"
+        confirmVariant="danger"
+        onConfirm={handleWrongPerson}
+        onCancel={() => setWrongPersonId(null)}
       />
     </View>
   );
@@ -223,6 +285,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  searchReminder: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#444444',
     marginBottom: spacing.sm,
   },
   headerButtons: {
@@ -242,7 +310,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: '700',
     color: '#444444',
-    alignSelf: 'center',
+    marginTop: spacing.sm,
   },
   dismissedSection: {
     marginTop: spacing.lg,

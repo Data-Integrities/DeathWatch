@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../theme';
-import { Badge } from './Badge';
 import type { SearchQuery } from '../types';
 
 interface SearchCardProps {
@@ -31,9 +30,12 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
       <View style={styles.cardRow}>
         <View style={styles.content}>
           <View style={styles.nameRow}>
-            <FontAwesome name="search" size={14} color="#444444" />
+            {search.confirmed ? (
+              <FontAwesome name="check" size={14} color={colors.green} />
+            ) : (
+              <FontAwesome name="search" size={14} color="#444444" />
+            )}
             <Text style={styles.name}>{displayName}</Text>
-            {search.matchCntNew > 0 && <Badge count={search.matchCntNew} />}
           </View>
 
           <View style={styles.details}>
@@ -48,10 +50,18 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
             )}
           </View>
 
-          {search.confirmed && (
+          {search.confirmed ? (
             <View style={styles.confirmedBadge}>
-              <Text style={styles.confirmedText}>Person Found</Text>
+              <Text style={styles.confirmedText}>You marked this as Right Person  <Text style={styles.confirmedStopped}>Daily searches stopped.</Text></Text>
             </View>
+          ) : search.matchCntNew > 0 ? (
+            <View style={styles.matchBadge}>
+              <Text style={styles.matchBadgeText}>{search.matchCntNew} new</Text>
+            </View>
+          ) : search.matchCntTotal > 0 ? (
+            <Text style={styles.matchSubdued}>{search.matchCntTotal} obituaries found.  <Text style={styles.matchLink}>Please open.</Text>  Performing daily searches.</Text>
+          ) : (
+            <Text style={styles.matchSearching}>No obituaries found.  Performing daily searches.</Text>
           )}
         </View>
 
@@ -64,7 +74,7 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
                 accessibilityLabel={`Edit ${displayName}`}
                 style={[styles.iconButton, styles.editButton]}
               >
-                <FontAwesome name="pencil" size={24} color={colors.green} />
+                <FontAwesome name="pencil" size={32} color={colors.green} />
               </Pressable>
             )}
             {onDelete && (
@@ -74,7 +84,7 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
                 accessibilityLabel={`Delete ${displayName}`}
                 style={styles.iconButton}
               >
-                <FontAwesome name="trash" size={24} color={colors.error} />
+                <FontAwesome name="trash" size={32} color={colors.error} />
               </Pressable>
             )}
           </View>
@@ -117,7 +127,7 @@ const styles = StyleSheet.create({
   icons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 9,
     marginLeft: 2,
     marginRight: -5,
   },
@@ -129,7 +139,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   editButton: {
-    marginLeft: 1,
+    marginLeft: 0,
   },
   details: {
     flexDirection: 'row',
@@ -155,5 +165,41 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.success,
     fontWeight: '600',
+  },
+  confirmedStopped: {
+    color: '#444444',
+    fontWeight: '600',
+  },
+  matchBadge: {
+    backgroundColor: colors.green,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    marginLeft: 22,
+  },
+  matchBadgeText: {
+    fontSize: fontSize.sm,
+    color: colors.white,
+    fontWeight: '700',
+  },
+  matchSubdued: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    fontWeight: '600',
+    marginTop: spacing.sm,
+    marginLeft: 22,
+  },
+  matchLink: {
+    color: colors.green,
+    fontWeight: '700',
+  },
+  matchSearching: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    fontWeight: '600',
+    marginTop: spacing.sm,
+    marginLeft: 22,
   },
 });

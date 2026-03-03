@@ -23,12 +23,6 @@ export function AppHeader({ minimal, onHelp }: AppHeaderProps = {}) {
         </Pressable>
         {!minimal ? (
           <View style={styles.navRow}>
-            <Pressable onPress={() => router.replace('/searches' as any)} accessibilityRole="link" style={styles.navItem}>
-              <Text style={styles.navText}>Searches</Text>
-            </Pressable>
-            <Pressable onPress={() => router.replace('/matches')} accessibilityRole="link" style={styles.navItem}>
-              <Text style={styles.navText}>Obituaries</Text>
-            </Pressable>
             <Pressable onPress={() => router.replace('/help' as any)} accessibilityRole="link" accessibilityLabel="Help" style={styles.navItem}>
               <FontAwesome name="question-circle" size={20} color={colors.white} />
             </Pressable>
@@ -85,10 +79,5 @@ const styles = StyleSheet.create({
   navItem: {
     minHeight: 44,
     justifyContent: 'center' as const,
-  },
-  navText: {
-    fontSize: fontSize.sm,
-    fontWeight: '600' as const,
-    color: colors.white,
   },
 });

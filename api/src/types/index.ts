@@ -57,6 +57,8 @@ export interface SearchQuery extends SearchQueryCreate {
   confirmedAt: string | null;
   keySearch: string | null;
   matchCntNew: number;
+  matchCntTotal: number;
+  matchCntDismissed: number;
   createdAt: string;
   updatedAt: string;
 }

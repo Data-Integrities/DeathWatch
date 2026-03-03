@@ -151,6 +151,21 @@ function extractDodFromText(text) {
     if (result) return result;
   }
 
+  // Pattern 3b: "[death phrase] [in/during] YYYY" (year only, no month/day)
+  // e.g., "Passed away in 2019", "died in 2020"
+  const deathPhraseYearPattern = new RegExp(
+    `(?:${DEATH_PHRASE_PATTERN})\\s+(?:in|during)\\s+((?:19|20)\\d{2})`,
+    'i'
+  );
+  match = t.match(deathPhraseYearPattern);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const now = new Date();
+    if (year <= now.getFullYear()) {
+      return match[1];
+    }
+  }
+
   // ===== DATE RANGES (BIRTH - DEATH) =====
 
   // Pattern 4: "Month DD, YYYY - Month DD, YYYY" (take second date as DOD)
@@ -176,8 +191,7 @@ function extractDodFromText(text) {
   const yearRangePattern = /\(?\s*(19\d{2}|20\d{2})\s*[-–—]\s*(19\d{2}|20\d{2})\s*\)?/;
   match = t.match(yearRangePattern);
   if (match) {
-    const deathYear = match[2];
-    return `${deathYear}-01-01`;
+    return match[2];
   }
 
   // ===== STANDALONE DATES IN OBITUARY CONTEXT =====

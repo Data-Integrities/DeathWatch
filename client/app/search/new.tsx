@@ -55,7 +55,7 @@ export default function NewSearchScreen() {
       if (resultCount > 0) {
         router.replace(`/matches/${res.search.id}`);
       } else {
-        router.replace('/searches');
+        router.replace('/matches');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create search.');
@@ -110,7 +110,7 @@ export default function NewSearchScreen() {
       />
 
       <TextField
-        label="Apx Age"
+        label="Approx Age"
         labelWidth={90}
         value={ageApx}
         onChangeText={setAgeApx}

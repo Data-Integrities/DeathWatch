@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { useAuth } from '../../src/context/AuthContext';
 import { AppHeader } from '../../src/components/AppHeader';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
 import { Button } from '../../src/components/Button';
@@ -8,8 +9,17 @@ import { colors, fontSize, spacing, heading } from '../../src/theme';
 
 export default function VerifyEmailScreen() {
   const { status, message } = useLocalSearchParams<{ status?: string; message?: string }>();
+  const { user, refreshUser } = useAuth();
 
   const isSuccess = status === 'success';
+  const isLoggedIn = !!user;
+
+  // If already logged in and verification succeeded, refresh user data
+  useEffect(() => {
+    if (isSuccess && isLoggedIn) {
+      refreshUser().catch(() => {});
+    }
+  }, [isSuccess, isLoggedIn]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -23,9 +33,9 @@ export default function VerifyEmailScreen() {
             {message || (isSuccess ? 'Your email has been verified.' : 'The verification link is invalid or has expired.')}
           </Text>
           <Button
-            title="Sign In"
+            title={isLoggedIn ? 'Continue' : 'Sign In'}
             variant="primary"
-            onPress={() => router.replace('/sign-in')}
+            onPress={() => router.replace(isLoggedIn ? '/matches' : '/sign-in')}
             style={styles.button}
           />
         </View>

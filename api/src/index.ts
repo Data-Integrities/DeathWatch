@@ -7,7 +7,9 @@ import searchRoutes from './routes/searches';
 import matchRoutes from './routes/matches';
 import notificationRoutes from './routes/notifications';
 import adminRoutes from './routes/admin';
+import messageRoutes from './routes/messages';
 import { runBatch, getUsersWithNewResults } from './services/batchService';
+import { purgeOldRejectedResults } from './services/matchService';
 import { sendMatchNotification } from './services/emailService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 
@@ -46,6 +48,7 @@ app.use('/api/searches', searchRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Proxy: serves obituary pages in an iframe-friendly way.
 // If the real page can be fetched, serve it with headers stripped.
@@ -239,8 +242,12 @@ app.listen(PORT, () => {
 
 // Daily batch: run at 11:00 AM ET (16:00 UTC)
 cron.schedule('0 16 * * *', async () => {
-  console.log('[Cron] Starting daily batch search...');
+  console.log('[Cron] Starting daily batch...');
   try {
+    // Purge dismissed results older than 7 days
+    const purged = await purgeOldRejectedResults();
+    if (purged > 0) console.log(`[Cron] Purged ${purged} dismissed results older than 7 days`);
+
     await runBatch();
 
     // Send notifications to users with new batch results

@@ -21,6 +21,8 @@ function rowToSearch(row: any): SearchQuery {
     confirmedAt: row.confirmed_at?.toISOString() || null,
     keySearch: row.key_search,
     matchCntNew: parseInt(row.match_cnt_new || '0', 10),
+    matchCntTotal: parseInt(row.match_cnt_total || '0', 10),
+    matchCntDismissed: parseInt(row.match_cnt_dismissed || '0', 10),
     createdAt: row.created_at?.toISOString() || '',
     updatedAt: row.updated_at?.toISOString() || '',
   };
@@ -57,9 +59,11 @@ function rowToResult(row: any): MatchResult {
 export async function listSearches(userId: string): Promise<SearchQuery[]> {
   const { rows } = await pool.query(
     `SELECT uq.*,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new
+       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new,
+       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NULL), 0) AS match_cnt_total,
+       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NOT NULL), 0) AS match_cnt_dismissed
      FROM user_query uq
-     WHERE uq.login_id = $1 AND uq.disabled = false
+     WHERE uq.login_id = $1 AND (uq.disabled = false OR uq.confirmed = true)
      ORDER BY uq.name_last, uq.name_first`,
     [userId]
   );
@@ -69,7 +73,9 @@ export async function listSearches(userId: string): Promise<SearchQuery[]> {
 export async function getSearch(userId: string, searchId: string): Promise<SearchQuery> {
   const { rows } = await pool.query(
     `SELECT uq.*,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new
+       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new,
+       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NULL), 0) AS match_cnt_total,
+       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NOT NULL), 0) AS match_cnt_dismissed
      FROM user_query uq
      WHERE uq.id = $1 AND uq.login_id = $2`,
     [searchId, userId]
@@ -175,7 +181,7 @@ export async function createSearch(userId: string, data: SearchQueryCreate) {
     // Search was still saved — results just empty
   }
 
-  const search = rowToSearch({ ...rows[0], match_cnt_new: results.length });
+  const search = rowToSearch({ ...rows[0], match_cnt_new: results.length, match_cnt_total: results.length, match_cnt_dismissed: 0 });
   return { search, results };
 }
 
@@ -281,7 +287,7 @@ export async function updateSearch(userId: string, searchId: string, data: Parti
     console.error('[Search] Re-search after edit failed:', err);
   }
 
-  return { search: rowToSearch({ ...updated, match_cnt_new: 0 }) };
+  return { search: rowToSearch({ ...updated, match_cnt_new: 0, match_cnt_total: 0, match_cnt_dismissed: 0 }) };
 }
 
 export async function deleteSearch(userId: string, searchId: string) {

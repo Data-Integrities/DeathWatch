@@ -54,6 +54,7 @@ export interface ActivityRow {
 export interface UserSummaryRow {
   firstName: string;
   lastName: string;
+  location: string;
   email: string;
   isAdmin: boolean;
   createdAt: string;
@@ -72,6 +73,8 @@ export interface UserSummaryRow {
 export async function getUsersSummary(): Promise<UserSummaryRow[]> {
   const { rows } = await pool.query(
     `SELECT u.first_name, u.last_name, u.email, u.is_admin, u.created_at,
+       (SELECT CONCAT_WS(', ', NULLIF(lh.geo_city, ''), NULLIF(lh.geo_region, ''))
+        FROM login_history lh WHERE lh.login_id = u.login_id ORDER BY lh.login_at ASC LIMIT 1) AS signup_location,
        (SELECT COUNT(*) FROM login_history lh WHERE lh.login_id = u.login_id) AS sign_in_count,
        (SELECT COUNT(*) FROM user_query uq WHERE uq.login_id = u.login_id AND uq.disabled = false) AS searches_count,
        (SELECT COUNT(*) FROM user_result ur JOIN user_query uq ON ur.user_query_id = uq.id WHERE uq.login_id = u.login_id) AS matches_count,
@@ -86,6 +89,7 @@ export async function getUsersSummary(): Promise<UserSummaryRow[]> {
   return rows.map(row => ({
     firstName: row.first_name,
     lastName: row.last_name,
+    location: row.signup_location || '',
     email: row.email,
     isAdmin: row.is_admin,
     createdAt: row.created_at?.toISOString?.() || row.created_at || '',
@@ -116,8 +120,8 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
      UNION ALL
 
      SELECT
-       '' AS geo_city,
-       '' AS geo_region,
+       COALESCE(latest_login.geo_city, '') AS geo_city,
+       COALESCE(latest_login.geo_region, '') AS geo_region,
        u.first_name,
        u.last_name,
        al.created_at,
@@ -125,6 +129,13 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
        COALESCE(al.detail, '') AS detail
      FROM activity_log al
      JOIN dw_user u ON u.login_id = al.login_id
+     LEFT JOIN LATERAL (
+       SELECT lh.geo_city, lh.geo_region
+       FROM login_history lh
+       WHERE lh.login_id = al.login_id AND lh.login_at <= al.created_at
+       ORDER BY lh.login_at DESC
+       LIMIT 1
+     ) latest_login ON true
      WHERE al.created_at >= $1::date AND al.created_at < ($2::date + interval '1 day')
 
      ORDER BY created_at DESC`,

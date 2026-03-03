@@ -24,6 +24,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  if (!visible) return null;
+
   return (
     <Modal
       visible={visible}

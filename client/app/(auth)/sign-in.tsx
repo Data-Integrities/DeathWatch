@@ -8,16 +8,21 @@ import { Button } from '../../src/components/Button';
 import { Checkbox } from '../../src/components/Checkbox';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
+import { BUILD_VERSION } from '../../src/version';
 
 export default function SignInScreen() {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    if (Platform.OS === 'web') {
+      try { return localStorage.getItem('obitnote_email') || ''; } catch { return ''; }
+    }
+    return '';
+  });
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [supportVisible, setSupportVisible] = useState(false);
-
   const isReturning = Platform.OS === 'web' && (() => {
     try { return localStorage.getItem('obitnote_returning') === '1'; } catch { return false; }
   })();
@@ -31,6 +36,15 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       await signIn(email, password, rememberMe);
+      if (Platform.OS === 'web') {
+        try {
+          if (rememberMe) {
+            localStorage.setItem('obitnote_email', email);
+          } else {
+            localStorage.removeItem('obitnote_email');
+          }
+        } catch {}
+      }
       router.replace('/matches');
     } catch (err: any) {
       const isNetworkError = err.message === 'Failed to fetch' || err.message === 'Load failed';
@@ -80,6 +94,7 @@ export default function SignInScreen() {
         autoCapitalize="none"
         autoComplete="email"
         textContentType="emailAddress"
+        returnKeyType="next"
       />
 
       <TextField
@@ -91,6 +106,8 @@ export default function SignInScreen() {
         showPasswordToggle
         autoComplete="password"
         textContentType="password"
+        onSubmitEditing={handleSignIn}
+        returnKeyType="go"
       />
 
       <View>
@@ -139,7 +156,7 @@ export default function SignInScreen() {
       />
 
       <Text style={styles.footer}>
-        Copyright &copy; 2009-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
+        Copyright &copy; 2009-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.  {BUILD_VERSION}
       </Text>
     </ScreenContainer>
   );

@@ -9,6 +9,7 @@ import { Button } from '../../src/components/Button';
 import { StatePicker } from '../../src/components/StatePicker';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
+import { Toast } from '../../src/components/Toast';
 import { colors, fontSize, spacing } from '../../src/theme';
 import type { SearchQuery } from '../../src/types';
 
@@ -27,6 +28,7 @@ export default function EditSearchScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     loadSearch();
@@ -74,7 +76,8 @@ export default function EditSearchScreen() {
         state,
         keyWords: keyWords.trim() || null,
       });
-      router.back();
+      setToast('Saved');
+      setTimeout(() => router.back(), 1400);
     } catch (err: any) {
       setError(err.message || 'Failed to save changes.');
     } finally {
@@ -87,7 +90,7 @@ export default function EditSearchScreen() {
     setSaving(true);
     try {
       await api.delete(`/api/searches/${id}`);
-      router.replace('/searches');
+      router.replace('/matches');
     } catch (err: any) {
       setError(err.message || 'Failed to delete search.');
     } finally {
@@ -119,6 +122,7 @@ export default function EditSearchScreen() {
     <View style={{ flex: 1 }}>
     <AppHeader />
     <ScreenContainer>
+      <Toast message={toast} visible={!!toast} onDone={() => setToast('')} />
       <Text style={styles.title}>Edit Search</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -127,7 +131,7 @@ export default function EditSearchScreen() {
       <TextField label="Last Name" labelWidth={90} value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
       <TextField label="Nickname" labelWidth={90} value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" />
       <TextField label="Middle" labelWidth={90} value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" />
-      <TextField label="Apx Age" labelWidth={90} value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" />
+      <TextField label="Approx Age" labelWidth={90} value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" />
       <TextField label="City" labelWidth={90} value={city} onChangeText={setCity} autoCapitalize="words" />
       <StatePicker value={state} onChange={setState} labelWidth={90} openOnFocus />
       <TextField label="Keywords" labelWidth={90} value={keyWords} onChangeText={setKeyWords} />
@@ -141,7 +145,7 @@ export default function EditSearchScreen() {
       <ConfirmDialog
         visible={deleteConfirm}
         title="Delete Search"
-        body="Are you sure you want to delete this search? This will stop monitoring for this person."
+        body={`Delete the search for ${[nameFirst, nameLast].filter(Boolean).join(' ')}?  This will stop monitoring for this person.`}
         confirmLabel="Delete"
         confirmVariant="danger"
         onConfirm={handleDelete}

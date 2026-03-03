@@ -6,6 +6,7 @@ import { Card } from './Card';
 import type { MatchResult } from '../types';
 
 function formatDate(iso: string): string {
+  if (/^\d{4}$/.test(iso)) return iso;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });

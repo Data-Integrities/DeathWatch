@@ -3,10 +3,10 @@ import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../theme';
-import { Badge } from './Badge';
 import type { MatchResult } from '../types';
 
 function formatDate(iso: string): string {
+  if (/^\d{4}$/.test(iso)) return iso;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
@@ -18,9 +18,12 @@ interface MatchCardProps {
   dismissed?: boolean;
   onRestore?: () => void;
   onDelete?: () => void;
+  onMoreInfo?: () => void;
+  onRight?: () => void;
+  onWrong?: () => void;
 }
 
-export function MatchCard({ result, href, dismissed, onRestore, onDelete }: MatchCardProps) {
+export function MatchCard({ result, href, dismissed, onRestore, onDelete, onMoreInfo, onRight, onWrong }: MatchCardProps) {
   const displayName = result.nameFull || [result.nameFirst, result.nameLast].filter(Boolean).join(' ') || 'Unknown';
   const locationParts = [result.city, result.state].filter(Boolean);
   const location = locationParts.length > 0 ? locationParts.join(', ') : null;
@@ -28,7 +31,7 @@ export function MatchCard({ result, href, dismissed, onRestore, onDelete }: Matc
   const detailParts = [
     result.ageYears ? `Age ${result.ageYears}` : null,
     location,
-    result.dod ? `DOD: ${formatDate(result.dod)}` : null,
+    result.dod ? `Died: ${formatDate(result.dod)}` : null,
   ].filter(Boolean);
 
   const cardContent = (
@@ -44,7 +47,40 @@ export function MatchCard({ result, href, dismissed, onRestore, onDelete }: Matc
       {result.status === 'confirmed' && (
         <Text style={styles.confirmedText}>Confirmed</Text>
       )}
-      {false && !dismissed && !result.isRead && <Badge count={1} />}
+      {!dismissed && (onMoreInfo || onRight || onWrong) && (
+        <View style={styles.actionButtons}>
+          {onMoreInfo && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onMoreInfo(); }}
+              accessibilityRole="button"
+              accessibilityLabel={`More info for ${displayName}`}
+              style={({ pressed }) => [styles.actionBtn, styles.actionBtnInfo, pressed && styles.actionBtnPressed]}
+            >
+              <Text style={[styles.actionBtnText, styles.actionBtnInfoText]}>More{'\n'}Info</Text>
+            </Pressable>
+          )}
+          {onRight && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onRight(); }}
+              accessibilityRole="button"
+              accessibilityLabel={`Right person for ${displayName}`}
+              style={({ pressed }) => [styles.actionBtn, styles.actionBtnRight, pressed && styles.actionBtnPressed]}
+            >
+              <Text style={[styles.actionBtnText, styles.actionBtnRightText]}>Right{'\n'}Person</Text>
+            </Pressable>
+          )}
+          {onWrong && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onWrong(); }}
+              accessibilityRole="button"
+              accessibilityLabel={`Wrong person for ${displayName}`}
+              style={({ pressed }) => [styles.actionBtn, styles.actionBtnWrong, pressed && styles.actionBtnPressed]}
+            >
+              <Text style={[styles.actionBtnText, styles.actionBtnWrongText]}>Wrong{'\n'}Person</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
       {!dismissed && onDelete && (
         <Pressable
           onPress={(e) => { e.stopPropagation(); onDelete(); }}
@@ -52,7 +88,7 @@ export function MatchCard({ result, href, dismissed, onRestore, onDelete }: Matc
           accessibilityLabel={`Delete ${displayName}`}
           style={styles.deleteButton}
         >
-          <FontAwesome name="trash" size={24} color={colors.error} />
+          <FontAwesome name="trash" size={32} color={colors.error} />
         </Pressable>
       )}
       {dismissed && (
@@ -132,6 +168,48 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontWeight: '600',
   },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionBtn: {
+    borderRadius: borderRadius.sm,
+    borderWidth: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnPressed: {
+    opacity: 0.7,
+  },
+  actionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  actionBtnInfo: {
+    borderColor: colors.green,
+    backgroundColor: colors.white,
+  },
+  actionBtnInfoText: {
+    color: colors.green,
+  },
+  actionBtnRight: {
+    borderColor: colors.green,
+    backgroundColor: colors.green,
+  },
+  actionBtnRightText: {
+    color: colors.white,
+  },
+  actionBtnWrong: {
+    borderColor: colors.error,
+    backgroundColor: colors.error,
+  },
+  actionBtnWrongText: {
+    color: colors.white,
+  },
   deleteButton: {
     padding: spacing.xs,
     minWidth: 44,
@@ -142,8 +220,6 @@ const styles = StyleSheet.create({
     marginLeft: -5,
   },
   dismissedCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.textMuted,
   },
   dismissedText: {
     color: colors.textMuted,

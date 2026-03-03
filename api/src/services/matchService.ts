@@ -151,7 +151,7 @@ export async function rejectResult(userId: string, searchId: string, resultId: s
 
   // Mark result as rejected
   await pool.query(
-    "UPDATE user_result SET status = 'rejected', is_read = true WHERE id = $1",
+    "UPDATE user_result SET status = 'rejected', is_read = true, rejected_at = NOW() WHERE id = $1",
     [resultId]
   );
 
@@ -196,7 +196,7 @@ export async function restoreResult(userId: string, searchId: string, resultId: 
 
   // Flip status back to pending
   await pool.query(
-    "UPDATE user_result SET status = 'pending' WHERE id = $1",
+    "UPDATE user_result SET status = 'pending', rejected_at = NULL WHERE id = $1",
     [resultId]
   );
 
@@ -286,4 +286,11 @@ export async function getNotificationBadge(userId: string): Promise<Notification
     matchCntNew: rows[0].match_cnt_new,
     searchesCntWithNew: rows[0].searches_cnt_with_new,
   };
+}
+
+export async function purgeOldRejectedResults(): Promise<number> {
+  const result = await pool.query(
+    "DELETE FROM user_result WHERE status = 'rejected' AND rejected_at < NOW() - INTERVAL '7 days'"
+  );
+  return result.rowCount || 0;
 }

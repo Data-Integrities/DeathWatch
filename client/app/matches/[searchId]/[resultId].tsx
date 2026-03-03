@@ -10,6 +10,7 @@ import { colors, fontSize, spacing, borderRadius, shadows, minTouchTarget } from
 import type { MatchResult } from '../../../src/types';
 
 function formatDate(iso: string): string {
+  if (/^\d{4}$/.test(iso)) return iso;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
@@ -187,16 +188,16 @@ export default function ObitViewerScreen() {
             style={styles.actionButton}
           />
           <Button
-            title="Wrong Person"
-            variant="danger"
-            onPress={() => setConfirmDialog('wrong')}
+            title="Right Person"
+            variant="primary"
+            onPress={() => setConfirmDialog('right')}
             loading={actionLoading}
             style={styles.actionButton}
           />
           <Button
-            title="Right Person"
-            variant="primary"
-            onPress={() => setConfirmDialog('right')}
+            title="Wrong Person"
+            variant="danger"
+            onPress={() => setConfirmDialog('wrong')}
             loading={actionLoading}
             style={styles.actionButton}
           />

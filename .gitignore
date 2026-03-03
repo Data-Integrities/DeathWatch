@@ -26,6 +26,9 @@ web-build/
 *.swp
 *.swo
 
+# GeoLite2 data
+data/
+
 # Scratch/test files
 *.PNG
 *.jpg

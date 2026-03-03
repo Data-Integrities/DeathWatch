@@ -8,7 +8,9 @@ import { Button } from '../../src/components/Button';
 import { TextField } from '../../src/components/TextField';
 import { Card } from '../../src/components/Card';
 import { Checkbox } from '../../src/components/Checkbox';
+import { Toast } from '../../src/components/Toast';
 import { colors, fontSize, spacing } from '../../src/theme';
+import { BUILD_VERSION } from '../../src/version';
 
 export default function SettingsScreen() {
   const { user, signOut, refreshUser } = useAuth();
@@ -27,6 +29,7 @@ export default function SettingsScreen() {
 
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  const [toast, setToast] = useState('');
 
   const handleChangeEmail = async () => {
     setEmailError('');
@@ -42,9 +45,10 @@ export default function SettingsScreen() {
         passwordCurrent: emailPassword,
       });
       await refreshUser();
-      setEmailMessage(res.message || 'Email changed successfully.');
+      setEmailMessage('');
       setNewEmail('');
       setEmailPassword('');
+      setToast('Email changed');
     } catch (err: any) {
       setEmailError(err.message || 'Failed to change email.');
     } finally {
@@ -74,10 +78,11 @@ export default function SettingsScreen() {
         passwordNew: newPassword,
         passwordNewConfirm: confirmPassword,
       });
-      setMessage('Password changed successfully.');
+      setMessage('');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setToast('Password changed');
     } catch (err: any) {
       setError(err.message || 'Failed to change password.');
     } finally {
@@ -100,16 +105,23 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer>
+      <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.backButton} />
+      <Toast message={toast} visible={!!toast} onDone={() => setToast('')} />
       {user?.isAdmin && (
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Admin</Text>
           <Pressable onPress={() => router.push('/admin/activity')} style={styles.adminRow}>
-            <Text style={styles.adminRowText}>User Activity (24h)</Text>
+            <Text style={styles.adminRowText}>User Activity</Text>
             <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
           </Pressable>
           <View style={styles.adminDivider} />
           <Pressable onPress={() => router.push('/admin/users')} style={styles.adminRow}>
             <Text style={styles.adminRowText}>Users</Text>
+            <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+          </Pressable>
+          <View style={styles.adminDivider} />
+          <Pressable onPress={() => router.push('/admin/messages')} style={styles.adminRow}>
+            <Text style={styles.adminRowText}>Messages</Text>
             <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
           </Pressable>
         </Card>
@@ -219,6 +231,11 @@ export default function SettingsScreen() {
         />
       </Card>
 
+      <Card style={styles.section}>
+        <Text style={styles.sectionTitle}>Version</Text>
+        <Text style={styles.versionText}>{BUILD_VERSION}</Text>
+      </Card>
+
       <Button
         title="Sign Out"
         onPress={signOut}
@@ -310,6 +327,15 @@ const styles = StyleSheet.create({
   adminDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
+  },
+  versionText: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    textAlign: 'center',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.md,
   },
   signOut: {
     marginTop: spacing.lg,
