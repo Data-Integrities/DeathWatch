@@ -91,7 +91,7 @@ export async function getUserMessages(loginId: string): Promise<UserMessageRow[]
     [loginId]
   );
 
-  return rows.map(r => ({
+  return rows.map((r: any) => ({
     id: r.id,
     ticketId: r.ticket_id,
     subject: r.subject,
