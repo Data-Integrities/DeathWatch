@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, FlatList, Text, StyleSheet, RefreshControl } from 'react-native';
+import { View, FlatList, Text, StyleSheet, RefreshControl, Platform, Linking } from 'react-native';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { api } from '../../../src/services/api/client';
 import { AppHeader } from '../../../src/components/AppHeader';
@@ -20,12 +20,24 @@ export default function SearchMatchesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
   const [rightPersonId, setRightPersonId] = useState<string | null>(null);
   const [wrongPersonId, setWrongPersonId] = useState<string | null>(null);
+  const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
+  const [investigatedIds, setInvestigatedIds] = useState<Set<string>>(new Set());
 
   const activeResults = useMemo(() => results.filter(r => r.status !== 'rejected'), [results]);
   const dismissedResults = useMemo(() => results.filter(r => r.status === 'rejected'), [results]);
+  const uniqueDomains = useMemo(() => {
+    const domains = new Set(activeResults.map(r => r.sourceDomain).filter(Boolean));
+    return [...domains].map(d => d.charAt(0).toUpperCase() + d.slice(1));
+  }, [activeResults]);
+
+  // Display name from user's search input (not from snippet data)
+  const displayName = search ? [search.nameFirst, search.nameLast].filter(Boolean).join(' ') : '';
+  const nicknameDisplay = search?.nameNickname ? ` "${search.nameNickname}"` : '';
+  const fullDisplayName = search?.nameFirst
+    ? `${search.nameFirst}${search.nameMiddle ? ' ' + search.nameMiddle : ''}${nicknameDisplay} ${search?.nameLast || ''}`
+    : displayName;
 
   const loadResults = useCallback(async () => {
     try {
@@ -38,13 +50,6 @@ export default function SearchMatchesScreen() {
 
       // Mark all as read
       api.post(`/api/matches/${searchId}/mark-read`).catch(() => {});
-
-      // Auto-skip to detail if exactly 1 active result
-      const active = matchRes.results.filter(r => r.status !== 'rejected');
-      if (active.length === 1) {
-        router.replace(`/matches/${searchId}/${active[0].id}` as any);
-        return;
-      }
     } catch (err) {
       console.error('Failed to load results:', err);
     } finally {
@@ -78,7 +83,6 @@ export default function SearchMatchesScreen() {
     setRestoringId(resultId);
     try {
       await api.post(`/api/matches/${searchId}/${resultId}/restore`);
-      // Optimistically update local state
       setResults(prev => prev.map(r =>
         r.id === resultId ? { ...r, status: 'pending' as const } : r
       ));
@@ -89,25 +93,15 @@ export default function SearchMatchesScreen() {
     }
   }, [searchId]);
 
-  const handleDeleteResult = useCallback(async () => {
-    if (!deleteResultId) return;
-    const id = deleteResultId;
-    setDeleteResultId(null);
-    try {
-      await api.delete(`/api/matches/${searchId}/${id}`);
-      setResults(prev => prev.filter(r => r.id !== id));
-    } catch (err) {
-      console.error('Failed to delete result:', err);
-    }
-  }, [searchId, deleteResultId]);
-
   const handleRightPerson = useCallback(async () => {
     if (!rightPersonId) return;
     const id = rightPersonId;
     setRightPersonId(null);
     try {
       await api.post(`/api/matches/${searchId}/${id}/confirm`);
-      router.replace('/matches');
+      setResults(prev => prev.map(r =>
+        r.id === id ? { ...r, status: 'confirmed' as const } : r
+      ));
     } catch (err) {
       console.error('Failed to confirm:', err);
     }
@@ -127,12 +121,33 @@ export default function SearchMatchesScreen() {
     }
   }, [searchId, wrongPersonId]);
 
+  const handleInvestigate = useCallback((result: MatchResult) => {
+    setInvestigatedIds(prev => new Set(prev).add(result.id));
+    const url = `https://${result.sourceDomain}`;
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank', 'noopener');
+    } else {
+      Linking.openURL(url);
+    }
+  }, []);
+
+  const handleDeleteResult = useCallback(async () => {
+    if (!deleteResultId) return;
+    const id = deleteResultId;
+    setDeleteResultId(null);
+    try {
+      await api.delete(`/api/matches/${searchId}/${id}`);
+      setResults(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      console.error('Failed to delete result:', err);
+    }
+  }, [searchId, deleteResultId]);
+
   if (loading) {
     return <LoadingOverlay visible message="Loading results..." />;
   }
 
   if (results.length === 0) {
-    const displayName = search ? [search.nameFirst, search.nameLast].filter(Boolean).join(' ') : '';
     const details: { label: string; value: string }[] = [];
     if (search?.nameNickname) details.push({ label: 'Nickname', value: search.nameNickname });
     if (search?.nameMiddle) details.push({ label: 'Middle', value: search.nameMiddle });
@@ -168,7 +183,7 @@ export default function SearchMatchesScreen() {
         <ConfirmDialog
           visible={deleteConfirm}
           title="Delete Search"
-          body={`Are you sure you want to delete ${displayName}? This will stop monitoring for this person.`}
+          body={`Are you sure you want to delete ${displayName}?  This will stop monitoring for this person.`}
           confirmLabel="Delete"
           confirmVariant="danger"
           onConfirm={handleDelete}
@@ -185,20 +200,32 @@ export default function SearchMatchesScreen() {
         data={activeResults}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>{activeResults.length === 1 ? '1 Obituary' : `${activeResults.length} Obituaries`} found</Text>
-            {search && (
-              <Text style={styles.searchReminder}>
-                {[search.nameFirst, search.nameLast].filter(Boolean).join(' ')}
-                {search.city || search.state ? ` - ${[search.city, search.state].filter(Boolean).join(', ')}` : ''}
-                {search.ageApx ? `, age around ${search.ageApx}` : ''}
-              </Text>
-            )}
+            {/* Your Search card */}
+            <View style={styles.searchCard}>
+              <Text style={styles.searchCardLabel}>Your Search</Text>
+              <Text style={styles.searchCardName}>{fullDisplayName.trim()}</Text>
+              {search?.ageApx != null && (
+                <Text style={styles.searchCardDetail}>Approximately {search.ageApx} years old</Text>
+              )}
+              {(search?.city || search?.state) && (
+                <Text style={styles.searchCardDetail}>
+                  {[search?.city, search?.state].filter(Boolean).join(', ')}
+                </Text>
+              )}
+              {search?.keyWords && (
+                <Text style={styles.searchCardDetail}>Keywords: {search.keyWords}</Text>
+              )}
+            </View>
+
+            <Text style={styles.title}>{activeResults.length === 1 ? '1 Obituary' : `${activeResults.length} Obituaries`} possibly found</Text>
             <View style={styles.headerButtons}>
               <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
               <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
             </View>
             {activeResults.length > 0 && (
-              <Text style={styles.headerHint}>Please choose Right or Wrong Person.</Text>
+              <Text style={styles.headerHint}>
+                {activeResults.length === 1 ? 'An obituary might' : 'Obituaries might'} possibly exist at {activeResults.length === 1 ? 'this site' : 'these sites'}.{'\n'}Tap More Info to search.
+              </Text>
             )}
             {activeResults.length === 0 && (
               <Text style={styles.noResultsText}>No obituaries found today, but we'll search again tomorrow.</Text>
@@ -210,45 +237,50 @@ export default function SearchMatchesScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green} />
         }
-        renderItem={({ item }) => (
-          <MatchCard
-            result={item}
-            href={`/matches/${searchId}/${item.id}`}
-            onMoreInfo={() => router.push(`/matches/${searchId}/${item.id}` as any)}
-            onRight={() => setRightPersonId(item.id)}
-            onWrong={() => setWrongPersonId(item.id)}
-          />
-        )}
-        ListFooterComponent={dismissedResults.length > 0 ? (
-          <View style={styles.dismissedSection}>
-            <Text style={styles.dismissedHeader}>Dismissed Results</Text>
-            <Text style={styles.dismissedSubtext}>
-              These were marked "Wrong Person."  Tap Restore to bring one back.  Dismissed results are removed after seven days.
-            </Text>
-            {dismissedResults.map(item => (
-              <MatchCard
-                key={item.id}
-                result={item}
-                dismissed
-                onRestore={() => handleRestore(item.id)}
-              />
-            ))}
-          </View>
-        ) : null}
-      />
-      <ConfirmDialog
-        visible={!!deleteResultId}
-        title="Delete Obituary"
-        body={`Delete this obituary result for ${(() => { const r = results.find(r => r.id === deleteResultId); return r?.nameFull || [r?.nameFirst, r?.nameLast].filter(Boolean).join(' ') || 'this person'; })()}?  This cannot be undone.`}
-        confirmLabel="Delete"
-        confirmVariant="danger"
-        onConfirm={handleDeleteResult}
-        onCancel={() => setDeleteResultId(null)}
+        renderItem={({ item }) => {
+          const investigated = investigatedIds.has(item.id);
+          return (
+            <MatchCard
+              result={item}
+              onMoreInfo={() => handleInvestigate(item)}
+              onDelete={() => setDeleteResultId(item.id)}
+              onRight={investigated ? () => setRightPersonId(item.id) : undefined}
+              onWrong={investigated ? () => setWrongPersonId(item.id) : undefined}
+            />
+          );
+        }}
+        ListFooterComponent={
+          <>
+            {uniqueDomains.length > 0 && (
+              <View style={styles.disclaimerCard}>
+                <Text style={styles.disclaimerText}>
+                  ObitNOTE is not affiliated with the following {uniqueDomains.length === 1 ? 'company' : 'companies'} in any way: {uniqueDomains.join(', ')}.  ObitNOTE does not guarantee the accuracy of search results.  Use of third-party websites is subject to their own terms and privacy policies.
+                </Text>
+              </View>
+            )}
+            {dismissedResults.length > 0 && (
+              <View style={styles.dismissedSection}>
+                <Text style={styles.dismissedHeader}>Dismissed Results</Text>
+                <Text style={styles.dismissedSubtext}>
+                  These were marked "Wrong Person."  Tap Restore to bring one back.  Dismissed results are removed after seven days.
+                </Text>
+                {dismissedResults.map(item => (
+                  <MatchCard
+                    key={item.id}
+                    result={item}
+                    dismissed
+                    onRestore={() => handleRestore(item.id)}
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        }
       />
       <ConfirmDialog
         visible={!!rightPersonId}
         title="Confirm: Right Person"
-        body={`Confirm this is the right person?  Searching for ${(() => { const r = results.find(r => r.id === rightPersonId); return r?.nameFull || [r?.nameFirst, r?.nameLast].filter(Boolean).join(' ') || 'this person'; })()} will stop.`}
+        body={`Confirm this is the right person?  Searching for ${displayName || 'this person'} will stop.`}
         confirmLabel="Yes, This Is Them"
         confirmVariant="primary"
         onConfirm={handleRightPerson}
@@ -262,6 +294,15 @@ export default function SearchMatchesScreen() {
         confirmVariant="danger"
         onConfirm={handleWrongPerson}
         onCancel={() => setWrongPersonId(null)}
+      />
+      <ConfirmDialog
+        visible={!!deleteResultId}
+        title="Delete Result"
+        body={`Delete this result for ${displayName || 'this person'}?  This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDeleteResult}
+        onCancel={() => setDeleteResultId(null)}
       />
     </View>
   );
@@ -281,17 +322,34 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.md,
   },
+  searchCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  searchCardLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.purple,
+    marginBottom: spacing.sm,
+  },
+  searchCardName: {
+    fontSize: fontSize.xl,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  searchCardDetail: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    marginTop: 2,
+  },
   title: {
     fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: spacing.xs,
-  },
-  searchReminder: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#444444',
-    marginBottom: spacing.sm,
   },
   headerButtons: {
     flexDirection: 'row',
@@ -311,6 +369,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#444444',
     marginTop: spacing.sm,
+  },
+  disclaimerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  disclaimerText: {
+    fontSize: 12,
+    color: '#555555',
+    lineHeight: 17,
   },
   dismissedSection: {
     marginTop: spacing.lg,

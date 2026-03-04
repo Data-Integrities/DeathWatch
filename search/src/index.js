@@ -5,7 +5,6 @@ const { serperProvider } = require('./providers/serper/SerperProvider');
 const { scoreAndRankCandidates } = require('./scoring/criteriaScore');
 const { deduplicateCandidates } = require('./dedupe/dedupe');
 const { exclusionStore } = require('./data/ExclusionStore');
-const { parseFingerprint } = require('./dedupe/fingerprint');
 const { normalizeName } = require('./normalize/name');
 const { getNicknameVariants } = require('./normalize/nicknames');
 const { normalizeCity, normalizeState } = require('./normalize/location');
@@ -176,25 +175,11 @@ async function searchObits(query) {
     logger.info(`Filtered out ${domainBlockedCnt} results from blocked domains`);
   }
 
-  // 4. Filter out excluded candidates
-  // - Fingerprint with DOD: fingerprint match alone excludes (same person, high confidence)
-  // - Fingerprint without DOD ("unknown"): too coarse, require URL match as well
-  // - URL match: always excludes (exact same page)
+  // 4. Filter out excluded candidates (fingerprint-only matching)
+  // Full URLs are no longer stored — fingerprint match alone excludes
   const fingerprintsExcluded = await exclusionStore.getFingerprintsExcluded(normalizedQuery.keySearch);
-  const urlsExcluded = await exclusionStore.getUrlsExcluded(normalizedQuery.keySearch);
   const filtered = domainFiltered.filter(c => {
-    const urlNorm = c.url ? exclusionStore._normalizeUrl(c.url) : null;
-    const urlMatched = urlNorm && urlsExcluded.has(urlNorm);
-
-    // URL match alone always excludes
-    if (urlMatched) return false;
-
-    // Fingerprint match: only exclude if DOD is present (not "unknown")
-    if (c.fingerprint && fingerprintsExcluded.has(c.fingerprint)) {
-      const parsed = parseFingerprint(c.fingerprint);
-      if (parsed.dod !== 'unknown') return false;
-    }
-
+    if (c.fingerprint && fingerprintsExcluded.has(c.fingerprint)) return false;
     return true;
   });
 

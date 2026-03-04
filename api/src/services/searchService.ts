@@ -4,6 +4,10 @@ import type { SearchQuery, SearchQueryCreate, MatchResult } from '../types';
 
 const SEARCH_ENGINE_URL = process.env.SEARCH_ENGINE_URL || 'http://localhost:3000';
 
+function extractDomain(url: string): string {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url || ''; }
+}
+
 function rowToSearch(row: any): SearchQuery {
   return {
     id: row.id,
@@ -32,22 +36,8 @@ function rowToResult(row: any): MatchResult {
   return {
     id: row.id,
     userQueryId: row.user_query_id,
-    ranDt: row.ran_dt?.toISOString() || '',
-    nameFull: row.name_full,
-    nameFirst: row.name_first,
-    nameLast: row.name_last,
-    ageYears: row.age_years,
-    dod: row.dod,
-    dateVisitation: row.date_visitation,
-    dateFuneral: row.date_funeral,
-    city: row.city,
-    state: row.state,
-    source: row.source,
-    url: row.url,
-    snippet: row.snippet,
+    sourceDomain: row.url || '',
     fingerprint: row.fingerprint,
-    typeProvider: row.type_provider,
-    urlImage: row.url_image,
     scoreFinal: row.score_final || 0,
     scoreMax: row.score_max || 0,
     rank: row.rank || 0,
@@ -125,21 +115,25 @@ export async function createSearch(userId: string, data: SearchQueryCreate) {
     const ranDt = new Date();
     for (const r of json.results || []) {
       const resultId = uuidv4();
+      const domain = r.url ? extractDomain(r.url) : null;
       await pool.query(
         `INSERT INTO user_result (
-          id, user_query_id, ran_dt, name_full, name_first, name_last, age_years,
-          dod, date_visitation, date_funeral, city, state, source, url, snippet,
+          id, user_query_id, ran_dt, name_full, name_first, name_middle, name_last, age_years,
+          dob, dod, date_visitation, date_funeral, city, state,
+          pob_city, pob_state, source, url, snippet,
           score, reasons, fingerprint, type_provider, also_found_at,
           scores_criteria, score_final, score_max, criteria_cnt, rank, url_image,
           is_read, status
         ) VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32
         )`,
         [
           resultId, id, ranDt,
-          r.nameFull || null, r.nameFirst || null, r.nameLast || null, r.ageYears || null,
-          r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
-          r.city || null, r.state || null, r.source || null, r.url || null, r.snippet || null,
+          r.nameFull || null, r.nameFirst || null, r.nameMiddle || null, r.nameLast || null, r.ageYears || null,
+          r.dob || null, r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
+          r.city || null, r.state || null,
+          r.pobCity || null, r.pobState || null,
+          r.source || null, domain, r.snippet || null,
           r.score || 0, JSON.stringify(r.reasons || []),
           r.fingerprint || null, r.typeProvider || null,
           r.alsoFoundAt ? JSON.stringify(r.alsoFoundAt) : null,
@@ -153,22 +147,8 @@ export async function createSearch(userId: string, data: SearchQueryCreate) {
       results.push({
         id: resultId,
         userQueryId: id,
-        ranDt: ranDt.toISOString(),
-        nameFull: r.nameFull || null,
-        nameFirst: r.nameFirst || null,
-        nameLast: r.nameLast || null,
-        ageYears: r.ageYears || null,
-        dod: r.dod || null,
-        dateVisitation: r.dateVisitation || null,
-        dateFuneral: r.dateFuneral || null,
-        city: r.city || null,
-        state: r.state || null,
-        source: r.source || null,
-        url: r.url || '',
-        snippet: r.snippet || null,
+        sourceDomain: domain || '',
         fingerprint: r.fingerprint || null,
-        typeProvider: r.typeProvider || null,
-        urlImage: r.urlImage || null,
         scoreFinal: r.scoreFinal || 0,
         scoreMax: r.scoreMax || 0,
         rank: r.rank || 0,
@@ -258,21 +238,25 @@ export async function updateSearch(userId: string, searchId: string, data: Parti
       if (r.fingerprint && existingFingerprints.has(r.fingerprint)) continue;
 
       const resultId = uuidv4();
+      const domain = r.url ? extractDomain(r.url) : null;
       await pool.query(
         `INSERT INTO user_result (
-          id, user_query_id, ran_dt, name_full, name_first, name_last, age_years,
-          dod, date_visitation, date_funeral, city, state, source, url, snippet,
+          id, user_query_id, ran_dt, name_full, name_first, name_middle, name_last, age_years,
+          dob, dod, date_visitation, date_funeral, city, state,
+          pob_city, pob_state, source, url, snippet,
           score, reasons, fingerprint, type_provider, also_found_at,
           scores_criteria, score_final, score_max, criteria_cnt, rank, url_image,
           is_read, status
         ) VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32
         )`,
         [
           resultId, searchId, ranDt,
-          r.nameFull || null, r.nameFirst || null, r.nameLast || null, r.ageYears || null,
-          r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
-          r.city || null, r.state || null, r.source || null, r.url || null, r.snippet || null,
+          r.nameFull || null, r.nameFirst || null, r.nameMiddle || null, r.nameLast || null, r.ageYears || null,
+          r.dob || null, r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
+          r.city || null, r.state || null,
+          r.pobCity || null, r.pobState || null,
+          r.source || null, domain, r.snippet || null,
           r.score || 0, JSON.stringify(r.reasons || []),
           r.fingerprint || null, r.typeProvider || null,
           r.alsoFoundAt ? JSON.stringify(r.alsoFoundAt) : null,

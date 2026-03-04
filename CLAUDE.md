@@ -28,8 +28,8 @@ cd search && npm start
 ## View Names
 - **Home** — `client/app/(tabs)/matches.tsx` — Unified list of all searches via SearchCard; shows match counts, status text, inline edit/delete icons; sorted: obits found → no results → confirmed
 - **Searches (redirect)** — `client/app/(tabs)/searches.tsx` — Redirects to `/matches`
-- **Results View** — `client/app/matches/[searchId]/index.tsx` — Obituary results for a search; auto-skips to detail if exactly 1 active result; inline Right/Wrong Person buttons on MatchCard
-- **Obit View** — `client/app/matches/[searchId]/[resultId].tsx` — Single obituary detail with confirm/reject actions
+- **Results View** — `client/app/matches/[searchId]/index.tsx` — Obituary results for a search; "Your Search" card at top; MatchCard shows domain only; More Info opens domain homepage; Right/Wrong Person buttons appear only after investigating; disclaimer card at bottom
+- **More Info** — `client/app/matches/[searchId]/[resultId].tsx` — Simplified detail: user's search input, domain link, disclaimer (no snippet data, no deep links)
 - **New Search** — `client/app/search/new.tsx` — Compact form with left-side labels
 - **Edit Search** — `client/app/search/[id].tsx` — Edit form with Save/Delete/Cancel row
 - **Help** — `client/app/(tabs)/help.tsx` — Send us a message form
@@ -46,9 +46,19 @@ cd search && npm start
 - ObitNOTE brand text: purple + bold
 - No browser alert/confirm dialogs — use ConfirmDialog component
 - SearchCard: shows match count badges (green for new), status text, magnifying glass / green check icons, edit (32px) + trash (32px) icons with 9px gap
-- MatchCard: inline More Info / Right Person / Wrong Person buttons; More Info = green outline white bg, Right = solid green, Wrong = solid red; "Died:" label (not "DOD:")
+- MatchCard: shows domain name only (no snippet data); buttons: More Info (green outline), Right Person (solid green), Wrong Person (solid red), Delete (trash icon, always right-most); Right/Wrong only visible after user investigates (clicks More Info); 150ms hover tooltip shows full domain name
 - AppHeader: logo (tap → home) + help icon + settings icon only (no text nav links)
 - Build version: `ver YYMMDD-HHmm` from `client/src/version.ts`, shown on sign-in footer and settings page
+
+## Source Compliance (Legal)
+- **Never** fetch or scrape obituary source pages directly
+- **Never** deep-link to specific obituary URLs — only link to source domain homepages
+- **Never** display raw snippet text to users — Serper/Google data is internal-only for scoring
+- `user_result.url` stores root domain only (e.g., `legacy.com`), not full URLs
+- API response (MatchResult) is sanitized: id, userQueryId, sourceDomain, fingerprint, scores, isRead, status — no snippet, no image URL, no service dates
+- Search engine enrichment (page fetching) is disabled globally
+- Exclusion matching uses fingerprint only (no URL matching)
+- New extraction fields stored internally: `dob`, `name_middle`, `pob_city`, `pob_state` (migration 018)
 
 ## Database
 - PostgreSQL on localhost:5432, database: dw

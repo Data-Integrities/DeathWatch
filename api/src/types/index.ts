@@ -64,26 +64,12 @@ export interface SearchQuery extends SearchQueryCreate {
   updatedAt: string;
 }
 
-// Match
+// Match — sanitized response (no snippet-derived data exposed to client)
 export interface MatchResult {
   id: string;
   userQueryId: string;
-  ranDt: string;
-  nameFull: string | null;
-  nameFirst: string | null;
-  nameLast: string | null;
-  ageYears: number | null;
-  dod: string | null;
-  dateVisitation: string | null;
-  dateFuneral: string | null;
-  city: string | null;
-  state: string | null;
-  source: string | null;
-  url: string;
-  snippet: string | null;
+  sourceDomain: string;
   fingerprint: string | null;
-  typeProvider: string | null;
-  urlImage: string | null;
   scoreFinal: number;
   scoreMax: number;
   rank: number;

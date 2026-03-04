@@ -1,15 +1,14 @@
-import React from 'react';
-import { Pressable, View, Text, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { Pressable, View, Text, StyleSheet, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../theme';
 import type { MatchResult } from '../types';
 
-function formatDate(iso: string): string {
-  if (/^\d{4}$/.test(iso)) return iso;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+function formatDomain(domain: string): string {
+  // Capitalize first letter of domain for display
+  if (!domain) return 'Unknown source';
+  return domain.charAt(0).toUpperCase() + domain.slice(1);
 }
 
 interface MatchCardProps {
@@ -17,43 +16,45 @@ interface MatchCardProps {
   href?: string;
   dismissed?: boolean;
   onRestore?: () => void;
-  onDelete?: () => void;
   onMoreInfo?: () => void;
   onRight?: () => void;
   onWrong?: () => void;
+  onDelete?: () => void;
 }
 
-export function MatchCard({ result, href, dismissed, onRestore, onDelete, onMoreInfo, onRight, onWrong }: MatchCardProps) {
-  const displayName = result.nameFull || [result.nameFirst, result.nameLast].filter(Boolean).join(' ') || 'Unknown';
-  const locationParts = [result.city, result.state].filter(Boolean);
-  const location = locationParts.length > 0 ? locationParts.join(', ') : null;
+export function MatchCard({ result, href, dismissed, onRestore, onMoreInfo, onRight, onWrong, onDelete }: MatchCardProps) {
+  const domainLabel = formatDomain(result.sourceDomain);
+  const domainRef = useRef<any>(null);
 
-  const detailParts = [
-    result.ageYears ? `Age ${result.ageYears}` : null,
-    location,
-    result.dod ? `Died: ${formatDate(result.dod)}` : null,
-  ].filter(Boolean);
+  useEffect(() => {
+    if (Platform.OS === 'web' && domainRef.current) {
+      const el = domainRef.current as HTMLElement;
+      let timer: ReturnType<typeof setTimeout>;
+      const show = () => { timer = setTimeout(() => { el.title = result.sourceDomain || ''; }, 150); };
+      const hide = () => { clearTimeout(timer); el.title = ''; };
+      el.addEventListener('mouseenter', show);
+      el.addEventListener('mouseleave', hide);
+      return () => { clearTimeout(timer); el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); };
+    }
+  }, [result.sourceDomain]);
 
   const cardContent = (
     <View style={styles.row}>
       <View style={styles.info}>
-        <Text style={[styles.name, dismissed && styles.dismissedText]} numberOfLines={2}>{displayName}</Text>
-        {detailParts.length > 0 && (
-          <Text style={[styles.detail, dismissed && styles.dismissedText]} numberOfLines={1}>
-            {detailParts.join('  ·  ')}
-          </Text>
-        )}
+        <Text ref={domainRef} style={[styles.domain, dismissed && styles.dismissedText]} numberOfLines={1}>
+          {domainLabel}
+        </Text>
       </View>
       {result.status === 'confirmed' && (
         <Text style={styles.confirmedText}>Confirmed</Text>
       )}
-      {!dismissed && (onMoreInfo || onRight || onWrong) && (
+      {!dismissed && (onMoreInfo || onDelete || onRight || onWrong) && (
         <View style={styles.actionButtons}>
           {onMoreInfo && (
             <Pressable
               onPress={(e) => { e.stopPropagation(); onMoreInfo(); }}
               accessibilityRole="button"
-              accessibilityLabel={`More info for ${displayName}`}
+              accessibilityLabel="More info"
               style={({ pressed }) => [styles.actionBtn, styles.actionBtnInfo, pressed && styles.actionBtnPressed]}
             >
               <Text style={[styles.actionBtnText, styles.actionBtnInfoText]}>More{'\n'}Info</Text>
@@ -63,7 +64,7 @@ export function MatchCard({ result, href, dismissed, onRestore, onDelete, onMore
             <Pressable
               onPress={(e) => { e.stopPropagation(); onRight(); }}
               accessibilityRole="button"
-              accessibilityLabel={`Right person for ${displayName}`}
+              accessibilityLabel="Right person"
               style={({ pressed }) => [styles.actionBtn, styles.actionBtnRight, pressed && styles.actionBtnPressed]}
             >
               <Text style={[styles.actionBtnText, styles.actionBtnRightText]}>Right{'\n'}Person</Text>
@@ -73,29 +74,29 @@ export function MatchCard({ result, href, dismissed, onRestore, onDelete, onMore
             <Pressable
               onPress={(e) => { e.stopPropagation(); onWrong(); }}
               accessibilityRole="button"
-              accessibilityLabel={`Wrong person for ${displayName}`}
+              accessibilityLabel="Wrong person"
               style={({ pressed }) => [styles.actionBtn, styles.actionBtnWrong, pressed && styles.actionBtnPressed]}
             >
               <Text style={[styles.actionBtnText, styles.actionBtnWrongText]}>Wrong{'\n'}Person</Text>
             </Pressable>
           )}
+          {onDelete && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onDelete(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Delete result"
+              style={styles.deleteButton}
+            >
+              <FontAwesome name="trash" size={32} color={colors.error} />
+            </Pressable>
+          )}
         </View>
-      )}
-      {!dismissed && onDelete && (
-        <Pressable
-          onPress={(e) => { e.stopPropagation(); onDelete(); }}
-          accessibilityRole="button"
-          accessibilityLabel={`Delete ${displayName}`}
-          style={styles.deleteButton}
-        >
-          <FontAwesome name="trash" size={32} color={colors.error} />
-        </Pressable>
       )}
       {dismissed && (
         <Pressable
           onPress={onRestore}
           accessibilityRole="button"
-          accessibilityLabel={`Restore ${displayName}`}
+          accessibilityLabel="Restore result"
           style={({ pressed }) => [styles.restoreButton, pressed && styles.restoreButtonPressed]}
         >
           <Text style={styles.restoreButtonText}>Restore</Text>
@@ -114,9 +115,9 @@ export function MatchCard({ result, href, dismissed, onRestore, onDelete, onMore
 
   return (
     <Pressable
-      onPress={() => href && router.push(href as any)}
+      onPress={() => onMoreInfo ? onMoreInfo() : (href && router.push(href as any))}
       accessibilityRole="link"
-      accessibilityLabel={`View obituary for ${displayName}`}
+      accessibilityLabel={`Detection from ${domainLabel}`}
       style={({ pressed }) => [
         styles.card,
         !result.isRead && styles.unread,
@@ -152,14 +153,14 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
   },
-  name: {
+  domain: {
     fontSize: fontSize.base,
     fontWeight: '600',
     color: colors.green,
   },
-  detail: {
+  fingerprint: {
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontFamily: 'monospace',
     color: '#444444',
     marginTop: 2,
   },
@@ -211,13 +212,11 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   deleteButton: {
-    padding: spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    padding: 4,
+    minWidth: 36,
+    minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: -5,
-    marginLeft: -5,
   },
   dismissedCard: {
   },

@@ -2,6 +2,8 @@ const { v4: uuidv4 } = require('uuid');
 const { generateFingerprint } = require('../../dedupe/fingerprint');
 const { extractAgeFromText } = require('../../normalize/age');
 const { extractDodFromText } = require('../../normalize/dod');
+const { extractDobFromText } = require('../../normalize/dob');
+const { extractPobFromText } = require('../../normalize/pob');
 const { extractServiceDates } = require('../../normalize/serviceDates');
 const { getFirstNameVariants, buildOrClause } = require('../../normalize/nameVariants');
 const { extractNameFromTitle, extractNameFromSnippet, extractNameFromUrl, isValidParsedName, isGenericTitle } = require('../../normalize/nameExtract');
@@ -134,6 +136,12 @@ class SerperProvider {
       dod = serviceDates.funeral || serviceDates.visitation || null;
     }
 
+    // Extract date of birth
+    const dob = extractDobFromText(snippet) || extractDobFromText(title) || null;
+
+    // Extract place of birth
+    const pobData = extractPobFromText(snippet) || extractPobFromText(title) || null;
+
     // Extract location from snippet
     const locationInfo = this._extractLocation(combined);
 
@@ -150,9 +158,13 @@ class SerperProvider {
       id: uuidv4(),
       nameFull: nameInfo.nameFull || title.split(' - ')[0].split('|')[0].trim(),
       nameFirst: nameInfo.nameFirst,
+      nameMiddle: nameInfo.nameMiddle || null,
       nameLast: nameInfo.nameLast,
       ageYears: age,
+      dob,
       dod,
+      pobCity: pobData?.city || null,
+      pobState: pobData?.state || null,
       dateVisitation: serviceDates.visitation,
       dateFuneral: serviceDates.funeral,
       city: locationInfo.city,

@@ -148,7 +148,7 @@ export default function HomeScreen() {
 
       {/* Section title */}
       {hasSearches && (
-        <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person' : `${cnt} People`; })()} being monitored  <Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
+        <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person' : `${cnt} People`; })()} being monitored{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
       )}
     </View>
   );

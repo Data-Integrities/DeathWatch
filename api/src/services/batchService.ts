@@ -3,6 +3,10 @@ import { pool } from '../db/pool';
 
 const SEARCH_ENGINE_URL = process.env.SEARCH_ENGINE_URL || 'http://localhost:3000';
 
+function extractDomain(url: string): string {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url || ''; }
+}
+
 export async function runBatch() {
   const ranDt = new Date();
   console.log(`[Batch] Starting batch run at ${ranDt.toISOString()}`);
@@ -66,21 +70,25 @@ export async function runBatch() {
         }
 
         const resultId = uuidv4();
+        const domain = r.url ? extractDomain(r.url) : null;
         await pool.query(
           `INSERT INTO user_result (
-            id, user_query_id, ran_dt, name_full, name_first, name_last, age_years,
-            dod, date_visitation, date_funeral, city, state, source, url, snippet,
+            id, user_query_id, ran_dt, name_full, name_first, name_middle, name_last, age_years,
+            dob, dod, date_visitation, date_funeral, city, state,
+            pob_city, pob_state, source, url, snippet,
             score, reasons, fingerprint, type_provider, also_found_at,
             scores_criteria, score_final, score_max, criteria_cnt, rank, url_image,
             is_read, status, source_type
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33
           )`,
           [
             resultId, q.id, ranDt,
-            r.nameFull || null, r.nameFirst || null, r.nameLast || null, r.ageYears || null,
-            r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
-            r.city || null, r.state || null, r.source || null, r.url || null, r.snippet || null,
+            r.nameFull || null, r.nameFirst || null, r.nameMiddle || null, r.nameLast || null, r.ageYears || null,
+            r.dob || null, r.dod || null, r.dateVisitation || null, r.dateFuneral || null,
+            r.city || null, r.state || null,
+            r.pobCity || null, r.pobState || null,
+            r.source || null, domain, r.snippet || null,
             r.score || 0, JSON.stringify(r.reasons || []),
             r.fingerprint || null, r.typeProvider || null,
             r.alsoFoundAt ? JSON.stringify(r.alsoFoundAt) : null,

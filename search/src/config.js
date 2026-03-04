@@ -30,12 +30,12 @@ const config = {
     }
   },
 
-  // Page enrichment: fetch actual obituary pages for service dates
+  // Page enrichment: disabled — legal compliance, do not fetch source pages
   enrichment: {
-    enabled: process.env.ENRICH_PAGES !== 'false',  // enabled by default
-    maxPerQuery: 1,     // only enrich the best guess (rank 1)
-    concurrency: 3,     // concurrent page fetches
-    timeoutMs: 8000     // per-page fetch timeout
+    enabled: false,
+    maxPerQuery: 1,
+    concurrency: 3,
+    timeoutMs: 8000
   },
 
   // Domains that never contain obituaries — results from these are dropped before scoring

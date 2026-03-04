@@ -117,14 +117,22 @@ function extractNameFromTitle(title) {
   if (parts.length >= 2) {
     const nameFirst = parts[0];
     let nameLast = parts[parts.length - 1];
+    let lastIdx = parts.length - 1;
 
     // If last part is a single letter (middle initial), use second-to-last
     if (nameLast.length === 1 && parts.length > 2) {
       nameLast = parts[parts.length - 2];
+      lastIdx = parts.length - 2;
     }
 
     // Clean up trailing punctuation and possessive 's
     nameLast = nameLast.replace(/'s$/i, '').replace(/[.,;:!?]+$/, '');
+
+    // Extract middle name/initial (parts between first and last)
+    let nameMiddle = null;
+    if (lastIdx > 1) {
+      nameMiddle = parts.slice(1, lastIdx).join(' ');
+    }
 
     // Validate the parsed name
     if (!isValidParsedName(nameFirst, nameLast)) {
@@ -134,6 +142,7 @@ function extractNameFromTitle(title) {
     return {
       nameFull: nameFullWithNicknames,
       nameFirst,
+      nameMiddle,
       nameLast
     };
   }

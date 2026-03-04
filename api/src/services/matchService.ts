@@ -7,22 +7,8 @@ function rowToResult(row: any): MatchResult {
   return {
     id: row.id,
     userQueryId: row.user_query_id,
-    ranDt: row.ran_dt?.toISOString() || '',
-    nameFull: row.name_full,
-    nameFirst: row.name_first,
-    nameLast: row.name_last,
-    ageYears: row.age_years,
-    dod: row.dod,
-    dateVisitation: row.date_visitation,
-    dateFuneral: row.date_funeral,
-    city: row.city,
-    state: row.state,
-    source: row.source,
-    url: row.url,
-    snippet: row.snippet,
+    sourceDomain: row.url || '',
     fingerprint: row.fingerprint,
-    typeProvider: row.type_provider,
-    urlImage: row.url_image,
     scoreFinal: row.score_final || 0,
     scoreMax: row.score_max || 0,
     rank: row.rank || 0,
@@ -155,7 +141,7 @@ export async function rejectResult(userId: string, searchId: string, resultId: s
     [resultId]
   );
 
-  // Add exclusion in search engine
+  // Add exclusion in search engine (fingerprint-only, no URL)
   if (queryRows[0].key_search && result.fingerprint) {
     try {
       await fetch(`${SEARCH_ENGINE_URL}/exclude`, {
@@ -164,7 +150,6 @@ export async function rejectResult(userId: string, searchId: string, resultId: s
         body: JSON.stringify({
           searchKey: queryRows[0].key_search,
           fingerprint: result.fingerprint,
-          url: result.url,
           name: result.name_full,
           reason: reason || 'wrong person',
         }),
