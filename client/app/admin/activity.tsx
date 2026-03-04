@@ -8,6 +8,7 @@ import { colors, spacing } from '../../src/theme';
 
 interface ActivityRow {
   location: string;
+  ip: string;
   name: string;
   lastName: string;
   firstName: string;
@@ -16,7 +17,7 @@ interface ActivityRow {
   detail: string;
 }
 
-type SortKey = 'location' | 'name' | 'dateTime' | 'action' | 'detail';
+type SortKey = 'location' | 'ip' | 'name' | 'dateTime' | 'action' | 'detail';
 type SortDir = 'asc' | 'desc';
 
 function toLocalYMD(d: Date): string {
@@ -50,6 +51,8 @@ function sortRows(rows: ActivityRow[], sortKey: SortKey, sortDir: SortDir): Acti
     switch (sortKey) {
       case 'location':
         return a.location.localeCompare(b.location) * dir;
+      case 'ip':
+        return a.ip.localeCompare(b.ip) * dir;
       case 'name': {
         const last = a.lastName.localeCompare(b.lastName) * dir;
         if (last !== 0) return last;
@@ -113,6 +116,7 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
 
 const COL_WIDTHS = {
   location: 110,
+  ip: 110,
   name: 140,
   dateTime: 120,
   action: 95,
@@ -219,6 +223,7 @@ export default function ActivityScreen() {
             {/* Frozen header row */}
             <View style={styles.headerRow}>
               {headerCell('Location', 'location', COL_WIDTHS.location)}
+              {headerCell('IP', 'ip', COL_WIDTHS.ip)}
               {headerCell('Name', 'name', COL_WIDTHS.name)}
               {headerCell('Date/Time', 'dateTime', COL_WIDTHS.dateTime)}
               {headerCell('Operation', 'action', COL_WIDTHS.action)}
@@ -237,6 +242,7 @@ export default function ActivityScreen() {
               {sorted.map((row, i) => (
                 <View key={i} style={[styles.dataRow, i % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
                   <Text style={[styles.cell, { width: COL_WIDTHS.location }]} numberOfLines={1}>{row.location}</Text>
+                  <Text style={[styles.cell, { width: COL_WIDTHS.ip }]} numberOfLines={1}>{row.ip}</Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.name }]} numberOfLines={1}>{row.name}</Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.dateTime }]} numberOfLines={1}>{formatDateTime(row.dateTime)}</Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.action }]} numberOfLines={1}>{row.action}</Text>
@@ -316,7 +322,7 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
-    maxWidth: 800,
+    maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
   },
@@ -338,7 +344,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: colors.white,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     ...gridFont,
   },
@@ -356,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#faf8fc',
   },
   cell: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textPrimary,
     paddingHorizontal: 4,
     ...gridFont,

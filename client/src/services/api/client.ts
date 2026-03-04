@@ -47,6 +47,8 @@ async function request<T>(
       path !== '/api/auth/register'
     ) {
       onUnauthorized();
+      // Never resolve — signOut will redirect to sign-in and unmount the caller
+      return new Promise<T>(() => {});
     }
     const error = new Error(json.error || 'Request failed') as any;
     error.status = res.status;

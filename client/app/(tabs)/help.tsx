@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Image, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, Image, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
@@ -9,16 +9,67 @@ import { TextField } from '../../src/components/TextField';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 
+interface UserMessage {
+  id: string;
+  ticketId: string;
+  subject: string;
+  body: string;
+  status: string;
+  adminReply: string | null;
+  repliedAt: string | null;
+  replyReadAt: string | null;
+  createdAt: string;
+}
+
+function formatDate(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(2);
+  return `${mm}/${dd}/${yy}`;
+}
+
 export default function HelpScreen() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSentModal, setShowSentModal] = useState(false);
+  const [sentTicketId, setSentTicketId] = useState('');
   const [showSubjectAlert, setShowSubjectAlert] = useState(false);
   const [subjectError, setSubjectError] = useState(false);
+
+  const [messages, setMessages] = useState<UserMessage[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await api.get<{ messages: UserMessage[] }>('/api/messages');
+      setMessages(res.messages);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (user) fetchMessages();
+  }, [user]);
+
+  const handleExpand = async (msg: UserMessage) => {
+    if (expandedId === msg.id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(msg.id);
+    if (msg.status === 'replied' && !msg.replyReadAt) {
+      try {
+        await api.patch(`/api/messages/${msg.id}/read-reply`);
+        setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, replyReadAt: new Date().toISOString() } : m));
+        refreshUser();
+      } catch {}
+    }
+  };
 
   const handleSend = async () => {
     if (!subject.trim()) {
@@ -30,10 +81,12 @@ export default function HelpScreen() {
     setError('');
     setLoading(true);
     try {
-      await api.post('/api/messages', { subject: subject.trim(), body: body.trim() });
+      const result = await api.post<{ id: string; ticketId: string }>('/api/messages', { subject: subject.trim(), body: body.trim() });
       setSubject('');
       setBody('');
+      setSentTicketId(result.ticketId);
       setShowSentModal(true);
+      fetchMessages();
     } catch (err: any) {
       setError(err.message || 'Failed to send message.');
     } finally {
@@ -41,16 +94,18 @@ export default function HelpScreen() {
     }
   };
 
+  const hasUnreadReply = (msg: UserMessage) => msg.status === 'replied' && !msg.replyReadAt;
+
   return (
     <ScreenContainer>
       <ConfirmDialog
         visible={showSentModal}
         title="Message Sent"
-        body="Your message has been sent.  We will respond as soon as possible."
+        body={`Your message has been sent (#${sentTicketId}).  We will respond as soon as possible.`}
         confirmLabel="OK"
         cancelLabel=""
-        onConfirm={() => { setShowSentModal(false); router.back(); }}
-        onCancel={() => { setShowSentModal(false); router.back(); }}
+        onConfirm={() => setShowSentModal(false)}
+        onCancel={() => setShowSentModal(false)}
       />
       <ConfirmDialog
         visible={showSubjectAlert}
@@ -68,10 +123,45 @@ export default function HelpScreen() {
         style={styles.backButton}
       />
 
+      {user && messages.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.heading}>Your Messages</Text>
+          {messages.map(msg => (
+            <View key={msg.id} style={styles.messageItem}>
+              <Pressable onPress={() => handleExpand(msg)} style={styles.messageHeader}>
+                <Text style={[styles.ticketText, hasUnreadReply(msg) && styles.unreadText]}>#{msg.ticketId}</Text>
+                <Text style={[styles.subjectText, hasUnreadReply(msg) && styles.unreadText]} numberOfLines={1}>{msg.subject}</Text>
+                <Text style={styles.dateText}>{formatDate(msg.createdAt)}</Text>
+                {hasUnreadReply(msg) && <View style={styles.unreadDot} />}
+              </Pressable>
+
+              {expandedId === msg.id && (
+                <View style={styles.messageDetail}>
+                  <Text style={styles.detailLabel}>Your message:</Text>
+                  <Text style={styles.detailBody}>{msg.body}</Text>
+
+                  {msg.status === 'replied' && msg.adminReply ? (
+                    <View style={styles.replyBlock}>
+                      <Text style={styles.replyLabel}>Our response:</Text>
+                      <Text style={styles.replyBody}>{msg.adminReply}</Text>
+                      {msg.repliedAt && (
+                        <Text style={styles.replyDate}>{formatDate(msg.repliedAt)}</Text>
+                      )}
+                    </View>
+                  ) : (
+                    <Text style={styles.awaitingText}>Awaiting response</Text>
+                  )}
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
       {user && (
         <View style={styles.card}>
           <Text style={styles.heading}>Send us a message</Text>
-          <Text style={styles.subtitle}>We'll respond by email as soon as possible. <Image source={require('../../assets/smile.jpg')} style={{ width: 20, height: 20, top: 4 }} /></Text>
+          <Text style={styles.subtitle}>We'll respond as soon as possible. <Image source={require('../../assets/smile.jpg')} style={{ width: 20, height: 20, top: 4 }} /></Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -156,5 +246,88 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: 8,
     marginBottom: spacing.md,
+  },
+
+  // Your Messages section
+  messageItem: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  ticketText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  subjectText: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    flex: 1,
+  },
+  dateText: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  unreadText: {
+    fontWeight: '700',
+    color: '#444444',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.green,
+  },
+  messageDetail: {
+    paddingBottom: spacing.sm,
+    paddingLeft: spacing.xs,
+  },
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#444444',
+    marginBottom: 4,
+  },
+  detailBody: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    lineHeight: 22,
+  },
+  replyBlock: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingLeft: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.green,
+    backgroundColor: colors.successLight,
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  replyLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.green,
+    marginBottom: 4,
+  },
+  replyBody: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    lineHeight: 22,
+  },
+  replyDate: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  awaitingText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    marginTop: spacing.sm,
   },
 });

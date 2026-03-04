@@ -6,7 +6,7 @@ import type { UserProfile, LoginResponse } from '../types';
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
-  signIn: (email: string, password: string, remember?: boolean) => Promise<void>;
+  signIn: (email: string, password: string, remember?: boolean) => Promise<UserProfile>;
   signUp: (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => void;
   refreshUser: () => Promise<void>;
@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (Platform.OS === 'web') {
       try { localStorage.setItem('obitnote_returning', '1'); } catch {}
     }
+    return res.user;
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string) => {

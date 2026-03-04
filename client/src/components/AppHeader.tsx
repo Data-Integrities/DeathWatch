@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import { colors, fontSize, spacing, shadows } from '../theme';
 
 const MAIN_WIDTH = 600;
@@ -12,6 +13,9 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ minimal, onHelp }: AppHeaderProps = {}) {
+  const { user } = useAuth();
+  const hasUnread = (user?.unreadReplyCount ?? 0) > 0;
+
   return (
     <View style={styles.headerBar}>
       <View style={styles.barContent}>
@@ -24,7 +28,10 @@ export function AppHeader({ minimal, onHelp }: AppHeaderProps = {}) {
         {!minimal ? (
           <View style={styles.navRow}>
             <Pressable onPress={() => router.replace('/help' as any)} accessibilityRole="link" accessibilityLabel="Help" style={styles.navItem}>
-              <FontAwesome name="question-circle" size={20} color={colors.white} />
+              <View>
+                <FontAwesome name="question-circle" size={20} color={colors.white} />
+                {hasUnread && <View style={styles.badgeDot} />}
+              </View>
             </Pressable>
             <Pressable onPress={() => router.replace('/settings' as any)} accessibilityRole="link" accessibilityLabel="Settings" style={styles.navItem}>
               <Ionicons name="settings-sharp" size={20} color={colors.white} />
@@ -32,7 +39,10 @@ export function AppHeader({ minimal, onHelp }: AppHeaderProps = {}) {
           </View>
         ) : onHelp ? (
           <Pressable onPress={onHelp} accessibilityRole="button" accessibilityLabel="Help" style={styles.navItem}>
-            <FontAwesome name="question-circle" size={20} color={colors.white} />
+            <View>
+              <FontAwesome name="question-circle" size={20} color={colors.white} />
+              {hasUnread && <View style={styles.badgeDot} />}
+            </View>
           </Pressable>
         ) : null}
       </View>
@@ -79,5 +89,16 @@ const styles = StyleSheet.create({
   navItem: {
     minHeight: 44,
     justifyContent: 'center' as const,
+  },
+  badgeDot: {
+    position: 'absolute' as const,
+    top: -2,
+    right: -4,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.green,
+    borderWidth: 1.5,
+    borderColor: colors.brand,
   },
 });

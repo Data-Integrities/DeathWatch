@@ -5,6 +5,7 @@ import { pool } from '../db/pool';
 import type { UserProfile } from '../types';
 import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from './emailService';
 import { lookupGeo } from './geoService';
+import { getUnreadReplyCount } from './messageService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const SALT_ROUNDS = 10;
@@ -13,7 +14,7 @@ function makeToken(userId: string): string {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
 }
 
-function rowToUser(row: any): UserProfile {
+function rowToUser(row: any, unreadReplies = 0): UserProfile {
   return {
     id: row.login_id,
     email: row.email,
@@ -22,6 +23,7 @@ function rowToUser(row: any): UserProfile {
     isAdmin: row.is_admin || false,
     emailVerified: row.email_verified || false,
     skipMatchesInfoCard: row.skip_matches_info_card || false,
+    unreadReplyCount: unreadReplies,
   };
 }
 
@@ -74,16 +76,17 @@ export async function login(email: string, password: string, clientIp?: string) 
     throw Object.assign(new Error('Invalid email or password'), { status: 401 });
   }
 
-  const user = rowToUser(row);
+  const unreadReplies = await getUnreadReplyCount(row.login_id);
+  const user = rowToUser(row, unreadReplies);
   const token = makeToken(user.id);
 
   // Record login history with geo data (non-blocking)
   try {
     const geo = lookupGeo(clientIp);
     pool.query(
-      `INSERT INTO login_history (login_id, geo_city, geo_region, geo_country, geo_lat, geo_lon)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [user.id, geo?.city || null, geo?.region || null, geo?.country || null, geo?.lat || null, geo?.lon || null]
+      `INSERT INTO login_history (login_id, geo_city, geo_region, geo_country, geo_lat, geo_lon, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [user.id, geo?.city || null, geo?.region || null, geo?.country || null, geo?.lat || null, geo?.lon || null, clientIp || null]
     ).catch(err => console.error('[Auth] login_history insert failed:', err.message));
   } catch (err: any) {
     console.error('[Auth] Geo lookup failed:', err.message);
@@ -100,7 +103,8 @@ export async function getMe(userId: string) {
   if (rows.length === 0) {
     throw Object.assign(new Error('User not found'), { status: 404 });
   }
-  return rowToUser(rows[0]);
+  const unreadReplies = await getUnreadReplyCount(userId);
+  return rowToUser(rows[0], unreadReplies);
 }
 
 export async function forgotPassword(email: string) {

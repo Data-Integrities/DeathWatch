@@ -211,7 +211,8 @@ export default function HomeScreen() {
 
       {/* Disclaimer modal */}
       <Modal visible={disclaimerVisible} transparent animationType="fade" onRequestClose={() => setDisclaimerVisible(false)}>
-        <Pressable style={styles.disclaimerOverlay} onPress={() => setDisclaimerVisible(false)}>
+        <View style={styles.disclaimerOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDisclaimerVisible(false)} />
           <View style={styles.disclaimerCard}>
             <Text style={styles.disclaimerText}>
               <Text style={styles.brandText}>ObitNOTE</Text> will check your list every day for new obituaries.
@@ -227,7 +228,7 @@ export default function HomeScreen() {
             </Text>
             <Button title="Close" variant="secondary" onPress={() => setDisclaimerVisible(false)} />
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </View>
   );

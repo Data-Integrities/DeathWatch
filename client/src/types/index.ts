@@ -17,6 +17,7 @@ export interface UserProfile {
   isAdmin: boolean;
   emailVerified: boolean;
   skipMatchesInfoCard: boolean;
+  unreadReplyCount: number;
 }
 
 export interface RegisterRequest {

@@ -19,6 +19,7 @@ interface MessageRow {
   adminReply: string | null;
   repliedAt: string | null;
   createdAt: string;
+  ticketId: string;
 }
 
 type SortKey = 'status' | 'createdAt' | 'name' | 'email' | 'subject';
@@ -58,6 +59,7 @@ function sortRows(rows: MessageRow[], sortKey: SortKey, sortDir: SortDir): Messa
 
 const COL_WIDTHS = {
   status: 55,
+  ticket: 75,
   createdAt: 72,
   name: 100,
   email: 150,
@@ -135,6 +137,7 @@ export default function MessagesScreen() {
     }
   };
 
+  const awaitingCount = rows.filter(r => r.status !== 'replied').length;
   const sorted = sortRows(rows, sortKey, sortDir);
 
   const headerCell = (label: string, key: SortKey, width: number) => (
@@ -163,6 +166,12 @@ export default function MessagesScreen() {
         <Button title="Back" variant="ghost" onPress={() => router.replace('/settings')} style={styles.backButton} />
       </View>
 
+      {awaitingCount > 0 && (
+        <View style={styles.awaitingBanner}>
+          <Text style={styles.awaitingText}>{awaitingCount} {awaitingCount === 1 ? 'message' : 'messages'} awaiting response</Text>
+        </View>
+      )}
+
       {error ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
@@ -174,6 +183,9 @@ export default function MessagesScreen() {
           <View>
             <View style={styles.headerRow}>
               {headerCell('Status', 'status', COL_WIDTHS.status)}
+              <View style={[styles.headerCell, { width: COL_WIDTHS.ticket }]}>
+                <Text style={styles.headerText}>Ticket</Text>
+              </View>
               {headerCell('Date', 'createdAt', COL_WIDTHS.createdAt)}
               {headerCell('Name', 'name', COL_WIDTHS.name)}
               {headerCell('Email', 'email', COL_WIDTHS.email)}
@@ -191,8 +203,9 @@ export default function MessagesScreen() {
               {sorted.map((row, i) => (
                 <View key={row.id}>
                   <Pressable onPress={() => handleExpand(row)}>
-                    <View style={[styles.dataRow, i % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
+                    <View style={[styles.dataRow, i % 2 === 0 ? styles.rowEven : styles.rowOdd, row.status !== 'replied' && styles.rowNeedsResponse]}>
                       <Text style={[styles.cell, { width: COL_WIDTHS.status }, row.status === 'unread' && styles.boldCell]} numberOfLines={1}>{row.status}</Text>
+                      <Text style={[styles.cell, { width: COL_WIDTHS.ticket }]} numberOfLines={1}>#{row.ticketId}</Text>
                       <Text style={[styles.cell, { width: COL_WIDTHS.createdAt }]} numberOfLines={1}>{formatDateTime(row.createdAt)}</Text>
                       <Text style={[styles.cell, { width: COL_WIDTHS.name }]} numberOfLines={1}>{row.firstName} {row.lastName}</Text>
                       <Text style={[styles.cell, { width: COL_WIDTHS.email }]} numberOfLines={1}>{row.email}</Text>
@@ -249,8 +262,8 @@ export default function MessagesScreen() {
   );
 }
 
-const monoFont = Platform.OS === 'web'
-  ? { fontFamily: "'Roboto Condensed', 'Arial Narrow', sans-serif" }
+const gridFont = Platform.OS === 'web'
+  ? { fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }
   : {};
 
 const styles = StyleSheet.create({
@@ -297,6 +310,8 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
+    maxWidth: 1200,
+    width: '100%',
     alignSelf: 'center',
   },
   scrollOuter: {
@@ -317,9 +332,9 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: colors.white,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    ...monoFont,
+    ...gridFont,
   },
   dataRow: {
     flexDirection: 'row',
@@ -335,10 +350,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#faf8fc',
   },
   cell: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textPrimary,
     paddingHorizontal: 4,
-    ...monoFont,
+    ...gridFont,
   },
   boldCell: {
     fontWeight: '700',
@@ -393,6 +408,19 @@ const styles = StyleSheet.create({
   replyButton: {
     marginTop: spacing.sm,
     alignSelf: 'flex-start',
+  },
+  awaitingBanner: {
+    alignSelf: 'center',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  awaitingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.warning,
+  },
+  rowNeedsResponse: {
+    backgroundColor: '#FFF8E1',
   },
   emptyRow: {
     padding: spacing.lg,

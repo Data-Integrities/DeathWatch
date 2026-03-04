@@ -131,7 +131,7 @@ export default function UsersScreen() {
     <Pressable
       onPress={() => handleSort(key)}
       style={[styles.headerCell, { width }, center && styles.centerCell]}
-      {...(Platform.OS === 'web' && title ? { title } as any : {})}
+      ref={(ref: any) => { if (Platform.OS === 'web' && ref && title) ref.title = title; }}
     >
       <Text style={styles.headerText}>{label}</Text>
     </Pressable>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
-    maxWidth: 800,
+    maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
   },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: colors.white,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     ...gridFont,
   },
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#faf8fc',
   },
   cell: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textPrimary,
     paddingHorizontal: 4,
     ...gridFont,

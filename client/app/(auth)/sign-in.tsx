@@ -23,6 +23,7 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [supportVisible, setSupportVisible] = useState(false);
+  const [showReplyModal, setShowReplyModal] = useState(false);
   const isReturning = Platform.OS === 'web' && (() => {
     try { return localStorage.getItem('obitnote_returning') === '1'; } catch { return false; }
   })();
@@ -35,7 +36,7 @@ export default function SignInScreen() {
     }
     setLoading(true);
     try {
-      await signIn(email, password, rememberMe);
+      const loggedInUser = await signIn(email, password, rememberMe);
       if (Platform.OS === 'web') {
         try {
           if (rememberMe) {
@@ -44,6 +45,10 @@ export default function SignInScreen() {
             localStorage.removeItem('obitnote_email');
           }
         } catch {}
+      }
+      if (loggedInUser.unreadReplyCount > 0) {
+        setShowReplyModal(true);
+        return;
       }
       router.replace('/matches');
     } catch (err: any) {
@@ -144,6 +149,16 @@ export default function SignInScreen() {
           <Text style={styles.link}>Contact support</Text>
         </Pressable>
       </View>
+
+      <ConfirmDialog
+        visible={showReplyModal}
+        title="Support Response"
+        body="You have a support response.  Go to Help to read it."
+        confirmLabel="Go to Help"
+        cancelLabel="Later"
+        onConfirm={() => { setShowReplyModal(false); router.replace('/help' as any); }}
+        onCancel={() => { setShowReplyModal(false); router.replace('/matches'); }}
+      />
 
       <ConfirmDialog
         visible={supportVisible}

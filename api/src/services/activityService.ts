@@ -39,6 +39,7 @@ export function logActivity(loginId: string, action: string, detail?: string): v
 
 export interface ActivityRow {
   location: string;
+  ip: string;
   name: string;
   lastName: string;
   firstName: string;
@@ -108,6 +109,7 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
     `SELECT
        COALESCE(lh.geo_city, '') AS geo_city,
        COALESCE(lh.geo_region, '') AS geo_region,
+       COALESCE(lh.ip_address, '') AS ip_address,
        u.first_name,
        u.last_name,
        lh.login_at AS created_at,
@@ -122,6 +124,7 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
      SELECT
        COALESCE(latest_login.geo_city, '') AS geo_city,
        COALESCE(latest_login.geo_region, '') AS geo_region,
+       COALESCE(latest_login.ip_address, '') AS ip_address,
        u.first_name,
        u.last_name,
        al.created_at,
@@ -130,7 +133,7 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
      FROM activity_log al
      JOIN dw_user u ON u.login_id = al.login_id
      LEFT JOIN LATERAL (
-       SELECT lh.geo_city, lh.geo_region
+       SELECT lh.geo_city, lh.geo_region, lh.ip_address
        FROM login_history lh
        WHERE lh.login_id = al.login_id AND lh.login_at <= al.created_at
        ORDER BY lh.login_at DESC
@@ -149,11 +152,12 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
 
     return {
       location: locParts.join(', '),
+      ip: row.ip_address || '',
       name: `${row.first_name} ${row.last_name}`,
       lastName: row.last_name,
       firstName: row.first_name,
       dateTime: row.created_at?.toISOString?.() || row.created_at || '',
-      action: row.action,
+      action: row.action === 'Search' ? 'Home list' : row.action === 'Match' ? 'Obit list' : row.action,
       detail: row.detail || '',
     };
   });

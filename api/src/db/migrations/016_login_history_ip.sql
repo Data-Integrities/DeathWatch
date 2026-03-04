@@ -1,0 +1,1 @@
+ALTER TABLE login_history ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);

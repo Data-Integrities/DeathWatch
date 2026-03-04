@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
@@ -30,6 +30,15 @@ export default function SettingsScreen() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [toast, setToast] = useState('');
+  const [unrepliedCount, setUnrepliedCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.isAdmin) {
+      api.get<{ count: number }>('/api/admin/messages/unreplied-count')
+        .then(res => setUnrepliedCount(res.count))
+        .catch(() => {});
+    }
+  }, [user?.isAdmin]);
 
   const handleChangeEmail = async () => {
     setEmailError('');
@@ -122,13 +131,19 @@ export default function SettingsScreen() {
           <View style={styles.adminDivider} />
           <Pressable onPress={() => router.push('/admin/messages')} style={styles.adminRow}>
             <Text style={styles.adminRowText}>Messages</Text>
-            <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+            <View style={styles.adminRowRight}>
+              {unrepliedCount > 0 && (
+                <Text style={styles.unrepliedBadge}>{unrepliedCount} unreplied</Text>
+              )}
+              <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+            </View>
           </Pressable>
         </Card>
       )}
 
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
+        <Text style={styles.email}>{user?.firstName} {user?.lastName}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         {user && user.emailVerified === false && (
           <View style={styles.verificationRow}>
@@ -315,10 +330,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.sm,
   },
+  adminRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   adminRowText: {
     fontSize: fontSize.base,
     color: colors.purple,
     fontWeight: '600',
+  },
+  unrepliedBadge: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.warning,
   },
   adminRowArrow: {
     fontSize: fontSize.lg,

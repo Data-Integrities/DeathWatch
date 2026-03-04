@@ -148,6 +148,18 @@ export async function sendMatchNotification(toEmail: string) {
   await sendEmail(toEmail, 'ObitNOTE: New obituary found', html);
 }
 
+export async function sendReplyNotification(toEmail: string, firstName: string, ticketId: string) {
+  const html = wrapHtml(`
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Hi ${escapeHtml(firstName)},</h2>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      We've responded to your support message #${escapeHtml(ticketId)}.  Sign in to read it.
+    </p>
+    ${ctaButton(`${APP_URL}/sign-in`, 'Sign In')}
+  `);
+
+  await sendEmail(toEmail, `ObitNOTE: Response to your support message #${ticketId}`, html);
+}
+
 export async function sendSupportReply(toEmail: string, firstName: string, subject: string, originalBody: string, replyText: string) {
   const emailSubject = `Support Response to ${subject}`;
   const html = wrapHtml(`
