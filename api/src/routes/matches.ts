@@ -65,6 +65,15 @@ router.post('/:searchId/:resultId/confirm', async (req: Request, res: Response) 
   }
 });
 
+router.post('/:searchId/:resultId/unconfirm', async (req: Request, res: Response) => {
+  try {
+    const search = await matchService.unconfirmResult(req.userId!, req.params.searchId, req.params.resultId);
+    res.json({ search });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 router.post('/:searchId/:resultId/reject', async (req: Request, res: Response) => {
   try {
     await matchService.rejectResult(req.userId!, req.params.searchId, req.params.resultId, req.body.reason);

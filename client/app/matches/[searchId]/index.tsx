@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, FlatList, Text, StyleSheet, RefreshControl, Platform, Linking } from 'react-native';
+import { View, FlatList, Text, StyleSheet, RefreshControl, Platform, Linking, Pressable } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { api } from '../../../src/services/api/client';
 import { AppHeader } from '../../../src/components/AppHeader';
@@ -23,6 +24,7 @@ export default function SearchMatchesScreen() {
   const [rightPersonId, setRightPersonId] = useState<string | null>(null);
   const [wrongPersonId, setWrongPersonId] = useState<string | null>(null);
   const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
+  const [unconfirmId, setUnconfirmId] = useState<string | null>(null);
   const [investigatedIds, setInvestigatedIds] = useState<Set<string>>(new Set());
 
   const activeResults = useMemo(() => results.filter(r => r.status !== 'rejected'), [results]);
@@ -121,6 +123,17 @@ export default function SearchMatchesScreen() {
     }
   }, [searchId, wrongPersonId]);
 
+  const handleWrongPersonDirect = useCallback(async (id: string) => {
+    try {
+      await api.post(`/api/matches/${searchId}/${id}/reject`);
+      setResults(prev => prev.map(r =>
+        r.id === id ? { ...r, status: 'rejected' as const } : r
+      ));
+    } catch (err) {
+      console.error('Failed to reject:', err);
+    }
+  }, [searchId]);
+
   const handleInvestigate = useCallback((result: MatchResult) => {
     setInvestigatedIds(prev => new Set(prev).add(result.id));
     const url = `https://${result.sourceDomain}`;
@@ -130,6 +143,23 @@ export default function SearchMatchesScreen() {
       Linking.openURL(url);
     }
   }, []);
+
+  const handleUnconfirm = useCallback(async () => {
+    if (!unconfirmId) return;
+    const id = unconfirmId;
+    setUnconfirmId(null);
+    try {
+      await api.post(`/api/matches/${searchId}/${id}/unconfirm`);
+      setResults(prev => prev.map(r =>
+        r.id === id ? { ...r, status: 'pending' as const } : r
+      ));
+      if (search) {
+        setSearch({ ...search, confirmed: false });
+      }
+    } catch (err) {
+      console.error('Failed to unconfirm:', err);
+    }
+  }, [searchId, search, unconfirmId]);
 
   const handleDeleteResult = useCallback(async () => {
     if (!deleteResultId) return;
@@ -202,7 +232,20 @@ export default function SearchMatchesScreen() {
           <View style={styles.header}>
             {/* Your Search card */}
             <View style={styles.searchCard}>
-              <Text style={styles.searchCardLabel}>Your Search</Text>
+              <View style={styles.searchCardHeader}>
+                <Text style={styles.searchCardLabel}>Your Search</Text>
+                {!search?.confirmed && (
+                  <Pressable
+                    onPress={() => router.push(`/search/${searchId}`)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit search"
+                    style={({ pressed }) => [styles.editButton, pressed && { opacity: 0.6 }]}
+                  >
+                    <FontAwesome name="pencil" size={24} color={colors.green} />
+                    <Text style={styles.editButtonLabel}>Edit search</Text>
+                  </Pressable>
+                )}
+              </View>
               <Text style={styles.searchCardName}>{fullDisplayName.trim()}</Text>
               {search?.ageApx != null && (
                 <Text style={styles.searchCardDetail}>Approximately {search.ageApx} years old</Text>
@@ -224,7 +267,7 @@ export default function SearchMatchesScreen() {
             </View>
             {activeResults.length > 0 && (
               <Text style={styles.headerHint}>
-                {activeResults.length === 1 ? 'An obituary might' : 'Obituaries might'} possibly exist at {activeResults.length === 1 ? 'this site' : 'these sites'}.{'\n'}Tap More Info to search.
+                {activeResults.length === 1 ? 'An obituary possibly exists at this site' : 'Obituaries possibly exist at these sites'}.  Tap More Info to search obituary site.
               </Text>
             )}
             {activeResults.length === 0 && (
@@ -243,9 +286,9 @@ export default function SearchMatchesScreen() {
             <MatchCard
               result={item}
               onMoreInfo={() => handleInvestigate(item)}
-              onDelete={() => setDeleteResultId(item.id)}
               onRight={investigated ? () => setRightPersonId(item.id) : undefined}
-              onWrong={investigated ? () => setWrongPersonId(item.id) : undefined}
+              onWrong={investigated ? () => handleWrongPersonDirect(item.id) : undefined}
+              onUnconfirm={item.status === 'confirmed' ? () => setUnconfirmId(item.id) : undefined}
             />
           );
         }}
@@ -254,7 +297,7 @@ export default function SearchMatchesScreen() {
             {uniqueDomains.length > 0 && (
               <View style={styles.disclaimerCard}>
                 <Text style={styles.disclaimerText}>
-                  ObitNOTE is not affiliated with the following {uniqueDomains.length === 1 ? 'company' : 'companies'} in any way: {uniqueDomains.join(', ')}.  ObitNOTE does not guarantee the accuracy of search results.  Use of third-party websites is subject to their own terms and privacy policies.
+                  ObitNOTE is not affiliated with the following {uniqueDomains.length === 1 ? 'company' : 'companies'} : {uniqueDomains.join(', ')}.  ObitNOTE does not guarantee the accuracy of search results.  Use of third-party websites is subject to their own terms and privacy policies.
                 </Text>
               </View>
             )}
@@ -304,6 +347,15 @@ export default function SearchMatchesScreen() {
         onConfirm={handleDeleteResult}
         onCancel={() => setDeleteResultId(null)}
       />
+      <ConfirmDialog
+        visible={!!unconfirmId}
+        title="Undo Confirmation"
+        body={`Searches will continue for ${fullDisplayName.trim()}.`}
+        confirmLabel="Continue Searching"
+        confirmVariant="primary"
+        onConfirm={handleUnconfirm}
+        onCancel={() => setUnconfirmId(null)}
+      />
     </View>
   );
 }
@@ -328,11 +380,27 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.md,
   },
+  searchCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   searchCardLabel: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.purple,
-    marginBottom: spacing.sm,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 4,
+  },
+  editButtonLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.green,
   },
   searchCardName: {
     fontSize: fontSize.xl,

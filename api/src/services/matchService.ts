@@ -115,6 +115,31 @@ export async function confirmResult(userId: string, searchId: string, resultId: 
   return rows[0];
 }
 
+export async function unconfirmResult(userId: string, searchId: string, resultId: string) {
+  const { rows: queryRows } = await pool.query(
+    'SELECT * FROM user_query WHERE id = $1 AND login_id = $2',
+    [searchId, userId]
+  );
+  if (queryRows.length === 0) {
+    throw Object.assign(new Error('Search not found'), { status: 404 });
+  }
+
+  // Revert result status to pending
+  await pool.query(
+    "UPDATE user_result SET status = 'pending' WHERE id = $1 AND user_query_id = $2",
+    [resultId, searchId]
+  );
+
+  // Re-enable the search
+  await pool.query(
+    'UPDATE user_query SET confirmed = false, confirmed_at = NULL, disabled = false, updated_at = NOW() WHERE id = $1',
+    [searchId]
+  );
+
+  const { rows } = await pool.query('SELECT * FROM user_query WHERE id = $1', [searchId]);
+  return rows[0];
+}
+
 export async function rejectResult(userId: string, searchId: string, resultId: string, reason?: string) {
   const { rows: queryRows } = await pool.query(
     'SELECT * FROM user_query WHERE id = $1 AND login_id = $2',

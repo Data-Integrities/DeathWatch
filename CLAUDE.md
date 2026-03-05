@@ -28,7 +28,7 @@ cd search && npm start
 ## View Names
 - **Home** — `client/app/(tabs)/matches.tsx` — Unified list of all searches via SearchCard; shows match counts, status text, inline edit/delete icons; sorted: obits found → no results → confirmed
 - **Searches (redirect)** — `client/app/(tabs)/searches.tsx` — Redirects to `/matches`
-- **Results View** — `client/app/matches/[searchId]/index.tsx` — Obituary results for a search; "Your Search" card at top; MatchCard shows domain only; More Info opens domain homepage; Right/Wrong Person buttons appear only after investigating; disclaimer card at bottom
+- **Results View** — `client/app/matches/[searchId]/index.tsx` — Obituary results for a search; "Your Search" card at top with edit icon (hidden when confirmed); MatchCard shows domain only; More Info opens domain homepage; Right/Wrong Person buttons appear only after investigating; disclaimer card at bottom; unconfirm flow with modal
 - **More Info** — `client/app/matches/[searchId]/[resultId].tsx` — Simplified detail: user's search input, domain link, disclaimer (no snippet data, no deep links)
 - **New Search** — `client/app/search/new.tsx` — Compact form with left-side labels
 - **Edit Search** — `client/app/search/[id].tsx` — Edit form with Save/Delete/Cancel row
@@ -46,7 +46,7 @@ cd search && npm start
 - ObitNOTE brand text: purple + bold
 - No browser alert/confirm dialogs — use ConfirmDialog component
 - SearchCard: shows match count badges (green for new), status text, magnifying glass / green check icons, edit (32px) + trash (32px) icons with 9px gap
-- MatchCard: shows domain name only (no snippet data); buttons: More Info (green outline), Right Person (solid green), Wrong Person (solid red), Delete (trash icon, always right-most); Right/Wrong only visible after user investigates (clicks More Info); 150ms hover tooltip shows full domain name
+- MatchCard: shows domain name only (no snippet data); buttons: More Info (green outline), Right Person (solid green), Wrong Person (solid red); Right/Wrong only visible after user investigates (clicks More Info); Wrong Person acts immediately without confirmation; 150ms hover tooltip shows full domain name; confirmed results show "Confirmed as Right Person" with red "Undo" link
 - AppHeader: logo (tap → home) + help icon + settings icon only (no text nav links)
 - Build version: `ver YYMMDD-HHmm` from `client/src/version.ts`, shown on sign-in footer and settings page
 

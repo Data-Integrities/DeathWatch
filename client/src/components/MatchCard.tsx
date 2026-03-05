@@ -20,9 +20,10 @@ interface MatchCardProps {
   onRight?: () => void;
   onWrong?: () => void;
   onDelete?: () => void;
+  onUnconfirm?: () => void;
 }
 
-export function MatchCard({ result, href, dismissed, onRestore, onMoreInfo, onRight, onWrong, onDelete }: MatchCardProps) {
+export function MatchCard({ result, href, dismissed, onRestore, onMoreInfo, onRight, onWrong, onDelete, onUnconfirm }: MatchCardProps) {
   const domainLabel = formatDomain(result.sourceDomain);
   const domainRef = useRef<any>(null);
 
@@ -46,7 +47,19 @@ export function MatchCard({ result, href, dismissed, onRestore, onMoreInfo, onRi
         </Text>
       </View>
       {result.status === 'confirmed' && (
-        <Text style={styles.confirmedText}>Confirmed</Text>
+        <View style={styles.confirmedRow}>
+          <Text style={styles.confirmedText}>Confirmed as Right Person</Text>
+          {onUnconfirm && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onUnconfirm(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Undo confirmation"
+              style={({ pressed }) => [styles.undoButton, pressed && { opacity: 0.6 }]}
+            >
+              <Text style={styles.undoButtonText}>Undo</Text>
+            </Pressable>
+          )}
+        </View>
       )}
       {!dismissed && (onMoreInfo || onDelete || onRight || onWrong) && (
         <View style={styles.actionButtons}>
@@ -164,9 +177,22 @@ const styles = StyleSheet.create({
     color: '#444444',
     marginTop: 2,
   },
+  confirmedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   confirmedText: {
     fontSize: fontSize.sm,
     color: colors.success,
+    fontWeight: '600',
+  },
+  undoButton: {
+    padding: 4,
+  },
+  undoButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.error,
     fontWeight: '600',
   },
   actionButtons: {
