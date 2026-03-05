@@ -49,9 +49,9 @@ function rowToResult(row: any): MatchResult {
 export async function listSearches(userId: string): Promise<SearchQuery[]> {
   const { rows } = await pool.query(
     `SELECT uq.*,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NULL), 0) AS match_cnt_total,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NOT NULL), 0) AS match_cnt_dismissed
+       COALESCE((SELECT COUNT(DISTINCT url) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new,
+       COALESCE((SELECT COUNT(DISTINCT url) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NULL), 0) AS match_cnt_total,
+       COALESCE((SELECT COUNT(DISTINCT url) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM user_result ur2 WHERE ur2.user_query_id = uq.id AND ur2.url = ur.url AND ur2.rejected_at IS NULL)), 0) AS match_cnt_dismissed
      FROM user_query uq
      WHERE uq.login_id = $1 AND (uq.disabled = false OR uq.confirmed = true)
      ORDER BY uq.name_last, uq.name_first`,
@@ -63,9 +63,9 @@ export async function listSearches(userId: string): Promise<SearchQuery[]> {
 export async function getSearch(userId: string, searchId: string): Promise<SearchQuery> {
   const { rows } = await pool.query(
     `SELECT uq.*,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NULL), 0) AS match_cnt_total,
-       COALESCE((SELECT COUNT(*) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NOT NULL), 0) AS match_cnt_dismissed
+       COALESCE((SELECT COUNT(DISTINCT url) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.is_read = false AND ur.status = 'pending'), 0) AS match_cnt_new,
+       COALESCE((SELECT COUNT(DISTINCT url) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NULL), 0) AS match_cnt_total,
+       COALESCE((SELECT COUNT(DISTINCT url) FROM user_result ur WHERE ur.user_query_id = uq.id AND ur.rejected_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM user_result ur2 WHERE ur2.user_query_id = uq.id AND ur2.url = ur.url AND ur2.rejected_at IS NULL)), 0) AS match_cnt_dismissed
      FROM user_query uq
      WHERE uq.id = $1 AND uq.login_id = $2`,
     [searchId, userId]

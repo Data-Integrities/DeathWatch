@@ -29,6 +29,7 @@ export default function SearchMatchesScreen() {
 
   const activeResults = useMemo(() => results.filter(r => r.status !== 'rejected'), [results]);
   const dismissedResults = useMemo(() => results.filter(r => r.status === 'rejected'), [results]);
+  const confirmedResult = useMemo(() => results.find(r => r.status === 'confirmed'), [results]);
   const uniqueDomains = useMemo(() => {
     const domains = new Set(activeResults.map(r => r.sourceDomain).filter(Boolean));
     return [...domains].map(d => d.charAt(0).toUpperCase() + d.slice(1));
@@ -104,6 +105,9 @@ export default function SearchMatchesScreen() {
       setResults(prev => prev.map(r =>
         r.id === id ? { ...r, status: 'confirmed' as const } : r
       ));
+      if (search) {
+        setSearch({ ...search, confirmed: true });
+      }
     } catch (err) {
       console.error('Failed to confirm:', err);
     }
@@ -248,7 +252,7 @@ export default function SearchMatchesScreen() {
               </View>
               <Text style={styles.searchCardName}>{fullDisplayName.trim()}</Text>
               {search?.ageApx != null && (
-                <Text style={styles.searchCardDetail}>Approximately {search.ageApx} years old</Text>
+                <Text style={styles.searchCardDetail}>Around {search.ageApx} years old</Text>
               )}
               {(search?.city || search?.state) && (
                 <Text style={styles.searchCardDetail}>
@@ -261,11 +265,15 @@ export default function SearchMatchesScreen() {
             </View>
 
             <Text style={styles.title}>{activeResults.length === 1 ? '1 Obituary' : `${activeResults.length} Obituaries`} possibly found</Text>
-            <View style={styles.headerButtons}>
-              <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.headerButton} />
-              <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
-            </View>
-            {activeResults.length > 0 && (
+            <Button title="Home" variant="secondary" onPress={() => router.replace('/matches')} style={styles.headerButton} />
+            {confirmedResult && activeResults.length > 1 && (
+              <View style={styles.confirmedBanner}>
+                <Text style={styles.confirmedBannerText}>
+                  Because you confirmed {displayName}'s obituary from {confirmedResult.sourceDomain ? confirmedResult.sourceDomain.charAt(0).toUpperCase() + confirmedResult.sourceDomain.slice(1) : 'this site'} as the Right Person, daily searches have stopped and you don't need to review the remaining listings, unless you want to.
+                </Text>
+              </View>
+            )}
+            {!confirmedResult && activeResults.length > 0 && (
               <Text style={styles.headerHint}>
                 {activeResults.length === 1 ? 'An obituary possibly exists at this site' : 'Obituaries possibly exist at these sites'}.  Tap More Info to search obituary site.
               </Text>
@@ -431,6 +439,19 @@ const styles = StyleSheet.create({
     color: '#444444',
     marginTop: spacing.md,
     lineHeight: 26,
+  },
+  confirmedBanner: {
+    backgroundColor: '#f0f7f0',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#c8e6c8',
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  confirmedBannerText: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    lineHeight: 20,
   },
   headerHint: {
     fontSize: fontSize.sm,

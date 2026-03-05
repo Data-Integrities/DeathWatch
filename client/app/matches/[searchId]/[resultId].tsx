@@ -91,7 +91,7 @@ export default function MoreInfoScreen() {
           <Text style={styles.sectionLabel}>Your Search</Text>
           <Text style={styles.searchName}>{fullDisplayName.trim()}</Text>
           {search?.ageApx != null && (
-            <Text style={styles.searchDetail}>Approximately {search.ageApx} years old</Text>
+            <Text style={styles.searchDetail}>Around {search.ageApx} years old</Text>
           )}
           {(search?.city || search?.state) && (
             <Text style={styles.searchDetail}>

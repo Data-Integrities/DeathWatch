@@ -24,9 +24,9 @@ export async function getSummaries(userId: string): Promise<MatchSummary[]> {
        uq.name_last,
        uq.name_first,
        uq.confirmed,
-       COUNT(ur.id) FILTER (WHERE ur.status != 'rejected')::int AS match_cnt_total,
-       COUNT(ur.id) FILTER (WHERE ur.is_read = false AND ur.status = 'pending')::int AS match_cnt_new,
-       COUNT(ur.id) FILTER (WHERE ur.status = 'rejected')::int AS match_cnt_dismissed
+       COUNT(DISTINCT ur.url) FILTER (WHERE ur.status != 'rejected')::int AS match_cnt_total,
+       COUNT(DISTINCT ur.url) FILTER (WHERE ur.is_read = false AND ur.status = 'pending')::int AS match_cnt_new,
+       COUNT(DISTINCT ur.url) FILTER (WHERE ur.status = 'rejected')::int AS match_cnt_dismissed
      FROM user_query uq
      LEFT JOIN user_result ur ON ur.user_query_id = uq.id
      WHERE uq.login_id = $1 AND (uq.disabled = false OR uq.confirmed = true)
@@ -58,8 +58,15 @@ export async function getResultsForSearch(userId: string, searchId: string): Pro
   }
 
   const { rows } = await pool.query(
-    `SELECT * FROM user_result
-     WHERE user_query_id = $1
+    `SELECT * FROM (
+       SELECT DISTINCT ON (url) *
+       FROM user_result
+       WHERE user_query_id = $1
+       ORDER BY url,
+         CASE WHEN status = 'rejected' THEN 1 ELSE 0 END,
+         score_final DESC NULLS LAST,
+         rank ASC NULLS LAST
+     ) deduped
      ORDER BY
        CASE WHEN status = 'rejected' THEN 1 ELSE 0 END,
        score_final DESC NULLS LAST,
@@ -284,7 +291,7 @@ export async function markRead(userId: string, searchId: string): Promise<number
 export async function getNotificationBadge(userId: string): Promise<NotificationBadge> {
   const { rows } = await pool.query(
     `SELECT
-       COALESCE(SUM(CASE WHEN ur.is_read = false AND ur.status = 'pending' THEN 1 ELSE 0 END), 0)::int AS match_cnt_new,
+       COALESCE((SELECT COUNT(DISTINCT ur2.url) FROM user_result ur2 JOIN user_query uq2 ON ur2.user_query_id = uq2.id WHERE uq2.login_id = $1 AND (uq2.disabled = false OR uq2.confirmed = true) AND ur2.is_read = false AND ur2.status = 'pending'), 0)::int AS match_cnt_new,
        COUNT(DISTINCT CASE WHEN ur.is_read = false AND ur.status = 'pending' THEN uq.id END)::int AS searches_cnt_with_new
      FROM user_query uq
      LEFT JOIN user_result ur ON ur.user_query_id = uq.id
