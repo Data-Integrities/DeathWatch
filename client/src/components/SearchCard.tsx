@@ -56,10 +56,10 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
             </View>
           ) : search.matchCntNew > 0 ? (
             <View style={styles.matchBadge}>
-              <Text style={styles.matchBadgeText}>{search.matchCntNew} new</Text>
+              <Text style={styles.matchBadgeText}>Possible match found</Text>
             </View>
           ) : search.matchCntTotal > 0 ? (
-            <Text style={styles.matchSubdued}>{search.matchCntTotal} obituaries found.  <Text style={styles.matchLink}>Please open.</Text>  Performing daily searches.</Text>
+            <Text style={styles.matchSubdued}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text>  Performing daily searches.</Text>
           ) : (
             <Text style={styles.matchSearching}>No obituaries found.  Performing daily searches.</Text>
           )}

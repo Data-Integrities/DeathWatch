@@ -72,6 +72,33 @@ router.patch('/:id', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/:id/confirm', async (req: Request, res: Response) => {
+  try {
+    const search = await searchService.confirmSearch(req.userId!, req.params.id);
+    res.json({ search });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/unconfirm', async (req: Request, res: Response) => {
+  try {
+    const search = await searchService.unconfirmSearch(req.userId!, req.params.id);
+    res.json({ search });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/reject-all', async (req: Request, res: Response) => {
+  try {
+    await searchService.rejectAllResults(req.userId!, req.params.id);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const search = await searchService.getSearch(req.userId!, req.params.id);

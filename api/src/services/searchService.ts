@@ -274,6 +274,92 @@ export async function updateSearch(userId: string, searchId: string, data: Parti
   return { search: rowToSearch({ ...updated, match_cnt_new: 0, match_cnt_total: 0, match_cnt_dismissed: 0 }) };
 }
 
+export async function confirmSearch(userId: string, searchId: string): Promise<SearchQuery> {
+  const { rows } = await pool.query(
+    'SELECT * FROM user_query WHERE id = $1 AND login_id = $2',
+    [searchId, userId]
+  );
+  if (rows.length === 0) {
+    throw Object.assign(new Error('Search not found'), { status: 404 });
+  }
+
+  await pool.query(
+    'UPDATE user_query SET confirmed = true, confirmed_at = NOW(), disabled = true, updated_at = NOW() WHERE id = $1',
+    [searchId]
+  );
+
+  // Mark all pending results as read
+  await pool.query(
+    "UPDATE user_result SET is_read = true WHERE user_query_id = $1 AND is_read = false",
+    [searchId]
+  );
+
+  return getSearch(userId, searchId);
+}
+
+export async function unconfirmSearch(userId: string, searchId: string): Promise<SearchQuery> {
+  const { rows } = await pool.query(
+    'SELECT * FROM user_query WHERE id = $1 AND login_id = $2',
+    [searchId, userId]
+  );
+  if (rows.length === 0) {
+    throw Object.assign(new Error('Search not found'), { status: 404 });
+  }
+
+  await pool.query(
+    'UPDATE user_query SET confirmed = false, confirmed_at = NULL, disabled = false, updated_at = NOW() WHERE id = $1',
+    [searchId]
+  );
+
+  return getSearch(userId, searchId);
+}
+
+export async function rejectAllResults(userId: string, searchId: string): Promise<void> {
+  const { rows } = await pool.query(
+    'SELECT * FROM user_query WHERE id = $1 AND login_id = $2',
+    [searchId, userId]
+  );
+  if (rows.length === 0) {
+    throw Object.assign(new Error('Search not found'), { status: 404 });
+  }
+
+  const searchKey = rows[0].key_search;
+
+  // Get all pending results for exclusion
+  const { rows: pendingResults } = await pool.query(
+    "SELECT * FROM user_result WHERE user_query_id = $1 AND status = 'pending'",
+    [searchId]
+  );
+
+  // Reject all pending results
+  await pool.query(
+    "UPDATE user_result SET status = 'rejected', is_read = true, rejected_at = NOW() WHERE user_query_id = $1 AND status = 'pending'",
+    [searchId]
+  );
+
+  // Add exclusions in search engine for each rejected result
+  if (searchKey) {
+    for (const result of pendingResults) {
+      if (result.fingerprint) {
+        try {
+          await fetch(`${SEARCH_ENGINE_URL}/exclude`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              searchKey,
+              fingerprint: result.fingerprint,
+              name: result.name_full,
+              reason: 'wrong person (all rejected)',
+            }),
+          });
+        } catch (err) {
+          console.error('Failed to add exclusion to search engine:', err);
+        }
+      }
+    }
+  }
+}
+
 export async function deleteSearch(userId: string, searchId: string) {
   await getSearch(userId, searchId); // verify ownership
   await pool.query(
