@@ -55,11 +55,13 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
               <Text style={styles.confirmedText}>You marked this as Right Person  <Text style={styles.confirmedStopped}>Daily searches stopped.</Text></Text>
             </View>
           ) : search.matchCntNew > 0 ? (
-            <View style={styles.matchBadge}>
-              <Text style={styles.matchBadgeText}>Possible match found</Text>
+            <View style={styles.matchBadgeHighlight}>
+              <Text style={styles.matchBadgeHighlightText}>Possible match found</Text>
             </View>
           ) : search.matchCntTotal > 0 ? (
-            <Text style={styles.matchSubdued}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text>  Performing daily searches.</Text>
+            <View style={styles.matchBadgeHighlight}>
+              <Text style={styles.matchBadgeHighlightText}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text></Text>
+            </View>
           ) : (
             <Text style={styles.matchSearching}>No obituaries found.  Performing daily searches.</Text>
           )}
@@ -170,18 +172,18 @@ const styles = StyleSheet.create({
     color: '#444444',
     fontWeight: '600',
   },
-  matchBadge: {
-    backgroundColor: colors.green,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+  matchBadgeHighlight: {
+    backgroundColor: '#FFFF00',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     alignSelf: 'flex-start',
     marginTop: spacing.sm,
     marginLeft: 22,
   },
-  matchBadgeText: {
+  matchBadgeHighlightText: {
     fontSize: fontSize.sm,
-    color: colors.white,
+    color: '#444444',
     fontWeight: '700',
   },
   matchSubdued: {
