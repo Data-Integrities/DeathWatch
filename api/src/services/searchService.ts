@@ -77,6 +77,15 @@ export async function getSearch(userId: string, searchId: string): Promise<Searc
 }
 
 export async function createSearch(userId: string, data: SearchQueryCreate) {
+  // Rate limit: 16 seconds between search creations per user
+  const { rows: recent } = await pool.query(
+    "SELECT 1 FROM user_query WHERE login_id = $1 AND created_at > NOW() - INTERVAL '16 seconds' LIMIT 1",
+    [userId]
+  );
+  if (recent.length > 0) {
+    throw Object.assign(new Error('Please wait a few seconds before creating another search.'), { status: 429 });
+  }
+
   const id = uuidv4();
 
   // Insert the user_query
@@ -166,6 +175,15 @@ export async function createSearch(userId: string, data: SearchQueryCreate) {
 }
 
 export async function updateSearch(userId: string, searchId: string, data: Partial<SearchQueryCreate>) {
+  // Rate limit: 16 seconds between search edits per user
+  const { rows: recent } = await pool.query(
+    "SELECT 1 FROM user_query WHERE login_id = $1 AND updated_at > NOW() - INTERVAL '16 seconds' LIMIT 1",
+    [userId]
+  );
+  if (recent.length > 0) {
+    throw Object.assign(new Error('Please wait a few seconds before editing another search.'), { status: 429 });
+  }
+
   // Verify ownership
   const existing = await getSearch(userId, searchId);
   if (existing.confirmed) {

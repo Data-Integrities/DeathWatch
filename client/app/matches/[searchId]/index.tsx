@@ -229,22 +229,6 @@ export default function SearchMatchesScreen() {
         ) : (
           /* Search Google card */
           <View style={styles.googleCard}>
-            <Text style={styles.googleCardLabel}>
-              An obituary search match may have been found.
-            </Text>
-            <Text style={styles.googleCardHint}>
-              Tap Search Google, review results, then return here to say Right or Wrong Person.
-            </Text>
-            <Pressable
-              onPress={handleSearchGoogle}
-              accessibilityRole="button"
-              accessibilityLabel="Search Google"
-              style={({ pressed }) => [styles.googleButton, pressed && styles.googleButtonPressed]}
-            >
-              <FontAwesome name="search" size={16} color={colors.white} style={{ marginRight: 8 }} />
-              <Text style={styles.googleButtonText}>Search Google</Text>
-            </Pressable>
-
             {buttonsEnabled && (
               <View style={styles.verdictSection}>
                 <Text style={styles.verdictLabel}>Did you find the right person?</Text>
@@ -252,21 +236,55 @@ export default function SearchMatchesScreen() {
                   <Pressable
                     onPress={() => setRightPersonConfirm(true)}
                     accessibilityRole="button"
-                    accessibilityLabel="Right person"
+                    accessibilityLabel="Yes"
                     style={({ pressed }) => [styles.verdictBtn, styles.verdictBtnRight, pressed && { opacity: 0.7 }]}
                   >
-                    <Text style={styles.verdictBtnRightText}>Right Person</Text>
+                    <Text style={styles.verdictBtnRightText}>Yes</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => setWrongPersonConfirm(true)}
                     accessibilityRole="button"
-                    accessibilityLabel="Wrong person"
+                    accessibilityLabel="No"
                     style={({ pressed }) => [styles.verdictBtn, styles.verdictBtnWrong, pressed && { opacity: 0.7 }]}
                   >
-                    <Text style={styles.verdictBtnWrongText}>Wrong Person</Text>
+                    <Text style={styles.verdictBtnWrongText}>No</Text>
                   </Pressable>
                 </View>
               </View>
+            )}
+            {buttonsEnabled ? (
+              <>
+                <Text style={styles.googleCardContinue}>
+                  We will search again tomorrow and every day and notify you of any new results.
+                </Text>
+                <Pressable
+                  onPress={handleSearchGoogle}
+                  accessibilityRole="button"
+                  accessibilityLabel="Search Google again now"
+                  style={({ pressed }) => [styles.googleButton, pressed && styles.googleButtonPressed]}
+                >
+                  <FontAwesome name="search" size={16} color={colors.white} style={{ marginRight: 8 }} />
+                  <Text style={styles.googleButtonText}>Search Google again now</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.googleCardLabel}>
+                  An obituary search match may have been found.
+                </Text>
+                <Text style={styles.googleCardHint}>
+                  Tap Search Google, review results, then return here to say Right or Wrong Person was found.
+                </Text>
+                <Pressable
+                  onPress={handleSearchGoogle}
+                  accessibilityRole="button"
+                  accessibilityLabel="Search Google"
+                  style={({ pressed }) => [styles.googleButton, pressed && styles.googleButtonPressed]}
+                >
+                  <FontAwesome name="search" size={16} color={colors.white} style={{ marginRight: 8 }} />
+                  <Text style={styles.googleButtonText}>Search Google</Text>
+                </Pressable>
+              </>
             )}
           </View>
         )}
@@ -380,6 +398,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     ...shadows.card,
   },
+  googleCardContinue: {
+    fontSize: 17,
+    color: '#444444',
+    marginBottom: spacing.md,
+    lineHeight: 22,
+  },
   googleCardLabel: {
     fontSize: fontSize.base,
     fontWeight: '700',
@@ -406,18 +430,18 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   googleButtonText: {
-    fontSize: fontSize.base,
+    fontSize: fontSize.sm,
     fontWeight: '700',
     color: colors.white,
   },
   verdictSection: {
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   verdictLabel: {
-    fontSize: fontSize.sm,
+    fontSize: 17,
     fontWeight: '700',
     color: '#444444',
     marginBottom: spacing.sm,
@@ -444,7 +468,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
   verdictBtnRightText: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.base,
     fontWeight: '700',
     color: colors.white,
   },
@@ -453,7 +477,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.error,
   },
   verdictBtnWrongText: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.base,
     fontWeight: '700',
     color: colors.white,
   },
