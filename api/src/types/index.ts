@@ -19,6 +19,9 @@ export interface UserProfile {
   skipMatchesInfoCard: boolean;
   unreadReplyCount: number;
   unreadTicketIds: string[];
+  trialSearchesUsed: number;
+  trialSearchesMax: number;
+  subscriptionActive: boolean;
 }
 
 export interface RegisterRequest {

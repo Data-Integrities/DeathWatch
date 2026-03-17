@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
+import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 import { colors, fontSize, spacing, borderRadius, minTouchTarget } from '../theme';
 
 type ButtonVariant = 'primary' | 'primaryLight' | 'secondary' | 'secondaryPurple' | 'danger' | 'ghost';
@@ -11,6 +11,7 @@ interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   style?: ViewStyle;
+  textStyle?: TextStyle;
   accessibilityLabel?: string;
 }
 
@@ -23,7 +24,7 @@ const variantStyles: Record<ButtonVariant, { bg: string; text: string; border?: 
   ghost: { bg: 'transparent', text: colors.green },
 };
 
-export function Button({ title, onPress, variant = 'primary', disabled, loading, style, accessibilityLabel }: ButtonProps) {
+export function Button({ title, onPress, variant = 'primary', disabled, loading, style, textStyle, accessibilityLabel }: ButtonProps) {
   const v = variantStyles[variant];
   const isDisabled = disabled || loading;
 
@@ -46,7 +47,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
       {loading ? (
         <ActivityIndicator color={v.text} size="small" />
       ) : (
-        <Text style={[styles.text, { color: v.text }]}>{title}</Text>
+        <Text style={[styles.text, { color: v.text }, textStyle]}>{title}</Text>
       )}
     </Pressable>
   );

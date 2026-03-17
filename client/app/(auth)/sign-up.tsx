@@ -92,7 +92,7 @@ export default function SignUpScreen() {
             <Button
               title="Continue to ObitNOTE"
               variant="primary"
-              onPress={() => router.replace('/matches')}
+              onPress={() => router.replace('/welcome')}
               style={styles.continueButton}
             />
           </View>

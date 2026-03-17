@@ -63,6 +63,10 @@ export default function EditSearchScreen() {
       setError('Either first name or nickname is required.');
       return;
     }
+    if (!ageApx.trim()) {
+      setError('Approximate age is required.');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -131,7 +135,7 @@ export default function EditSearchScreen() {
       <TextField label="Last Name" labelWidth={90} value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
       <TextField label="Nickname" labelWidth={90} value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" />
       <TextField label="Middle" labelWidth={90} value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" />
-      <TextField label="Approx Age" labelWidth={90} value={ageApx} onChangeText={setAgeApx} keyboardType="numeric" />
+      <TextField label="Approx Age" labelWidth={90} value={ageApx} onChangeText={v => setAgeApx(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" />
       <TextField label="City" labelWidth={90} value={city} onChangeText={setCity} autoCapitalize="words" />
       <StatePicker value={state} onChange={setState} city={city} onCityChange={setCity} labelWidth={90} openOnFocus />
       <TextField label="Keywords" labelWidth={90} value={keyWords} onChangeText={setKeyWords} />

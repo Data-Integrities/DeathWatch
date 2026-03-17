@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
 import { AppHeader } from '../../src/components/AppHeader';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
@@ -12,6 +13,14 @@ import { colors, fontSize, spacing } from '../../src/theme';
 import type { SearchQueryCreate, SearchQuery, MatchResult } from '../../src/types';
 
 export default function NewSearchScreen() {
+  const { user } = useAuth();
+
+  // Redirect non-subscribers to welcome page
+  useEffect(() => {
+    if (user && !user.subscriptionActive) {
+      router.replace('/welcome');
+    }
+  }, [user]);
   const [nameLast, setNameLast] = useState('');
   const [nameFirst, setNameFirst] = useState('');
   const [nameNickname, setNameNickname] = useState('');
@@ -32,6 +41,10 @@ export default function NewSearchScreen() {
     }
     if (!nameFirst.trim() && !nameNickname.trim()) {
       setError('Either first name or nickname is required.');
+      return;
+    }
+    if (!ageApx.trim()) {
+      setError('Approximate age is required.');
       return;
     }
 
@@ -113,9 +126,9 @@ export default function NewSearchScreen() {
         label="Approx Age"
         labelWidth={90}
         value={ageApx}
-        onChangeText={setAgeApx}
+        onChangeText={v => setAgeApx(v.replace(/[^0-9]/g, ''))}
         keyboardType="numeric"
-        placeholder="Best guess of current age"
+        placeholder="Best guess of age today"
       />
 
       <TextField

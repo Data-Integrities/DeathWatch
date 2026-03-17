@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Platform, Pressable } from 'react-native';
+import { View, Text, Image, StyleSheet, Platform, Pressable, Modal } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
@@ -23,6 +23,7 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [supportVisible, setSupportVisible] = useState(false);
+  const [tryFreeVisible, setTryFreeVisible] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [unreadTicketId, setUnreadTicketId] = useState('');
   const isReturning = Platform.OS === 'web' && (() => {
@@ -73,19 +74,20 @@ export default function SignInScreen() {
         </View>
       </View>
 
-      {!isReturning && (
+      {/* TODO: restore !isReturning check */}
+      {(
         <View style={styles.introCard}>
           <Text style={styles.introText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary notification service</Text>.
+            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
           </Text>
           <Text style={styles.introText}>
-            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>alert you</Text> later when an obituary for that person is published in the US, Canada, the UK, Australia, and New Zealand.
+            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>send you a text and email</Text> later when an obituary for that person is published in the US, Canada, the UK, Australia, and New Zealand.
           </Text>
           <Text style={styles.introText}>
             <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
           </Text>
           <Text style={[styles.introText, { marginBottom: 0 }]}>
-            To begin, tap <Text style={styles.boldText}>Create an Account</Text> (or <Text style={styles.boldText}>Sign In</Text>).
+            To begin, tap <Pressable onPress={() => setTryFreeVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>Create account and try for free</Text></Pressable>.
           </Text>
         </View>
       )}
@@ -136,7 +138,7 @@ export default function SignInScreen() {
       <Text style={styles.orText}>OR</Text>
 
       <Button
-        title="Create an Account"
+        title="Create account and try for free"
         variant="secondary"
         onPress={() => router.push('/sign-up')}
         style={styles.createAccount}
@@ -173,6 +175,25 @@ export default function SignInScreen() {
         onConfirm={() => setSupportVisible(false)}
         onCancel={() => setSupportVisible(false)}
       />
+
+      <Modal visible={tryFreeVisible} transparent animationType="fade" onRequestClose={() => setTryFreeVisible(false)}>
+        <View style={styles.tryFreeOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setTryFreeVisible(false)} />
+          <View style={styles.tryFreeCard}>
+            <Text style={styles.tryFreeTitle}>Try for free</Text>
+            <Text style={styles.tryFreeBody}>
+              When you create an account, you get 3 free trial searches.
+            </Text>
+            <Text style={styles.tryFreeBody}>
+              <Text style={styles.tryFreeHighlight}>For the trial</Text>, enter someone who has <Text style={styles.tryFreeHighlight}>already passed away</Text>.  <Text style={styles.brandText}>ObitNOTE</Text> will search for their obituary instantly so you can see how it works.
+            </Text>
+            <Text style={[styles.tryFreeBody, { marginBottom: spacing.md }]}>
+              <Text style={styles.tryFreeHighlight}>After subscribing</Text>, enter people who are <Text style={styles.tryFreeHighlight}>still living</Text>.  <Text style={styles.brandText}>ObitNOTE</Text> will search for them every day and notify you when an obituary is found.
+            </Text>
+            <Button title="Close" variant="secondary" onPress={() => setTryFreeVisible(false)} />
+          </View>
+        </View>
+      </Modal>
 
       <Text style={styles.footer}>
         Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.  {BUILD_VERSION}
@@ -265,6 +286,47 @@ const styles = StyleSheet.create({
   },
   linkSpacer: {
     fontSize: fontSize.base,
+  },
+  tryFreeLinkWrap: {
+    display: 'inline' as any,
+  },
+  tryFreeLink: {
+    fontWeight: '700',
+    color: colors.green,
+    fontSize: fontSize.base,
+    lineHeight: 26,
+    textDecorationLine: 'underline' as const,
+  },
+  tryFreeOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  tryFreeCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    maxWidth: 400,
+    width: '100%',
+    ...shadows.modal,
+  },
+  tryFreeTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: '#444444',
+    marginBottom: spacing.md,
+  },
+  tryFreeBody: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    lineHeight: 26,
+    marginBottom: spacing.md,
+  },
+  tryFreeHighlight: {
+    backgroundColor: '#FFFF00',
+    fontWeight: '700',
   },
   footer: {
     marginTop: 'auto' as any,

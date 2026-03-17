@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import * as searchService from '../services/searchService';
 import { logActivity, buildFingerprint } from '../services/activityService';
+import { pool } from '../db/pool';
 
 const router = Router();
 router.use(authMiddleware);
@@ -19,7 +20,7 @@ const searchCreateSchema = z.object({
   nameFirst: z.string().nullable().default(null),
   nameNickname: z.string().nullable().default(null),
   nameMiddle: z.string().nullable().default(null),
-  ageApx: z.number().int().min(0).max(150).nullable().default(null),
+  ageApx: z.number().int().min(0, 'Approximate age is required').max(150),
   city: z.string().nullable().default(null),
   state: z.string().length(2).refine(s => US_STATES.includes(s.toUpperCase()), 'Invalid state code').nullable().default(null),
   keyWords: z.string().nullable().default(null),
@@ -39,6 +40,16 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
+    // Subscription gate: only subscribers can create monitored searches
+    const { rows: userRows } = await pool.query(
+      'SELECT subscription_active FROM dw_user WHERE login_id = $1',
+      [req.userId!]
+    );
+    if (userRows.length > 0 && !userRows[0].subscription_active) {
+      res.status(403).json({ error: 'Subscription required to create monitored searches.' });
+      return;
+    }
+
     const data = searchCreateSchema.parse(req.body);
     const result = await searchService.createSearch(req.userId!, data);
     logActivity(req.userId!, 'New Search', buildFingerprint(data));

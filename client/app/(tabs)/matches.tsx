@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, FlatList, Text, StyleSheet, RefreshControl, Pressable, Modal } from 'react-native';
+import { View, FlatList, Text, StyleSheet, RefreshControl, Pressable, Modal, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
@@ -66,6 +66,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
+  const { width } = useWindowDimensions();
+  const subscribeTextStyle = width < 400 ? { fontSize: 14, fontWeight: '700' as const } : undefined;
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
@@ -117,10 +119,10 @@ export default function HomeScreen() {
       {!user?.skipMatchesInfoCard && (
         <View style={styles.welcomeCard}>
           <Text style={styles.welcomeText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary notification service</Text>.
+            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
           </Text>
           <Text style={styles.welcomeText}>
-            <Text style={styles.boldText}>Add a person</Text> to <Text style={styles.boldText}>New Search</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Pressable onPress={() => setDisclaimerVisible(true)} onHoverIn={() => { hoverTimer.current = setTimeout(() => setDisclaimerVisible(true), 100); }} onHoverOut={() => { if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; } }} accessibilityRole="button" accessibilityLabel="Disclaimer" style={styles.disclaimerLinkWrap}><Text style={styles.disclaimerLink}>alert you</Text></Pressable> later when an obituary for that person is published in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', and '}{country}</React.Fragment>))}.
+            <Text style={styles.boldText}>Add a person</Text> to <Text style={styles.boldText}>New Search</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Pressable onPress={() => setDisclaimerVisible(true)} onHoverIn={() => { hoverTimer.current = setTimeout(() => setDisclaimerVisible(true), 100); }} onHoverOut={() => { if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; } }} accessibilityRole="button" accessibilityLabel="Disclaimer" style={styles.disclaimerLinkWrap}><Text style={styles.disclaimerLink}>send you a text and email</Text></Pressable> when an obituary for that person is published in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', and '}{country}</React.Fragment>))}.
           </Text>
           <Text style={styles.welcomeText}>
             <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
@@ -138,12 +140,35 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* New Search button */}
+      {/* Action buttons — trial/subscription-aware */}
       <View style={styles.topButtons}>
-        <Button
-          title="New Search"
-          onPress={() => router.push('/search/new')}
-        />
+        {user?.subscriptionActive ? (
+          <Button
+            title="New Search"
+            onPress={() => router.push('/search/new')}
+          />
+        ) : (user?.trialSearchesUsed ?? 0) < (user?.trialSearchesMax ?? 3) ? (
+          <>
+            <Button
+              title="Try for Free"
+              onPress={() => router.push('/trial/search')}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Subscribe to ObitNOTE obituary monitoring"
+              variant="secondary"
+              onPress={() => router.push('/subscribe' as any)}
+              style={{ flex: 1 }}
+              textStyle={subscribeTextStyle}
+            />
+          </>
+        ) : (
+          <Button
+            title="Subscribe to ObitNOTE obituary monitoring"
+            onPress={() => router.push('/subscribe' as any)}
+            textStyle={subscribeTextStyle}
+          />
+        )}
       </View>
 
       {/* Section title */}
@@ -215,16 +240,16 @@ export default function HomeScreen() {
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setDisclaimerVisible(false)} />
           <View style={styles.disclaimerCard}>
             <Text style={styles.disclaimerText}>
-              <Text style={styles.brandText}>ObitNOTE</Text> will check your list every day for new obituaries.
+              <Text style={styles.brandText}>ObitNOTE</Text> will search the web for your entire list of people every day.
             </Text>
             <Text style={styles.disclaimerText}>
               We are accurate, but two things can still happen:
             </Text>
             <Text style={styles.disclaimerText}>
-              We might <Text style={styles.boldText}>miss an obituary</Text> sometimes.
+              We might sometimes <Text style={styles.boldText}>miss an obituary</Text>.
             </Text>
             <Text style={styles.disclaimerText}>
-              We will try to email you, but the <Text style={styles.boldText}>email might not reach you</Text> (for example, it could be blocked, filtered, or in spam).
+              We will try to text and email you, but <Text style={styles.boldText}>they might not reach you</Text> (for example, they could be blocked, filtered, or in spam).  This would be unusual, but it is still possible.
             </Text>
             <Button title="Close" variant="secondary" onPress={() => setDisclaimerVisible(false)} />
           </View>
@@ -277,6 +302,7 @@ const styles = StyleSheet.create({
     color: colors.green,
     fontSize: fontSize.base,
     lineHeight: 26,
+    textDecorationLine: 'underline',
   },
   topButtons: {
     flexDirection: 'row',

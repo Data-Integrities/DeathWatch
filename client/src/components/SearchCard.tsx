@@ -16,6 +16,7 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
   const displayName = [search.nameFirst, search.nameLast].filter(Boolean).join(' ');
   const locationParts = [search.city, search.state].filter(Boolean);
   const location = locationParts.length > 0 ? locationParts.join(', ') : null;
+  const hasMatchBadge = !search.confirmed && search.matchCntTotal > 0;
 
   return (
     <Pressable
@@ -27,71 +28,73 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
         pressed && styles.pressed,
       ]}
     >
-      <View style={styles.cardRow}>
-        <View style={styles.content}>
-          <View style={styles.nameRow}>
-            {search.confirmed ? (
-              <FontAwesome name="check" size={14} color={colors.green} />
-            ) : (
-              <FontAwesome name="search" size={14} color="#444444" />
-            )}
-            <Text style={styles.name}>{displayName}</Text>
-          </View>
+      {(onEdit || onDelete) && (
+        <View style={styles.icons}>
+          {onEdit && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onEdit(); }}
+              accessibilityRole="button"
+              accessibilityLabel={`Edit ${displayName}`}
+              style={[styles.iconButton, styles.editButton]}
+            >
+              <FontAwesome name="pencil" size={32} color={colors.green} />
+            </Pressable>
+          )}
+          {onDelete && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onDelete(); }}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${displayName}`}
+              style={styles.iconButton}
+            >
+              <FontAwesome name="trash" size={32} color={colors.error} />
+            </Pressable>
+          )}
+        </View>
+      )}
 
-          <View style={styles.details}>
-            {search.nameNickname && (
-              <Text style={styles.detail}>Nickname: {search.nameNickname}</Text>
-            )}
-            {search.ageApx && (
-              <Text style={styles.detail}>Age around {search.ageApx}</Text>
-            )}
-            {location && (
-              <Text style={styles.detail}>{location}</Text>
-            )}
-          </View>
-
+      <View style={(onEdit || onDelete) ? styles.contentWithIcons : undefined}>
+        <View style={styles.nameRow}>
           {search.confirmed ? (
-            <View style={styles.confirmedBadge}>
-              <Text style={styles.confirmedText}>You marked this as Right Person  <Text style={styles.confirmedStopped}>Daily searches stopped.</Text></Text>
-            </View>
-          ) : search.matchCntNew > 0 ? (
-            <View style={styles.matchBadgeHighlight}>
-              <Text style={styles.matchBadgeHighlightText}>Possible match found</Text>
-            </View>
-          ) : search.matchCntTotal > 0 ? (
-            <View style={styles.matchBadgeHighlight}>
-              <Text style={styles.matchBadgeHighlightText}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text></Text>
-            </View>
+            <FontAwesome name="check" size={14} color={colors.green} />
           ) : (
-            <Text style={styles.matchSearching}>No obituaries found.  Performing daily searches.</Text>
+            <FontAwesome name="search" size={14} color="#444444" />
+          )}
+          <Text style={styles.name}>{displayName}</Text>
+        </View>
+
+        <View style={styles.details}>
+          {search.nameNickname && (
+            <Text style={styles.detail}>Nickname: {search.nameNickname}</Text>
+          )}
+          {search.ageApx && (
+            <Text style={styles.detail}>Age around {search.ageApx}</Text>
+          )}
+          {location && (
+            <Text style={styles.detail}>{location}</Text>
           )}
         </View>
 
-        {(onEdit || onDelete) && (
-          <View style={styles.icons}>
-            {onEdit && (
-              <Pressable
-                onPress={(e) => { e.stopPropagation(); onEdit(); }}
-                accessibilityRole="button"
-                accessibilityLabel={`Edit ${displayName}`}
-                style={[styles.iconButton, styles.editButton]}
-              >
-                <FontAwesome name="pencil" size={32} color={colors.green} />
-              </Pressable>
-            )}
-            {onDelete && (
-              <Pressable
-                onPress={(e) => { e.stopPropagation(); onDelete(); }}
-                accessibilityRole="button"
-                accessibilityLabel={`Delete ${displayName}`}
-                style={styles.iconButton}
-              >
-                <FontAwesome name="trash" size={32} color={colors.error} />
-              </Pressable>
-            )}
-          </View>
+        {!hasMatchBadge && (
+          search.confirmed ? (
+            <View style={styles.confirmedBadge}>
+              <Text style={styles.confirmedText}>You marked this as Right Person  <Text style={styles.confirmedStopped}>Daily searches stopped.</Text></Text>
+            </View>
+          ) : (
+            <Text style={styles.matchSearching}>No obituaries found.  Performing daily searches.</Text>
+          )
         )}
       </View>
+
+      {hasMatchBadge && (
+        <View style={styles.matchBadgeHighlight}>
+          {search.matchCntNew > 0 ? (
+            <Text style={styles.matchBadgeHighlightText}>Possible match found</Text>
+          ) : (
+            <Text style={styles.matchBadgeHighlightText}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text></Text>
+          )}
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -108,12 +111,8 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.9,
   },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
+  contentWithIcons: {
+    paddingRight: 80,
   },
   nameRow: {
     flexDirection: 'row',
@@ -127,11 +126,13 @@ const styles = StyleSheet.create({
     color: colors.green,
   },
   icons: {
+    position: 'absolute',
+    right: spacing.md - 5,
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    marginLeft: 2,
-    marginRight: -5,
   },
   iconButton: {
     padding: 2,
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     alignSelf: 'flex-start',
     marginTop: spacing.sm,
-    marginLeft: 22,
+    marginLeft: 16,
   },
   matchBadgeHighlightText: {
     fontSize: fontSize.sm,

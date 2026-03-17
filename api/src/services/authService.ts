@@ -25,6 +25,9 @@ function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserP
     skipMatchesInfoCard: row.skip_matches_info_card || false,
     unreadReplyCount: unreadReplies,
     unreadTicketIds: ticketIds,
+    trialSearchesUsed: row.trial_searches_used || 0,
+    trialSearchesMax: 3,
+    subscriptionActive: row.subscription_active || false,
   };
 }
 

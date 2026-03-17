@@ -8,6 +8,7 @@ import matchRoutes from './routes/matches';
 import notificationRoutes from './routes/notifications';
 import adminRoutes from './routes/admin';
 import messageRoutes from './routes/messages';
+import trialRoutes from './routes/trial';
 import { runBatch, getUsersWithNewResults } from './services/batchService';
 import { purgeOldRejectedResults } from './services/matchService';
 import { sendMatchNotification } from './services/emailService';
@@ -49,6 +50,7 @@ app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/trial', trialRoutes);
 
 // Proxy: serves obituary pages in an iframe-friendly way.
 // If the real page can be fetched, serve it with headers stripped.
