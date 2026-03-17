@@ -76,15 +76,23 @@ export async function getSearch(userId: string, searchId: string): Promise<Searc
   return rowToSearch(rows[0]);
 }
 
-export async function createSearch(userId: string, data: SearchQueryCreate) {
-  // Rate limit: 16 seconds between search creations per user
-  const { rows: recent } = await pool.query(
-    "SELECT 1 FROM user_query WHERE login_id = $1 AND created_at > NOW() - INTERVAL '16 seconds' LIMIT 1",
+const SEARCH_THROTTLE_MS = 16_000;
+
+async function throttleSearch(userId: string, timestampCol: 'created_at' | 'updated_at') {
+  const { rows } = await pool.query(
+    `SELECT EXTRACT(EPOCH FROM (NOW() - ${timestampCol})) * 1000 AS elapsed_ms
+     FROM user_query WHERE login_id = $1
+     ORDER BY ${timestampCol} DESC LIMIT 1`,
     [userId]
   );
-  if (recent.length > 0) {
-    throw Object.assign(new Error('Please wait a few seconds before creating another search.'), { status: 429 });
+  if (rows.length > 0 && rows[0].elapsed_ms < SEARCH_THROTTLE_MS) {
+    const waitMs = Math.ceil(SEARCH_THROTTLE_MS - rows[0].elapsed_ms);
+    await new Promise(resolve => setTimeout(resolve, waitMs));
   }
+}
+
+export async function createSearch(userId: string, data: SearchQueryCreate) {
+  await throttleSearch(userId, 'created_at');
 
   const id = uuidv4();
 
@@ -175,14 +183,7 @@ export async function createSearch(userId: string, data: SearchQueryCreate) {
 }
 
 export async function updateSearch(userId: string, searchId: string, data: Partial<SearchQueryCreate>) {
-  // Rate limit: 16 seconds between search edits per user
-  const { rows: recent } = await pool.query(
-    "SELECT 1 FROM user_query WHERE login_id = $1 AND updated_at > NOW() - INTERVAL '16 seconds' LIMIT 1",
-    [userId]
-  );
-  if (recent.length > 0) {
-    throw Object.assign(new Error('Please wait a few seconds before editing another search.'), { status: 429 });
-  }
+  await throttleSearch(userId, 'updated_at');
 
   // Verify ownership
   const existing = await getSearch(userId, searchId);
