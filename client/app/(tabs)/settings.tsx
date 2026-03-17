@@ -259,7 +259,7 @@ export default function SettingsScreen() {
       />
 
       <Text style={styles.footer}>
-        Copyright © 2009-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
+        Copyright © 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
       </Text>
     </ScreenContainer>
   );

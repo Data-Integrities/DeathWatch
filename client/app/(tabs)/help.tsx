@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, TextInput, Image, Pressable, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
@@ -32,6 +32,8 @@ function formatDate(iso: string): string {
 
 export default function HelpScreen() {
   const { user, refreshUser } = useAuth();
+  const { ticket } = useLocalSearchParams<{ ticket?: string }>();
+  const autoExpandedRef = useRef(false);
 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -55,6 +57,17 @@ export default function HelpScreen() {
   useEffect(() => {
     if (user) fetchMessages();
   }, [user]);
+
+  // Auto-expand the message matching the ticket param (from post-login redirect)
+  useEffect(() => {
+    if (ticket && messages.length > 0 && !autoExpandedRef.current) {
+      const msg = messages.find(m => m.ticketId === ticket);
+      if (msg) {
+        autoExpandedRef.current = true;
+        handleExpand(msg);
+      }
+    }
+  }, [ticket, messages]);
 
   const handleExpand = async (msg: UserMessage) => {
     if (expandedId === msg.id) {

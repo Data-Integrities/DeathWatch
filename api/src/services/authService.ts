@@ -5,7 +5,7 @@ import { pool } from '../db/pool';
 import type { UserProfile } from '../types';
 import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from './emailService';
 import { lookupGeo } from './geoService';
-import { getUnreadReplyCount } from './messageService';
+import { getUnreadReplyCount, getUnreadTicketIds } from './messageService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const SALT_ROUNDS = 10;
@@ -14,7 +14,7 @@ function makeToken(userId: string): string {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
 }
 
-function rowToUser(row: any, unreadReplies = 0): UserProfile {
+function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserProfile {
   return {
     id: row.login_id,
     email: row.email,
@@ -24,6 +24,7 @@ function rowToUser(row: any, unreadReplies = 0): UserProfile {
     emailVerified: row.email_verified || false,
     skipMatchesInfoCard: row.skip_matches_info_card || false,
     unreadReplyCount: unreadReplies,
+    unreadTicketIds: ticketIds,
   };
 }
 
@@ -76,8 +77,11 @@ export async function login(email: string, password: string, clientIp?: string) 
     throw Object.assign(new Error('Invalid email or password'), { status: 401 });
   }
 
-  const unreadReplies = await getUnreadReplyCount(row.login_id);
-  const user = rowToUser(row, unreadReplies);
+  const [unreadReplies, unreadTickets] = await Promise.all([
+    getUnreadReplyCount(row.login_id),
+    getUnreadTicketIds(row.login_id),
+  ]);
+  const user = rowToUser(row, unreadReplies, unreadTickets);
   const token = makeToken(user.id);
 
   // Record login history with geo data (non-blocking)
@@ -103,8 +107,11 @@ export async function getMe(userId: string) {
   if (rows.length === 0) {
     throw Object.assign(new Error('User not found'), { status: 404 });
   }
-  const unreadReplies = await getUnreadReplyCount(userId);
-  return rowToUser(rows[0], unreadReplies);
+  const [unreadReplies, unreadTickets] = await Promise.all([
+    getUnreadReplyCount(userId),
+    getUnreadTicketIds(userId),
+  ]);
+  return rowToUser(rows[0], unreadReplies, unreadTickets);
 }
 
 export async function forgotPassword(email: string) {

@@ -130,6 +130,8 @@ export default function NewSearchScreen() {
       <StatePicker
         value={state}
         onChange={setState}
+        city={city}
+        onCityChange={setCity}
         labelWidth={90}
         openOnFocus
       />

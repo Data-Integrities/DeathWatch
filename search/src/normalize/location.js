@@ -15,10 +15,23 @@ const stateAbbreviations = {
   'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
   'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
   'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
-  'wisconsin': 'WI', 'wyoming': 'WY', 'district of columbia': 'DC'
+  'wisconsin': 'WI', 'wyoming': 'WY', 'district of columbia': 'DC',
+  // Canadian provinces and territories
+  'alberta': 'AB', 'british columbia': 'BC', 'manitoba': 'MB', 'new brunswick': 'NB',
+  'newfoundland and labrador': 'NL', 'nova scotia': 'NS', 'northwest territories': 'NT',
+  'nunavut': 'NU', 'ontario': 'ON', 'prince edward island': 'PE', 'quebec': 'QC',
+  'saskatchewan': 'SK', 'yukon': 'YT'
 };
 
 const validStateCodes = new Set(Object.values(stateAbbreviations));
+
+// Reverse lookup: code → full name (first match wins, US entries come first)
+const codeToName = {};
+for (const [name, code] of Object.entries(stateAbbreviations)) {
+  if (!codeToName[code]) {
+    codeToName[code] = name.replace(/\b\w/g, c => c.toUpperCase());
+  }
+}
 
 /**
  * Normalize state to USPS code
@@ -85,8 +98,17 @@ function getCityVariants(city) {
   return variants;
 }
 
+/**
+ * Get full state/province name from code (e.g., 'CA' → 'California', 'ON' → 'Ontario')
+ */
+function stateCodeToName(code) {
+  if (!code) return null;
+  return codeToName[code.toUpperCase()] || null;
+}
+
 module.exports = {
   normalizeState,
+  stateCodeToName,
   normalizeCity,
   citiesMatch,
   statesMatch,

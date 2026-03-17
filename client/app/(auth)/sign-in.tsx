@@ -24,6 +24,7 @@ export default function SignInScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [supportVisible, setSupportVisible] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
+  const [unreadTicketId, setUnreadTicketId] = useState('');
   const isReturning = Platform.OS === 'web' && (() => {
     try { return localStorage.getItem('obitnote_returning') === '1'; } catch { return false; }
   })();
@@ -46,7 +47,8 @@ export default function SignInScreen() {
           }
         } catch {}
       }
-      if (loggedInUser.unreadReplyCount > 0) {
+      if (loggedInUser.unreadReplyCount > 0 && loggedInUser.unreadTicketIds?.length > 0) {
+        setUnreadTicketId(loggedInUser.unreadTicketIds[0]);
         setShowReplyModal(true);
         return;
       }
@@ -131,6 +133,8 @@ export default function SignInScreen() {
         style={styles.signIn}
       />
 
+      <Text style={styles.orText}>OR</Text>
+
       <Button
         title="Create an Account"
         variant="secondary"
@@ -156,14 +160,14 @@ export default function SignInScreen() {
         body="You have a support response.  Go to Help to read it."
         confirmLabel="Go to Help"
         cancelLabel="Later"
-        onConfirm={() => { setShowReplyModal(false); router.replace('/help' as any); }}
+        onConfirm={() => { setShowReplyModal(false); router.replace(`/help?ticket=${unreadTicketId}` as any); }}
         onCancel={() => { setShowReplyModal(false); router.replace('/matches'); }}
       />
 
       <ConfirmDialog
         visible={supportVisible}
         title="Contact us"
-        body={<>{"support@obitnote.com\nor\n(800) 588-1950\n\nThank you "}<Image source={require('../../assets/smile.jpg')} style={{ width: 20, height: 20, top: 4 }} /></>}
+        body={<>{"support@obitnote.com\n\nThank you "}<Image source={require('../../assets/smile.jpg')} style={{ width: 20, height: 20, top: 4 }} /></>}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setSupportVisible(false)}
@@ -171,7 +175,7 @@ export default function SignInScreen() {
       />
 
       <Text style={styles.footer}>
-        Copyright &copy; 2009-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.  {BUILD_VERSION}
+        Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.  {BUILD_VERSION}
       </Text>
     </ScreenContainer>
   );
@@ -237,6 +241,13 @@ const styles = StyleSheet.create({
   },
   signIn: {
     marginTop: spacing.md,
+  },
+  orText: {
+    textAlign: 'center',
+    fontSize: 18,
+    color: colors.green,
+    fontWeight: '700',
+    marginTop: spacing.sm,
   },
   createAccount: {
     marginTop: spacing.sm,

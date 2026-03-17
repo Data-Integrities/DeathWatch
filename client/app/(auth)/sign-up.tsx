@@ -202,7 +202,7 @@ export default function SignUpScreen() {
       />
 
       <Text style={styles.footer}>
-        Copyright &copy; 2009-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
+        Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
       </Text>
     </ScreenContainer>
     </View>

@@ -18,6 +18,7 @@ export interface UserProfile {
   emailVerified: boolean;
   skipMatchesInfoCard: boolean;
   unreadReplyCount: number;
+  unreadTicketIds: string[];
 }
 
 export interface RegisterRequest {

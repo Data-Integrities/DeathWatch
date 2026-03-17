@@ -37,7 +37,7 @@ function wrapHtml(body: string): string {
     </tr>
     <tr>
       <td style="padding: 16px 24px; text-align: center; color: #9E9E9E; font-size: 12px; border-top: 1px solid #E0E0E0;">
-        Copyright &copy; 2009-${new Date().getFullYear()} UltraSafe Data, LLC (US). All rights reserved.
+        Copyright &copy; 2025-${new Date().getFullYear()} UltraSafe Data, LLC (US). All rights reserved.
       </td>
     </tr>
   </table>

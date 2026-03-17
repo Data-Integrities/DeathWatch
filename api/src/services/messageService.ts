@@ -124,6 +124,17 @@ export async function getUnreadReplyCount(loginId: string): Promise<number> {
   return rows[0].count;
 }
 
+export async function getUnreadTicketIds(loginId: string): Promise<string[]> {
+  const { rows } = await pool.query(
+    `SELECT ticket_id
+     FROM support_message
+     WHERE login_id = $1 AND status = 'replied' AND reply_read_at IS NULL
+     ORDER BY replied_at DESC`,
+    [loginId]
+  );
+  return rows.map(r => r.ticket_id);
+}
+
 export async function replyToMessage(messageId: string, adminLoginId: string, replyText: string) {
   const { rows } = await pool.query(
     `UPDATE support_message

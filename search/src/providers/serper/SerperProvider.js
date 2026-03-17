@@ -7,6 +7,7 @@ const { extractPobFromText } = require('../../normalize/pob');
 const { extractServiceDates } = require('../../normalize/serviceDates');
 const { getFirstNameVariants, buildOrClause } = require('../../normalize/nameVariants');
 const { extractNameFromTitle, extractNameFromSnippet, extractNameFromUrl, isValidParsedName, isGenericTitle } = require('../../normalize/nameExtract');
+const { stateCodeToName } = require('../../normalize/location');
 const config = require('../../config');
 const { logger } = require('../../utils/logger');
 
@@ -81,7 +82,7 @@ class SerperProvider {
       parts.push(query.city);
     }
     if (query.state) {
-      parts.push(query.state);
+      parts.push(stateCodeToName(query.state) || query.state);
     }
 
     return parts.join(' ');
@@ -185,7 +186,8 @@ class SerperProvider {
       'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
       'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
       'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-      'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'
+      'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
+      'AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT'
     ]);
 
     // Pattern: "City, ST" or "of City, State"
@@ -200,19 +202,19 @@ class SerperProvider {
       };
     }
 
-    // Try "City, State" with full state name
-    const fullStatePattern = /(?:of\s+)?((?:(?:St|Ft|Mt|Pt)\.\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*(Ohio|California|Florida|Texas|New York)/i;
+    // Try "City, State/Province" with full name
+    const { normalizeState } = require('../../normalize/location');
+    const fullStatePattern = /(?:of\s+)?((?:(?:St|Ft|Mt|Pt)\.\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*([A-Z][a-z]+(?:\s+[A-Za-z][a-z]+)*)/;
     const fullMatch = text.match(fullStatePattern);
 
     if (fullMatch) {
-      const stateMap = {
-        'ohio': 'OH', 'california': 'CA', 'florida': 'FL',
-        'texas': 'TX', 'new york': 'NY'
-      };
-      return {
-        city: fullMatch[1],
-        state: stateMap[fullMatch[2].toLowerCase()] || fullMatch[2]
-      };
+      const code = normalizeState(fullMatch[2]);
+      if (validStateCodes.has(code)) {
+        return {
+          city: fullMatch[1],
+          state: code
+        };
+      }
     }
 
     return {};

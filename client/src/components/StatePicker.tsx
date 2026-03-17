@@ -2,29 +2,50 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, Pressable, Modal, FlatList, StyleSheet } from 'react-native';
 import { colors, fontSize, spacing, borderRadius, minTouchTarget } from '../theme';
 
-const US_STATES = [
-  { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
-  { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
-  { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'FL', name: 'Florida' },
-  { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' }, { code: 'ID', name: 'Idaho' },
-  { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' }, { code: 'IA', name: 'Iowa' },
-  { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' }, { code: 'LA', name: 'Louisiana' },
-  { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' }, { code: 'MA', name: 'Massachusetts' },
-  { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' }, { code: 'MS', name: 'Mississippi' },
-  { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' }, { code: 'NE', name: 'Nebraska' },
-  { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' }, { code: 'NJ', name: 'New Jersey' },
-  { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' }, { code: 'NC', name: 'North Carolina' },
-  { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' }, { code: 'OK', name: 'Oklahoma' },
-  { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' }, { code: 'RI', name: 'Rhode Island' },
-  { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' }, { code: 'TN', name: 'Tennessee' },
-  { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' }, { code: 'VT', name: 'Vermont' },
-  { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' }, { code: 'WV', name: 'West Virginia' },
-  { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }, { code: 'DC', name: 'District of Columbia' },
+type PickerItem = { type: 'state'; code: string; name: string } | { type: 'divider'; label: string };
+
+const REGIONS: PickerItem[] = [
+  { type: 'state', code: 'AL', name: 'Alabama' }, { type: 'state', code: 'AK', name: 'Alaska' }, { type: 'state', code: 'AZ', name: 'Arizona' },
+  { type: 'state', code: 'AR', name: 'Arkansas' }, { type: 'state', code: 'CA', name: 'California' }, { type: 'state', code: 'CO', name: 'Colorado' },
+  { type: 'state', code: 'CT', name: 'Connecticut' }, { type: 'state', code: 'DE', name: 'Delaware' }, { type: 'state', code: 'FL', name: 'Florida' },
+  { type: 'state', code: 'GA', name: 'Georgia' }, { type: 'state', code: 'HI', name: 'Hawaii' }, { type: 'state', code: 'ID', name: 'Idaho' },
+  { type: 'state', code: 'IL', name: 'Illinois' }, { type: 'state', code: 'IN', name: 'Indiana' }, { type: 'state', code: 'IA', name: 'Iowa' },
+  { type: 'state', code: 'KS', name: 'Kansas' }, { type: 'state', code: 'KY', name: 'Kentucky' }, { type: 'state', code: 'LA', name: 'Louisiana' },
+  { type: 'state', code: 'ME', name: 'Maine' }, { type: 'state', code: 'MD', name: 'Maryland' }, { type: 'state', code: 'MA', name: 'Massachusetts' },
+  { type: 'state', code: 'MI', name: 'Michigan' }, { type: 'state', code: 'MN', name: 'Minnesota' }, { type: 'state', code: 'MS', name: 'Mississippi' },
+  { type: 'state', code: 'MO', name: 'Missouri' }, { type: 'state', code: 'MT', name: 'Montana' }, { type: 'state', code: 'NE', name: 'Nebraska' },
+  { type: 'state', code: 'NV', name: 'Nevada' }, { type: 'state', code: 'NH', name: 'New Hampshire' }, { type: 'state', code: 'NJ', name: 'New Jersey' },
+  { type: 'state', code: 'NM', name: 'New Mexico' }, { type: 'state', code: 'NY', name: 'New York' }, { type: 'state', code: 'NC', name: 'North Carolina' },
+  { type: 'state', code: 'ND', name: 'North Dakota' }, { type: 'state', code: 'OH', name: 'Ohio' }, { type: 'state', code: 'OK', name: 'Oklahoma' },
+  { type: 'state', code: 'OR', name: 'Oregon' }, { type: 'state', code: 'PA', name: 'Pennsylvania' }, { type: 'state', code: 'RI', name: 'Rhode Island' },
+  { type: 'state', code: 'SC', name: 'South Carolina' }, { type: 'state', code: 'SD', name: 'South Dakota' }, { type: 'state', code: 'TN', name: 'Tennessee' },
+  { type: 'state', code: 'TX', name: 'Texas' }, { type: 'state', code: 'UT', name: 'Utah' }, { type: 'state', code: 'VT', name: 'Vermont' },
+  { type: 'state', code: 'VA', name: 'Virginia' }, { type: 'state', code: 'WA', name: 'Washington' }, { type: 'state', code: 'WV', name: 'West Virginia' },
+  { type: 'state', code: 'WI', name: 'Wisconsin' }, { type: 'state', code: 'WY', name: 'Wyoming' }, { type: 'state', code: 'DC', name: 'District of Columbia' },
+  { type: 'divider', label: 'Canada' },
+  { type: 'state', code: 'AB', name: 'Alberta' }, { type: 'state', code: 'BC', name: 'British Columbia' },
+  { type: 'state', code: 'MB', name: 'Manitoba' }, { type: 'state', code: 'NB', name: 'New Brunswick' },
+  { type: 'state', code: 'NL', name: 'Newfoundland and Labrador' }, { type: 'state', code: 'NS', name: 'Nova Scotia' },
+  { type: 'state', code: 'NT', name: 'Northwest Territories' }, { type: 'state', code: 'NU', name: 'Nunavut' },
+  { type: 'state', code: 'ON', name: 'Ontario' }, { type: 'state', code: 'PE', name: 'Prince Edward Island' },
+  { type: 'state', code: 'QC', name: 'Quebec' }, { type: 'state', code: 'SK', name: 'Saskatchewan' },
+  { type: 'state', code: 'YT', name: 'Yukon' },
 ];
+
+// All known codes for distinguishing picker selections from custom entries
+const KNOWN_CODES = new Set(
+  REGIONS.filter(r => r.type === 'state').map(r => (r as { code: string }).code)
+);
+
+function isKnownCode(value: string): boolean {
+  return KNOWN_CODES.has(value);
+}
 
 interface StatePickerProps {
   value: string | null;
-  onChange: (code: string | null) => void;
+  onChange: (value: string | null) => void;
+  city?: string;
+  onCityChange?: (value: string) => void;
   label?: string;
   labelWidth?: number;
   hideLabel?: boolean;
@@ -32,20 +53,50 @@ interface StatePickerProps {
   openOnFocus?: boolean;
 }
 
-export function StatePicker({ value, onChange, label = 'State', labelWidth, hideLabel, error, openOnFocus }: StatePickerProps) {
+export function StatePicker({ value, onChange, city, onCityChange, label = 'State', labelWidth, hideLabel, error, openOnFocus }: StatePickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [showCustom, setShowCustom] = useState(false);
+  const [customCity, setCustomCity] = useState('');
+  const [customRegion, setCustomRegion] = useState('');
+  const [customCountry, setCustomCountry] = useState('');
 
-  const selectedState = US_STATES.find(s => s.code === value);
-  const displayText = selectedState ? `${selectedState.name} (${selectedState.code})` : '';
+  // Display text: known code → "Name (CODE)", custom → the value itself
+  const displayText = useMemo(() => {
+    if (!value) return '';
+    if (isKnownCode(value)) {
+      const found = REGIONS.find(s => s.type === 'state' && (s as any).code === value) as { name: string; code: string } | undefined;
+      return found ? `${found.name} (${found.code})` : value;
+    }
+    return value;
+  }, [value]);
 
   const filtered = useMemo(() => {
-    if (!search) return US_STATES;
+    if (!search) return REGIONS;
     const q = search.toLowerCase();
-    return US_STATES.filter(s =>
-      s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q)
+    return REGIONS.filter(s =>
+      s.type === 'state' && (s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q))
     );
   }, [search]);
+
+  const handleCustomSave = () => {
+    const cityVal = customCity.trim();
+    const region = customRegion.trim();
+    const country = customCountry.trim();
+    if (region || country) {
+      const parts = [region, country].filter(Boolean);
+      onChange(parts.join(', '));
+    }
+    if (onCityChange) {
+      onCityChange(cityVal);
+    }
+    setShowCustom(false);
+    setCustomCity('');
+    setCustomRegion('');
+    setCustomCountry('');
+    setOpen(false);
+    setSearch('');
+  };
 
   return (
     <View style={styles.container}>
@@ -70,7 +121,7 @@ export function StatePicker({ value, onChange, label = 'State', labelWidth, hide
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select State</Text>
-              <Pressable onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel="Close">
+              <Pressable onPress={() => { setOpen(false); setSearch(''); }} accessibilityRole="button" accessibilityLabel="Close">
                 <Text style={styles.closeButton}>Close</Text>
               </Pressable>
             </View>
@@ -84,21 +135,40 @@ export function StatePicker({ value, onChange, label = 'State', labelWidth, hide
             />
             <FlatList
               data={filtered}
-              keyExtractor={item => item.code}
-              renderItem={({ item }) => (
+              keyExtractor={(item, index) => item.type === 'divider' ? `divider-${index}` : item.code}
+              renderItem={({ item }) => {
+                if (item.type === 'divider') {
+                  return (
+                    <View style={styles.divider}>
+                      <View style={styles.dividerLine} />
+                      <Text style={styles.dividerText}>{item.label}</Text>
+                      <View style={styles.dividerLine} />
+                    </View>
+                  );
+                }
+                return (
+                  <Pressable
+                    onPress={() => {
+                      onChange(item.code);
+                      setOpen(false);
+                      setSearch('');
+                    }}
+                    style={[styles.option, item.code === value && styles.optionSelected]}
+                  >
+                    <Text style={[styles.optionText, item.code === value && styles.optionTextSelected]}>
+                      {item.name} ({item.code})
+                    </Text>
+                  </Pressable>
+                );
+              }}
+              ListFooterComponent={
                 <Pressable
-                  onPress={() => {
-                    onChange(item.code);
-                    setOpen(false);
-                    setSearch('');
-                  }}
-                  style={[styles.option, item.code === value && styles.optionSelected]}
+                  onPress={() => { setShowCustom(true); setCustomCity(city || ''); setCustomRegion(''); setCustomCountry(''); }}
+                  style={styles.notFoundButton}
                 >
-                  <Text style={[styles.optionText, item.code === value && styles.optionTextSelected]}>
-                    {item.name} ({item.code})
-                  </Text>
+                  <Text style={styles.notFoundText}>Not found?  Enter a region name.</Text>
                 </Pressable>
-              )}
+              }
             />
             {value && (
               <Pressable
@@ -108,6 +178,57 @@ export function StatePicker({ value, onChange, label = 'State', labelWidth, hide
                 <Text style={styles.clearText}>Clear Selection</Text>
               </Pressable>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showCustom} transparent animationType="fade" onRequestClose={() => setShowCustom(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.customModal}>
+            <Text style={styles.customTitle}>Enter Region</Text>
+            <Text style={styles.customHint}>
+              For countries outside the US and Canada, spell out the full region and country name.
+            </Text>
+            <Text style={styles.customFieldLabel}>City or Town</Text>
+            <TextInput
+              style={styles.customInput}
+              value={customCity}
+              onChangeText={setCustomCity}
+              placeholder="e.g., Christchurch, London"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+            <Text style={styles.customFieldLabel}>Region</Text>
+            <TextInput
+              style={styles.customInput}
+              value={customRegion}
+              onChangeText={setCustomRegion}
+              placeholder="e.g., Canterbury, Greater London"
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+            <Text style={styles.customFieldLabel}>Country</Text>
+            <TextInput
+              style={styles.customInput}
+              value={customCountry}
+              onChangeText={setCustomCountry}
+              placeholder="e.g., England, New Zealand"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="words"
+              onSubmitEditing={handleCustomSave}
+              returnKeyType="done"
+            />
+            <View style={styles.customButtons}>
+              <Pressable onPress={() => setShowCustom(false)} style={styles.customCancel}>
+                <Text style={styles.customCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={handleCustomSave} style={[styles.customSave, !customRegion.trim() && !customCountry.trim() && styles.customSaveDisabled]}>
+                <Text style={styles.customSaveText}>Save</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -218,6 +339,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.green,
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  notFoundButton: {
+    padding: spacing.md,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  notFoundText: {
+    fontSize: fontSize.sm,
+    color: colors.green,
+    fontWeight: '600',
+  },
   clearButton: {
     padding: spacing.md,
     alignItems: 'center',
@@ -227,6 +376,76 @@ const styles = StyleSheet.create({
   clearText: {
     fontSize: fontSize.base,
     color: colors.error,
+    fontWeight: '600',
+  },
+
+  // Custom region modal
+  customModal: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    maxWidth: 300,
+    width: '100%',
+    padding: spacing.lg,
+  },
+  customTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  customHint: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  customFieldLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: '#444444',
+    marginBottom: 4,
+  },
+  customInput: {
+    fontSize: fontSize.base,
+    color: colors.textPrimary,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  customButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  customCancel: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.sm,
+  },
+  customCancelText: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    fontWeight: '600',
+  },
+  customSave: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    backgroundColor: colors.green,
+    borderRadius: borderRadius.sm,
+  },
+  customSaveDisabled: {
+    opacity: 0.4,
+  },
+  customSaveText: {
+    fontSize: fontSize.base,
+    color: colors.white,
     fontWeight: '600',
   },
 });
