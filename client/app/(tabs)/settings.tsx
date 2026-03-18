@@ -14,23 +14,39 @@ import { BUILD_VERSION } from '../../src/version';
 
 export default function SettingsScreen() {
   const { user, signOut, refreshUser } = useAuth();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
+  // Editable account fields
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [accountError, setAccountError] = useState('');
+
+  // Change email
   const [newEmail, setNewEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
-  const [emailMessage, setEmailMessage] = useState('');
   const [emailError, setEmailError] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
 
+  // Change password
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+
+  // Misc
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [toast, setToast] = useState('');
   const [unrepliedCount, setUnrepliedCount] = useState(0);
+
+  // Sync fields when user data changes
+  useEffect(() => {
+    setFirstName(user?.firstName || '');
+    setLastName(user?.lastName || '');
+    setPhoneNumber(user?.phoneNumber || '');
+  }, [user?.firstName, user?.lastName, user?.phoneNumber]);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -40,21 +56,41 @@ export default function SettingsScreen() {
     }
   }, [user?.isAdmin]);
 
+  // Check if account fields have changed
+  const accountDirty = firstName !== (user?.firstName || '')
+    || lastName !== (user?.lastName || '')
+    || phoneNumber !== (user?.phoneNumber || '');
+
+  const handleSaveAccount = async () => {
+    setAccountError('');
+    if (!firstName.trim()) { setAccountError('First name is required.'); return; }
+    if (!lastName.trim()) { setAccountError('Last name is required.'); return; }
+    setAccountLoading(true);
+    try {
+      await api.patch('/api/auth/preferences', {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phoneNumber: phoneNumber.trim() || null,
+      });
+      await refreshUser();
+      setToast('Account updated');
+    } catch (err: any) {
+      setAccountError(err.message || 'Failed to save.');
+    } finally {
+      setAccountLoading(false);
+    }
+  };
+
   const handleChangeEmail = async () => {
     setEmailError('');
-    setEmailMessage('');
-    if (!newEmail || !emailPassword) {
-      setEmailError('Please fill in all fields.');
-      return;
-    }
+    if (!newEmail || !emailPassword) { setEmailError('Please fill in all fields.'); return; }
     setEmailLoading(true);
     try {
-      const res = await api.post<{ message: string }>('/api/auth/change-email', {
+      await api.post<{ message: string }>('/api/auth/change-email', {
         emailNew: newEmail,
         passwordCurrent: emailPassword,
       });
       await refreshUser();
-      setEmailMessage('');
       setNewEmail('');
       setEmailPassword('');
       setToast('Email changed');
@@ -66,36 +102,25 @@ export default function SettingsScreen() {
   };
 
   const handleChangePassword = async () => {
-    setError('');
-    setMessage('');
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Please fill in all fields.');
-      return;
-    }
-    if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('New passwords do not match.');
-      return;
-    }
-    setLoading(true);
+    setPwError('');
+    if (!currentPassword || !newPassword || !confirmPassword) { setPwError('Please fill in all fields.'); return; }
+    if (newPassword.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (newPassword !== confirmPassword) { setPwError('New passwords do not match.'); return; }
+    setPwLoading(true);
     try {
       await api.post('/api/auth/change-password', {
         passwordCurrent: currentPassword,
         passwordNew: newPassword,
         passwordNewConfirm: confirmPassword,
       });
-      setMessage('');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setToast('Password changed');
     } catch (err: any) {
-      setError(err.message || 'Failed to change password.');
+      setPwError(err.message || 'Failed to change password.');
     } finally {
-      setLoading(false);
+      setPwLoading(false);
     }
   };
 
@@ -116,6 +141,7 @@ export default function SettingsScreen() {
     <ScreenContainer>
       <Button title="Back" variant="secondary" onPress={() => router.back()} style={styles.backButton} />
       <Toast message={toast} visible={!!toast} onDone={() => setToast('')} />
+
       {user?.isAdmin && (
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Admin</Text>
@@ -143,8 +169,28 @@ export default function SettingsScreen() {
 
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
-        <Text style={styles.email}>{user?.firstName} {user?.lastName}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+
+        {accountError ? <Text style={styles.error}>{accountError}</Text> : null}
+
+        <TextField
+          label="First Name"
+          labelWidth={90}
+          value={firstName}
+          onChangeText={setFirstName}
+          autoCapitalize="words"
+        />
+        <TextField
+          label="Last Name"
+          labelWidth={90}
+          value={lastName}
+          onChangeText={setLastName}
+          autoCapitalize="words"
+        />
+
+        <View style={styles.emailRow}>
+          <Text style={styles.fieldLabel}>Email</Text>
+          <Text style={styles.fieldValue}>{user?.email}</Text>
+        </View>
         {user && user.emailVerified === false && (
           <View style={styles.verificationRow}>
             <Text style={styles.unverifiedText}>Email not verified</Text>
@@ -162,13 +208,46 @@ export default function SettingsScreen() {
         {user && user.emailVerified === true && (
           <Text style={styles.verifiedText}>Verified</Text>
         )}
+
+        <TextField
+          label="Mobile"
+          labelWidth={90}
+          value={phoneNumber}
+          onChangeText={(v) => setPhoneNumber(v.replace(/[^0-9+\-() ]/g, ''))}
+          keyboardType="phone-pad"
+          autoComplete="tel"
+          textContentType="telephoneNumber"
+          placeholder="US or Canada mobile number"
+        />
+
+        <Checkbox
+          checked={user?.smsOptIn !== false}
+          onToggle={async (checked) => {
+            try {
+              await api.patch('/api/auth/preferences', { smsOptIn: checked });
+              await refreshUser();
+            } catch (err) {
+              console.error('Failed to update SMS preference:', err);
+            }
+          }}
+          label="Send me text messages when obituaries are found"
+        />
+
+        {accountDirty && (
+          <Button
+            title="Save Changes"
+            onPress={handleSaveAccount}
+            loading={accountLoading}
+            variant="primary"
+            style={styles.saveButton}
+          />
+        )}
       </Card>
 
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Change Email</Text>
 
         {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
-        {emailMessage ? <Text style={styles.success}>{emailMessage}</Text> : null}
 
         <TextField
           label="New Email"
@@ -197,8 +276,7 @@ export default function SettingsScreen() {
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Change Password</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {message ? <Text style={styles.success}>{message}</Text> : null}
+        {pwError ? <Text style={styles.error}>{pwError}</Text> : null}
 
         <TextField
           label="Current"
@@ -225,13 +303,13 @@ export default function SettingsScreen() {
         <Button
           title="Change Password"
           onPress={handleChangePassword}
-          loading={loading}
+          loading={pwLoading}
           variant="secondary"
         />
       </Card>
 
       <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>Info Card</Text>
+        <Text style={styles.sectionTitle}>Preferences</Text>
         <Checkbox
           checked={!user?.skipMatchesInfoCard}
           onToggle={async (checked) => {
@@ -275,16 +353,31 @@ const styles = StyleSheet.create({
     color: '#444444',
     marginBottom: spacing.sm,
   },
-  email: {
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: spacing.sm,
+  },
+  fieldLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    width: 90,
+    flexShrink: 0,
+  },
+  fieldValue: {
     fontSize: fontSize.base,
     color: '#444444',
+    flex: 1,
   },
   verificationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
     flexWrap: 'wrap',
+    paddingLeft: 94,
   },
   unverifiedText: {
     fontSize: fontSize.sm,
@@ -295,7 +388,8 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.success,
     fontWeight: '600',
-    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    paddingLeft: 94,
   },
   resendLink: {
     fontSize: fontSize.sm,
@@ -308,18 +402,13 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontWeight: '600',
   },
+  saveButton: {
+    marginTop: spacing.md,
+  },
   error: {
     fontSize: fontSize.sm,
     color: colors.error,
     backgroundColor: colors.errorLight,
-    padding: spacing.sm,
-    borderRadius: 8,
-    marginBottom: spacing.md,
-  },
-  success: {
-    fontSize: fontSize.sm,
-    color: colors.success,
-    backgroundColor: colors.successLight,
     padding: spacing.sm,
     borderRadius: 8,
     marginBottom: spacing.md,

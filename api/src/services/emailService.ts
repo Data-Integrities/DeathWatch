@@ -175,6 +175,28 @@ export async function sendSupportReply(toEmail: string, firstName: string, subje
   await sendEmail(toEmail, emailSubject, html);
 }
 
+export async function sendErrorAlert(details: {
+  userEmail?: string;
+  userName?: string;
+  error: string;
+  page?: string;
+  userAgent?: string;
+  timestamp?: string;
+}) {
+  const html = wrapHtml(`
+    <h2 style="margin: 0 0 16px; color: #C62828; font-size: 22px;">Client Error Report</h2>
+    <table style="width: 100%; border-collapse: collapse; font-size: 16px; color: #444444;">
+      <tr><td style="padding: 8px 0; font-weight: 600; vertical-align: top; width: 100px;">Error:</td><td style="padding: 8px 0;">${escapeHtml(details.error)}</td></tr>
+      <tr><td style="padding: 8px 0; font-weight: 600; vertical-align: top;">Page:</td><td style="padding: 8px 0;">${escapeHtml(details.page || 'Unknown')}</td></tr>
+      <tr><td style="padding: 8px 0; font-weight: 600; vertical-align: top;">User:</td><td style="padding: 8px 0;">${escapeHtml(details.userName || 'Unknown')} (${escapeHtml(details.userEmail || 'Unknown')})</td></tr>
+      <tr><td style="padding: 8px 0; font-weight: 600; vertical-align: top;">Time:</td><td style="padding: 8px 0;">${escapeHtml(details.timestamp || new Date().toISOString())}</td></tr>
+      <tr><td style="padding: 8px 0; font-weight: 600; vertical-align: top;">Browser:</td><td style="padding: 8px 0; word-break: break-all;">${escapeHtml(details.userAgent || 'Unknown')}</td></tr>
+    </table>
+  `);
+
+  await sendEmail('support@obitnote.com', 'ObitNOTE: Client Error Report', html);
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')

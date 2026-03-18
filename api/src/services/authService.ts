@@ -28,6 +28,8 @@ function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserP
     trialSearchesUsed: row.trial_searches_used || 0,
     trialSearchesMax: 3,
     subscriptionActive: row.subscription_active || false,
+    phoneNumber: row.phone_number || null,
+    smsOptIn: row.sms_opt_in !== false,
   };
 }
 
@@ -37,7 +39,7 @@ function generateVerificationToken(): { token: string; expires: Date } {
   return { token, expires };
 }
 
-export async function register(email: string, password: string, firstName: string, lastName: string) {
+export async function register(email: string, password: string, firstName: string, lastName: string, phoneNumber?: string) {
   const existing = await pool.query(
     'SELECT login_id FROM dw_user WHERE email = $1',
     [email.toLowerCase()]
@@ -50,10 +52,10 @@ export async function register(email: string, password: string, firstName: strin
   const { token: verificationToken, expires: verificationExpires } = generateVerificationToken();
 
   const { rows } = await pool.query(
-    `INSERT INTO dw_user (email, password_hash, first_name, last_name, verification_token, verification_token_expires)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO dw_user (email, password_hash, first_name, last_name, verification_token, verification_token_expires, phone_number)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
-    [email.toLowerCase(), passwordHash, firstName, lastName, verificationToken, verificationExpires]
+    [email.toLowerCase(), passwordHash, firstName, lastName, verificationToken, verificationExpires, phoneNumber ? (phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber.replace(/[^0-9]/g, '')}`) : null]
   );
 
   const user = rowToUser(rows[0]);
@@ -231,7 +233,7 @@ export async function changeEmail(userId: string, newEmail: string, currentPassw
   sendVerificationEmail(newEmail, rows[0].first_name, token).catch(err => console.error('[Auth] Verification email failed:', err));
 }
 
-const ALLOWED_PREFERENCES = ['skip_matches_info_card'] as const;
+const ALLOWED_PREFERENCES = ['skip_matches_info_card', 'sms_opt_in'] as const;
 
 export async function updatePreference(userId: string, key: string, value: boolean) {
   if (!ALLOWED_PREFERENCES.includes(key as any)) {
@@ -240,6 +242,24 @@ export async function updatePreference(userId: string, key: string, value: boole
   await pool.query(
     `UPDATE dw_user SET ${key} = $1, updated_at = NOW() WHERE login_id = $2`,
     [value, userId]
+  );
+}
+
+export async function updatePhone(userId: string, phoneNumber: string | null) {
+  let normalized = phoneNumber?.replace(/[^0-9+]/g, '') || null;
+  if (normalized && !normalized.startsWith('+')) {
+    normalized = `+${normalized}`;
+  }
+  await pool.query(
+    'UPDATE dw_user SET phone_number = $1, updated_at = NOW() WHERE login_id = $2',
+    [normalized, userId]
+  );
+}
+
+export async function updateName(userId: string, firstName: string, lastName: string) {
+  await pool.query(
+    'UPDATE dw_user SET first_name = $1, last_name = $2, updated_at = NOW() WHERE login_id = $3',
+    [firstName, lastName, userId]
   );
 }
 

@@ -22,6 +22,8 @@ export interface UserProfile {
   trialSearchesUsed: number;
   trialSearchesMax: number;
   subscriptionActive: boolean;
+  phoneNumber: string | null;
+  smsOptIn: boolean;
 }
 
 export interface RegisterRequest {

@@ -9,9 +9,11 @@ import notificationRoutes from './routes/notifications';
 import adminRoutes from './routes/admin';
 import messageRoutes from './routes/messages';
 import trialRoutes from './routes/trial';
+import errorRoutes from './routes/errors';
 import { runBatch, getUsersWithNewResults } from './services/batchService';
 import { purgeOldRejectedResults } from './services/matchService';
 import { sendMatchNotification } from './services/emailService';
+import { sendMatchSms } from './services/smsService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 
 // Validate required env vars in production
@@ -51,6 +53,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/trial', trialRoutes);
+app.use('/api/errors', errorRoutes);
 
 // Proxy: serves obituary pages in an iframe-friendly way.
 // If the real page can be fetched, serve it with headers stripped.
@@ -253,11 +256,14 @@ cron.schedule('0 16 * * *', async () => {
     await runBatch();
 
     // Send notifications to users with new batch results
-    const emails = await getUsersWithNewResults();
-    for (const email of emails) {
-      await sendMatchNotification(email);
+    const users = await getUsersWithNewResults();
+    for (const u of users) {
+      await sendMatchNotification(u.email);
+      if (u.smsOptIn && u.phoneNumber) {
+        await sendMatchSms(u.phoneNumber);
+      }
     }
-    console.log(`[Cron] Sent notifications to ${emails.length} users`);
+    console.log(`[Cron] Sent notifications to ${users.length} users`);
   } catch (err) {
     console.error('[Cron] Batch failed:', err);
   }

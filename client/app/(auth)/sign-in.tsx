@@ -81,7 +81,7 @@ export default function SignInScreen() {
             <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
           </Text>
           <Text style={styles.introText}>
-            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>send you a text and email</Text> later when an obituary for that person is published in the US, Canada, the UK, Australia, and New Zealand.
+            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>send you a text and email</Text> later when an obituary for that person is published in the US, Canada, the UK, Australia, or New Zealand.
           </Text>
           <Text style={styles.introText}>
             <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.

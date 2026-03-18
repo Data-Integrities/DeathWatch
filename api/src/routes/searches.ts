@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import * as searchService from '../services/searchService';
 import { logActivity, buildFingerprint } from '../services/activityService';
+import { sendMatchNotification } from '../services/emailService';
+import { sendMatchSms } from '../services/smsService';
 import { pool } from '../db/pool';
 
 const router = Router();
@@ -53,6 +55,21 @@ router.post('/', async (req: Request, res: Response) => {
     const data = searchCreateSchema.parse(req.body);
     const result = await searchService.createSearch(req.userId!, data);
     logActivity(req.userId!, 'New Search', buildFingerprint(data));
+
+    // Send immediate notifications if matches found
+    if (result.results && result.results.length > 0) {
+      const { rows: uRows } = await pool.query(
+        'SELECT email, phone_number, sms_opt_in FROM dw_user WHERE login_id = $1',
+        [req.userId!]
+      );
+      if (uRows.length > 0) {
+        sendMatchNotification(uRows[0].email).catch(err => console.error('[Search] Email notification failed:', err));
+        if (uRows[0].sms_opt_in && uRows[0].phone_number) {
+          sendMatchSms(uRows[0].phone_number).catch(err => console.error('[Search] SMS notification failed:', err));
+        }
+      }
+    }
+
     res.status(201).json(result);
   } catch (err: any) {
     if (err.name === 'ZodError') {

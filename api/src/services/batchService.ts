@@ -116,9 +116,15 @@ export async function runBatch() {
  * Get emails of users who have new unread batch results (for notification emails).
  * Only batch-discovered results trigger notifications — initial search results do not.
  */
-export async function getUsersWithNewResults(): Promise<string[]> {
+export interface NotifyUser {
+  email: string;
+  phoneNumber: string | null;
+  smsOptIn: boolean;
+}
+
+export async function getUsersWithNewResults(): Promise<NotifyUser[]> {
   const { rows } = await pool.query(
-    `SELECT DISTINCT du.email
+    `SELECT DISTINCT du.email, du.phone_number, du.sms_opt_in
      FROM dw_user du
      JOIN user_query uq ON uq.login_id = du.id AND uq.disabled = false
      JOIN user_result ur ON ur.user_query_id = uq.id
@@ -127,5 +133,9 @@ export async function getUsersWithNewResults(): Promise<string[]> {
        AND ur.source_type = 'batch'
      WHERE du.email IS NOT NULL`
   );
-  return rows.map((r: any) => r.email);
+  return rows.map((r: any) => ({
+    email: r.email,
+    phoneNumber: r.phone_number || null,
+    smsOptIn: r.sms_opt_in !== false,
+  }));
 }

@@ -17,6 +17,20 @@ export function setOnUnauthorized(callback: (() => void) | null) {
   onUnauthorized = callback;
 }
 
+function reportError(error: string, path: string) {
+  if (!authToken) return;
+  const page = Platform.OS === 'web' ? window.location.pathname : path;
+  const userAgent = Platform.OS === 'web' ? navigator.userAgent : `${Platform.OS} ${Platform.Version}`;
+  fetch(`${API_BASE}/api/errors`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ error, page, userAgent }),
+  }).catch(() => {});
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -30,12 +44,21 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    ...(__DEV__ ? { cache: 'no-store' as RequestCache } : {}),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      ...(__DEV__ ? { cache: 'no-store' as RequestCache } : {}),
+    });
+  } catch (err: any) {
+    const message = err.message || 'Failed to fetch';
+    if (path !== '/api/errors') {
+      reportError(`${method} ${path}: ${message}`, path);
+    }
+    throw err;
+  }
 
   const json = await res.json();
 
@@ -49,6 +72,9 @@ async function request<T>(
       onUnauthorized();
       // Never resolve — signOut will redirect to sign-in and unmount the caller
       return new Promise<T>(() => {});
+    }
+    if (res.status >= 500 && path !== '/api/errors') {
+      reportError(`${method} ${path}: ${res.status} ${json.error || 'Server error'}`, path);
     }
     const error = new Error(json.error || 'Request failed') as any;
     error.status = res.status;

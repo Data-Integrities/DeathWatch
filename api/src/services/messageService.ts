@@ -150,15 +150,17 @@ export async function replyToMessage(messageId: string, adminLoginId: string, re
     throw err;
   }
 
-  // Get sender info for the email
+  // Get sender info for the email/SMS
   const { rows: userRows } = await pool.query(
-    `SELECT email, first_name FROM dw_user WHERE login_id = $1`,
+    `SELECT email, first_name, phone_number, sms_opt_in FROM dw_user WHERE login_id = $1`,
     [rows[0].login_id]
   );
 
   return {
     senderEmail: userRows[0]?.email,
     senderFirstName: userRows[0]?.first_name,
+    senderPhone: userRows[0]?.phone_number || null,
+    senderSmsOptIn: userRows[0]?.sms_opt_in !== false,
     subject: rows[0].subject,
     body: rows[0].body,
     ticketId: rows[0].ticket_id,

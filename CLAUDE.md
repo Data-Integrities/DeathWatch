@@ -22,7 +22,7 @@ cd search && npm start
 - Database columns: snake_case (name_first, score_final)
 - TypeScript/JS: camelCase (nameFirst, scoreFinal)
 - Category-first naming: name{Type}, score{Type}, date{Type}, url{Type}
-- API endpoints: /api/auth/*, /api/searches/*, /api/matches/*, /api/notifications/*, /api/messages/*, /api/admin/*
+- API endpoints: /api/auth/*, /api/searches/*, /api/matches/*, /api/notifications/*, /api/messages/*, /api/trial/*, /api/admin/*
 - All match/search endpoints require JWT auth (Bearer token)
 
 ## View Names
@@ -30,7 +30,9 @@ cd search && npm start
 - **Searches (redirect)** — `client/app/(tabs)/searches.tsx` — Redirects to `/matches`
 - **Results View** — `client/app/matches/[searchId]/index.tsx` — Obituary results for a search; "Your Search" card at top with edit icon (hidden when confirmed); MatchCard shows domain only; More Info opens domain homepage; Right/Wrong Person buttons appear only after investigating; disclaimer card at bottom; unconfirm flow with modal
 - **More Info** — `client/app/matches/[searchId]/[resultId].tsx` — Simplified detail: user's search input, domain link, disclaimer (no snippet data, no deep links)
-- **New Search** — `client/app/search/new.tsx` — Compact form with left-side labels
+- **Welcome** — `client/app/welcome.tsx` — Post-registration choice: Try Free or Subscribe
+- **Trial Search** — `client/app/trial/search.tsx` — Ephemeral trial search form, results with Google integration and verdict tracking
+- **New Search** — `client/app/search/new.tsx` — Compact form with left-side labels (subscription required)
 - **Edit Search** — `client/app/search/[id].tsx` — Edit form with Save/Delete/Cancel row
 - **Help** — `client/app/(tabs)/help.tsx` — Send us a message form
 - **Admin Activity** — `client/app/admin/activity.tsx` — User activity report (800px grid, system font 14px, sortable columns)
@@ -63,7 +65,7 @@ cd search && npm start
 ## Database
 - PostgreSQL on localhost:5432, database: dw
 - Migrations in api/src/db/migrations/ (006+) and search/src/db/migrations/ (001-005)
-- Key tables: dw_user, user_query, user_result, exclusions, support_message, activity_log, login_history
+- Key tables: dw_user, user_query, user_result, exclusions, support_message, activity_log, login_history, trial_search
 
 ## Safe Commands
 - `cd api && npm run dev` — Start API dev server

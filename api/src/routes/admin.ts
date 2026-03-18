@@ -4,6 +4,7 @@ import { adminAuth } from '../middleware/adminAuth';
 import { getRecentActivity, getUsersSummary } from '../services/activityService';
 import { getMessages, replyToMessage, markMessageRead, getUnrepliedMessageCount } from '../services/messageService';
 import { sendReplyNotification } from '../services/emailService';
+import { sendReplySms } from '../services/smsService';
 
 const router = Router();
 router.use(authMiddleware);
@@ -59,6 +60,9 @@ router.post('/messages/:id/reply', async (req: Request, res: Response) => {
     }
     const result = await replyToMessage(req.params.id, req.userId!, replyText.trim());
     await sendReplyNotification(result.senderEmail, result.senderFirstName, result.ticketId);
+    if (result.senderSmsOptIn && result.senderPhone) {
+      await sendReplySms(result.senderPhone);
+    }
     res.json({ success: true });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });

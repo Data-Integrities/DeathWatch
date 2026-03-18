@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { pool } from '../db/pool';
 import { logActivity, buildFingerprint } from '../services/activityService';
+import { sendMatchNotification } from '../services/emailService';
+import { sendMatchSms } from '../services/smsService';
 import type { MatchResult, SearchQueryCreate } from '../types';
 
 const SEARCH_ENGINE_URL = process.env.SEARCH_ENGINE_URL || 'http://localhost:3000';
@@ -41,7 +43,7 @@ router.post('/search', async (req: Request, res: Response) => {
   try {
     // Check trial eligibility
     const { rows: userRows } = await pool.query(
-      'SELECT trial_searches_used, subscription_active FROM dw_user WHERE login_id = $1',
+      'SELECT trial_searches_used, subscription_active, email, phone_number, sms_opt_in FROM dw_user WHERE login_id = $1',
       [req.userId!]
     );
     if (userRows.length === 0) {
@@ -113,6 +115,14 @@ router.post('/search', async (req: Request, res: Response) => {
     );
 
     logActivity(req.userId!, 'Trial Search', buildFingerprint(data));
+
+    // Send immediate notifications if matches found
+    if (results.length > 0) {
+      sendMatchNotification(user.email).catch(err => console.error('[Trial] Email notification failed:', err));
+      if (user.sms_opt_in && user.phone_number) {
+        sendMatchSms(user.phone_number).catch(err => console.error('[Trial] SMS notification failed:', err));
+      }
+    }
 
     res.json({
       trialSearchId: trialRows[0].id,
