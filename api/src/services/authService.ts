@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { pool } from '../db/pool';
 import type { UserProfile } from '../types';
 import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from './emailService';
+import { normalizePhone } from '../utils/phone';
 import { lookupGeo } from './geoService';
 import { getUnreadReplyCount, getUnreadTicketIds } from './messageService';
 
@@ -55,7 +56,7 @@ export async function register(email: string, password: string, firstName: strin
     `INSERT INTO dw_user (email, password_hash, first_name, last_name, verification_token, verification_token_expires, phone_number)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
-    [email.toLowerCase(), passwordHash, firstName, lastName, verificationToken, verificationExpires, phoneNumber ? (phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber.replace(/[^0-9]/g, '')}`) : null]
+    [email.toLowerCase(), passwordHash, firstName, lastName, verificationToken, verificationExpires, normalizePhone(phoneNumber)]
   );
 
   const user = rowToUser(rows[0]);
@@ -246,10 +247,7 @@ export async function updatePreference(userId: string, key: string, value: boole
 }
 
 export async function updatePhone(userId: string, phoneNumber: string | null) {
-  let normalized = phoneNumber?.replace(/[^0-9+]/g, '') || null;
-  if (normalized && !normalized.startsWith('+')) {
-    normalized = `+${normalized}`;
-  }
+  const normalized = normalizePhone(phoneNumber);
   await pool.query(
     'UPDATE dw_user SET phone_number = $1, updated_at = NOW() WHERE login_id = $2',
     [normalized, userId]

@@ -217,8 +217,9 @@ export default function SettingsScreen() {
           keyboardType="phone-pad"
           autoComplete="tel"
           textContentType="telephoneNumber"
-          placeholder="US or Canada mobile number"
+          placeholder="e.g. (904) 477-0311 or +44 7911 123456"
         />
+        <Text style={styles.phoneHint}>Include country code for non-US numbers (e.g. +44)</Text>
 
         <Checkbox
           checked={user?.smsOptIn !== false}
@@ -401,6 +402,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.success,
     fontWeight: '600',
+  },
+  phoneHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    paddingLeft: 94,
+    marginBottom: spacing.sm,
   },
   saveButton: {
     marginTop: spacing.md,

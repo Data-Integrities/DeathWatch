@@ -7,6 +7,7 @@ import { TextField } from '../../src/components/TextField';
 import { Button } from '../../src/components/Button';
 import { Checkbox } from '../../src/components/Checkbox';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
+import { SignUpModal } from '../../src/components/SignUpModal';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import { BUILD_VERSION } from '../../src/version';
 
@@ -23,7 +24,8 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [supportVisible, setSupportVisible] = useState(false);
-  const [tryFreeVisible, setTryFreeVisible] = useState(false);
+  const [pricingVisible, setPricingVisible] = useState(false);
+  const [signUpVisible, setSignUpVisible] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [unreadTicketId, setUnreadTicketId] = useState('');
   const isReturning = Platform.OS === 'web' && (() => {
@@ -81,13 +83,13 @@ export default function SignInScreen() {
             <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
           </Text>
           <Text style={styles.introText}>
-            <Text style={styles.boldText}>Add a person</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>send you a text and email</Text> later when an obituary for that person is published in the US, Canada, the UK, Australia, or New Zealand.
+            Add people's names and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>send you a text and email</Text> when an obituary for any of them is published in the US, Canada, the UK, Australia, or New Zealand.
           </Text>
           <Text style={styles.introText}>
             <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
           </Text>
           <Text style={[styles.introText, { marginBottom: 0 }]}>
-            To begin, tap <Pressable onPress={() => setTryFreeVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>Create account and try for free</Text></Pressable>.
+            To begin, tap <Pressable onPress={() => setSignUpVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>Create account and try for free</Text></Pressable>.  <Pressable onPress={() => setPricingVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>See pricing</Text></Pressable>.
           </Text>
         </View>
       )}
@@ -140,7 +142,7 @@ export default function SignInScreen() {
       <Button
         title="Create account and try for free"
         variant="secondary"
-        onPress={() => router.push('/sign-up')}
+        onPress={() => setSignUpVisible(true)}
         style={styles.createAccount}
       />
 
@@ -155,6 +157,10 @@ export default function SignInScreen() {
           <Text style={styles.link}>Contact support</Text>
         </Pressable>
       </View>
+
+      <Pressable onPress={() => setPricingVisible(true)} style={styles.pricingLinkWrap}>
+        <Text style={styles.pricingLink}>See pricing</Text>
+      </Pressable>
 
       <ConfirmDialog
         visible={showReplyModal}
@@ -176,24 +182,41 @@ export default function SignInScreen() {
         onCancel={() => setSupportVisible(false)}
       />
 
-      <Modal visible={tryFreeVisible} transparent animationType="fade" onRequestClose={() => setTryFreeVisible(false)}>
+      <Modal visible={pricingVisible} transparent animationType="fade" onRequestClose={() => setPricingVisible(false)}>
         <View style={styles.tryFreeOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setTryFreeVisible(false)} />
-          <View style={styles.tryFreeCard}>
-            <Text style={styles.tryFreeTitle}>Try for free</Text>
-            <Text style={styles.tryFreeBody}>
-              When you create an account, you get 3 free trial searches.
-            </Text>
-            <Text style={styles.tryFreeBody}>
-              <Text style={styles.tryFreeHighlight}>For the trial</Text>, enter someone who has <Text style={styles.tryFreeHighlight}>already passed away</Text>.  <Text style={styles.brandText}>ObitNOTE</Text> will search for their obituary instantly so you can see how it works.
-            </Text>
-            <Text style={[styles.tryFreeBody, { marginBottom: spacing.md }]}>
-              <Text style={styles.tryFreeHighlight}>After subscribing</Text>, enter people who are <Text style={styles.tryFreeHighlight}>still living</Text>.  <Text style={styles.brandText}>ObitNOTE</Text> will search for them every day and notify you when an obituary is found.
-            </Text>
-            <Button title="Close" variant="secondary" onPress={() => setTryFreeVisible(false)} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPricingVisible(false)} />
+          <View style={styles.pricingCard}>
+            <Text style={styles.pricingTitle}>Pricing</Text>
+            <Text style={styles.pricingSubtitle}>Monitor people you care about</Text>
+
+            <View style={styles.pricingTable}>
+              <View style={styles.pricingHeaderRow}>
+                <Text style={[styles.pricingHeaderCell, styles.pricingPlanCol]}>Plan</Text>
+                <Text style={[styles.pricingHeaderCell, styles.pricingPriceCol]}>Per Year</Text>
+                <Text style={[styles.pricingHeaderCell, styles.pricingPerCol]}>Per Person</Text>
+              </View>
+              {[
+                { plan: 'Up to 10 people', price: '$20', per: '$2.00' },
+                { plan: 'Up to 25 people', price: '$39', per: '$1.56' },
+                { plan: 'Up to 50 people', price: '$69', per: '$1.38' },
+                { plan: 'Up to 100 people', price: '$119', per: '$1.19' },
+              ].map((row, i) => (
+                <View key={i} style={[styles.pricingRow, i % 2 === 0 && styles.pricingRowAlt]}>
+                  <Text style={[styles.pricingCell, styles.pricingPlanCol]}>{row.plan}</Text>
+                  <Text style={[styles.pricingCell, styles.pricingPriceCol, styles.pricingPriceText]}>{row.price}</Text>
+                  <Text style={[styles.pricingCell, styles.pricingPerCol]}>{row.per}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Text style={styles.pricingNote}>3 free trial searches before any payment is required.  Upgrade anytime.</Text>
+
+            <Button title="Close" variant="secondary" onPress={() => setPricingVisible(false)} />
           </View>
         </View>
       </Modal>
+
+      <SignUpModal visible={signUpVisible} onClose={() => setSignUpVisible(false)} />
 
       <Text style={styles.footer}>
         Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.  {BUILD_VERSION}
@@ -274,7 +297,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   links: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -304,29 +327,87 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.lg,
   },
-  tryFreeCard: {
+  pricingLinkWrap: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  pricingLink: {
+    fontSize: fontSize.sm,
+    color: colors.green,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  pricingCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    maxWidth: 400,
+    maxWidth: 420,
     width: '100%',
     ...shadows.modal,
   },
-  tryFreeTitle: {
+  pricingTitle: {
     fontSize: fontSize.lg,
     fontWeight: '700',
+    color: colors.brand,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  pricingSubtitle: {
+    fontSize: fontSize.sm,
     color: '#444444',
+    textAlign: 'center',
     marginBottom: spacing.md,
   },
-  tryFreeBody: {
+  pricingTable: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  pricingHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.brand,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  pricingHeaderCell: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  pricingRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  pricingRowAlt: {
+    backgroundColor: '#F8F5FC',
+  },
+  pricingCell: {
     fontSize: fontSize.base,
     color: '#444444',
-    lineHeight: 26,
-    marginBottom: spacing.md,
   },
-  tryFreeHighlight: {
-    backgroundColor: '#FFFF00',
+  pricingPlanCol: {
+    flex: 3,
+  },
+  pricingPriceCol: {
+    flex: 2,
+    textAlign: 'center',
+  },
+  pricingPriceText: {
     fontWeight: '700',
+    color: colors.brand,
+  },
+  pricingPerCol: {
+    flex: 2,
+    textAlign: 'right',
+  },
+  pricingNote: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   footer: {
     marginTop: 'auto' as any,

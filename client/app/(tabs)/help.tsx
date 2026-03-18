@@ -156,7 +156,7 @@ export default function HelpScreen() {
                   {msg.status === 'replied' && msg.adminReply ? (
                     <View style={styles.replyBlock}>
                       <Text style={styles.replyLabel}>Our response:</Text>
-                      <Text style={styles.replyBody}>{msg.adminReply}</Text>
+                      <Text style={styles.replyBody}>{msg.adminReply}{'\n\n'}ObitNOTE Support Team</Text>
                       {msg.repliedAt && (
                         <Text style={styles.replyDate}>{formatDate(msg.repliedAt)}</Text>
                       )}

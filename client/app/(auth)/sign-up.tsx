@@ -9,6 +9,7 @@ import { Button } from '../../src/components/Button';
 import { StatePicker } from '../../src/components/StatePicker';
 import { CountryPicker } from '../../src/components/CountryPicker';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
+import { LegalModal } from '../../src/components/LegalModal';
 import { colors, fontSize, spacing, heading } from '../../src/theme';
 
 // US and Canadian state/province codes from StatePicker
@@ -36,6 +37,7 @@ export default function SignUpScreen() {
   const [pwVisible, setPwVisible] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [phoneWarningVisible, setPhoneWarningVisible] = useState(false);
+  const [legalType, setLegalType] = useState<'terms' | 'privacy' | null>(null);
 
   // Show country picker when state is NOT a known US/CA code (custom region)
   const isNonUsCanada = useMemo(() => {
@@ -199,6 +201,7 @@ export default function SignUpScreen() {
         textContentType="telephoneNumber"
         placeholder="Optional"
       />
+      <Text style={styles.phoneHint}>Include country code for non-US numbers (e.g. +44)</Text>
 
       <TextField
         label="Password"
@@ -225,6 +228,13 @@ export default function SignUpScreen() {
         autoComplete="new-password"
         textContentType="newPassword"
       />
+
+      <Text style={styles.consent}>
+        By clicking Create Account, you agree to our{' '}
+        <Text style={styles.consentLink} onPress={() => setLegalType('terms')}>Terms of Service</Text>
+        {' '}and{' '}
+        <Text style={styles.consentLink} onPress={() => setLegalType('privacy')}>Privacy Policy</Text>.
+      </Text>
 
       <View style={styles.buttons}>
         <Button
@@ -271,6 +281,8 @@ export default function SignUpScreen() {
         }}
         onCancel={() => setPhoneWarningVisible(false)}
       />
+
+      <LegalModal visible={!!legalType} type={legalType || 'terms'} onClose={() => setLegalType(null)} />
 
       <Text style={styles.footer}>
         Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
@@ -383,6 +395,24 @@ const styles = StyleSheet.create({
   },
   checkEmailBold: {
     fontWeight: '700',
+  },
+  phoneHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    paddingLeft: 94,
+    marginBottom: spacing.sm,
+  },
+  consent: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    lineHeight: 18,
+  },
+  consentLink: {
+    color: colors.green,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   continueButton: {
     minWidth: 200,

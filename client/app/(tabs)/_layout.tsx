@@ -4,12 +4,16 @@ import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-nati
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
 import { AppHeader } from '../../src/components/AppHeader';
+import { HelpModal } from '../../src/components/HelpModal';
+import { SettingsModal } from '../../src/components/SettingsModal';
 import { colors, fontSize, spacing } from '../../src/theme';
 
 export default function TabsLayout() {
   const { user, isLoading, refreshUser } = useAuth();
   const [resending, setResending] = useState(false);
   const [bannerMessage, setBannerMessage] = useState('');
+  const [helpVisible, setHelpVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   if (isLoading) {
     return (
@@ -40,7 +44,7 @@ export default function TabsLayout() {
 
   return (
     <View style={styles.container}>
-      <AppHeader />
+      <AppHeader onHelp={() => setHelpVisible(true)} onSettings={() => setSettingsVisible(true)} />
       {user.emailVerified === false && (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>
@@ -68,6 +72,8 @@ export default function TabsLayout() {
         <Tabs.Screen name="help" />
         <Tabs.Screen name="settings" />
       </Tabs>
+      <HelpModal visible={helpVisible} onClose={() => setHelpVisible(false)} />
+      <SettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
     </View>
   );
 }

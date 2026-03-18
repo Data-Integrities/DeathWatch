@@ -10,9 +10,10 @@ const MAIN_WIDTH = 600;
 interface AppHeaderProps {
   minimal?: boolean;
   onHelp?: () => void;
+  onSettings?: () => void;
 }
 
-export function AppHeader({ minimal, onHelp }: AppHeaderProps = {}) {
+export function AppHeader({ minimal, onHelp, onSettings }: AppHeaderProps = {}) {
   const { user } = useAuth();
   const hasUnread = (user?.unreadReplyCount ?? 0) > 0;
 
@@ -27,13 +28,13 @@ export function AppHeader({ minimal, onHelp }: AppHeaderProps = {}) {
         </Pressable>
         {!minimal ? (
           <View style={styles.navRow}>
-            <Pressable onPress={() => router.replace('/help' as any)} accessibilityRole="link" accessibilityLabel="Help" style={styles.navItem}>
+            <Pressable onPress={onHelp || (() => router.replace('/help' as any))} accessibilityRole="button" accessibilityLabel="Help" style={styles.navItem}>
               <View>
                 <FontAwesome name="question-circle" size={20} color={colors.white} />
                 {hasUnread && <View style={styles.badgeDot} />}
               </View>
             </Pressable>
-            <Pressable onPress={() => router.replace('/settings' as any)} accessibilityRole="link" accessibilityLabel="Settings" style={styles.navItem}>
+            <Pressable onPress={onSettings || (() => router.replace('/settings' as any))} accessibilityRole="button" accessibilityLabel="Settings" style={styles.navItem}>
               <Ionicons name="settings-sharp" size={20} color={colors.white} />
             </Pressable>
           </View>

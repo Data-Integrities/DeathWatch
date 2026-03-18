@@ -1,44 +1,50 @@
-import twilio from 'twilio';
+import { SinchClient } from '@sinch/sdk-core';
+import { normalizePhone } from '../utils/phone';
 
-const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
-const AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
-const FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || '';
+const PROJECT_ID = process.env.SINCH_PROJECT_ID || '';
+const KEY_ID = process.env.SINCH_KEY_ID || '';
+const KEY_SECRET = process.env.SINCH_KEY_SECRET || '';
+const FROM_NUMBER = process.env.SINCH_FROM_NUMBER || '';
 
-const isDev = !ACCOUNT_SID || !AUTH_TOKEN || !FROM_NUMBER;
+const isDev = !PROJECT_ID || !KEY_ID || !KEY_SECRET || !FROM_NUMBER;
 
-const client = isDev ? null : twilio(ACCOUNT_SID, AUTH_TOKEN);
-
-function normalizePhone(phone: string): string {
-  const digits = phone.replace(/[^0-9+]/g, '');
-  if (digits.startsWith('+')) return digits;
-  return `+${digits}`;
-}
+const sinch = isDev ? null : new SinchClient({
+  projectId: PROJECT_ID,
+  keyId: KEY_ID,
+  keySecret: KEY_SECRET,
+});
 
 export async function sendSms(to: string, body: string) {
   const normalized = normalizePhone(to);
-  if (isDev || !client) {
+  if (!normalized) {
+    console.error(`[SMS] Invalid phone number: "${to}"`);
+    return;
+  }
+  if (isDev || !sinch) {
     console.log(`[SMS] Would send to ${normalized}: "${body}"`);
     return;
   }
 
   try {
-    const msg = await client.messages.create({
-      to: normalized,
-      from: FROM_NUMBER,
-      body,
+    const response = await sinch.sms.batches.send({
+      sendSMSRequestBody: {
+        to: [normalized],
+        from: FROM_NUMBER,
+        body,
+      },
     });
-    console.log(`[SMS] Sent to ${normalized} | SID: ${msg.sid} | Status: ${msg.status}`);
+    console.log(`[SMS] Sent to ${normalized} | Batch ID: ${response.id} | Type: ${response.type}`);
   } catch (err: any) {
     console.error(`[SMS] Failed to send to ${normalized} | Code: ${err.code} | Status: ${err.status} | Message: ${err.message}`);
   }
 }
 
 export async function sendMatchSms(phone: string) {
-  await sendSms(phone, 'ObitNOTE: A new potential obituary match has been found.  Sign in to review: https://obitnote.com');
+  await sendSms(phone, 'ObitNOTE: New potential obituary match found.  Sign in to see: https://ObitNOTE.com');
 }
 
 export async function sendReplySms(phone: string) {
-  await sendSms(phone, 'ObitNOTE: You have a new support reply.  Sign in to read: https://obitnote.com');
+  await sendSms(phone, 'ObitNOTE: You have a new support reply.  Sign in to read: https://ObitNOTE.com');
 }
 
 export async function sendErrorAlertSms(phone: string, summary: string) {

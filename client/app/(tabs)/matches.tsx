@@ -1,13 +1,14 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, RefreshControl, Pressable, Modal, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
 import { Button } from '../../src/components/Button';
-import { Checkbox } from '../../src/components/Checkbox';
 import { SearchCard } from '../../src/components/SearchCard';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
+import { SearchDetailModal } from '../../src/components/SearchDetailModal';
+import { EditSearchModal } from '../../src/components/EditSearchModal';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import type { SearchQuery } from '../../src/types';
 
@@ -64,12 +65,12 @@ export default function HomeScreen() {
   const [searches, setSearches] = useState<SearchQuery[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [disclaimerVisible, setDisclaimerVisible] = useState(false);
-  const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
+  const [aboutVisible, setAboutVisible] = useState(false);
   const { width } = useWindowDimensions();
   const subscribeTextStyle = width < 400 ? { fontSize: 14, fontWeight: '700' as const } : undefined;
-  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [detailSearchId, setDetailSearchId] = useState<string | null>(null);
+  const [editSearchId, setEditSearchId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -115,31 +116,6 @@ export default function HomeScreen() {
 
   const renderHeader = () => (
     <View>
-      {/* Intro card */}
-      {!user?.skipMatchesInfoCard && (
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
-          </Text>
-          <Text style={styles.welcomeText}>
-            <Text style={styles.boldText}>Add a person</Text> to <Text style={styles.boldText}>New Search</Text>, and <Text style={styles.brandText}>ObitNOTE</Text> will <Pressable onPress={() => setDisclaimerVisible(true)} onHoverIn={() => { hoverTimer.current = setTimeout(() => setDisclaimerVisible(true), 100); }} onHoverOut={() => { if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; } }} accessibilityRole="button" accessibilityLabel="Disclaimer" style={styles.disclaimerLinkWrap}><Text style={styles.disclaimerLink}>send you a text and email</Text></Pressable> when an obituary for that person is published in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', and '}{country}</React.Fragment>))}.
-          </Text>
-          <Text style={styles.welcomeText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
-          </Text>
-          <Text style={styles.welcomeText}>
-            To begin, click <Text style={styles.boldText}>New Search</Text>.
-          </Text>
-          <View style={styles.skipCheckboxRow}>
-            <Checkbox
-              checked={false}
-              onToggle={() => setSkipConfirmVisible(true)}
-              label="Skip this info in the future."
-            />
-          </View>
-        </View>
-      )}
-
       {/* Action buttons — trial/subscription-aware */}
       <View style={styles.topButtons}>
         {user?.subscriptionActive ? (
@@ -159,17 +135,21 @@ export default function HomeScreen() {
               variant="secondary"
               onPress={() => router.push('/subscribe' as any)}
               style={{ flex: 1 }}
-              textStyle={subscribeTextStyle}
+              textStyle={{ ...subscribeTextStyle, textAlign: 'center' }}
             />
           </>
         ) : (
           <Button
             title="Subscribe to ObitNOTE obituary monitoring"
             onPress={() => router.push('/subscribe' as any)}
-            textStyle={subscribeTextStyle}
+            textStyle={{ ...subscribeTextStyle, textAlign: 'center' }}
           />
         )}
       </View>
+
+      <Pressable onPress={() => setAboutVisible(true)} style={styles.aboutLinkWrap}>
+        <Text style={styles.aboutLink}>About ObitNOTE</Text>
+      </Pressable>
 
       {/* Section title */}
       {hasSearches && (
@@ -198,30 +178,12 @@ export default function HomeScreen() {
           return (
             <SearchCard
               search={item}
-              onPress={() => router.push(`/matches/${item.id}` as any)}
-              onEdit={!item.confirmed ? () => router.push(`/search/${item.id}`) : undefined}
+              onPress={() => setDetailSearchId(item.id)}
+              onEdit={!item.confirmed ? () => setEditSearchId(item.id) : undefined}
               onDelete={() => setDeleteTarget({ id: item.id, name: displayName })}
             />
           );
         }}
-      />
-
-      <ConfirmDialog
-        visible={skipConfirmVisible}
-        title="Info Card Hidden"
-        body="You can bring this info back in Settings."
-        confirmLabel="OK"
-        cancelLabel=""
-        onConfirm={async () => {
-          setSkipConfirmVisible(false);
-          try {
-            await api.patch('/api/auth/preferences', { skipMatchesInfoCard: true });
-            await refreshUser();
-          } catch (err) {
-            console.error('Failed to update preference:', err);
-          }
-        }}
-        onCancel={() => setSkipConfirmVisible(false)}
       />
 
       <ConfirmDialog
@@ -234,24 +196,47 @@ export default function HomeScreen() {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      {/* Disclaimer modal */}
-      <Modal visible={disclaimerVisible} transparent animationType="fade" onRequestClose={() => setDisclaimerVisible(false)}>
-        <View style={styles.disclaimerOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDisclaimerVisible(false)} />
-          <View style={styles.disclaimerCard}>
-            <Text style={styles.disclaimerText}>
-              <Text style={styles.brandText}>ObitNOTE</Text> will search the web for your entire list of people every day.
+      <SearchDetailModal
+        visible={!!detailSearchId}
+        searchId={detailSearchId}
+        onClose={(shouldRefresh) => {
+          setDetailSearchId(null);
+          if (shouldRefresh) loadData();
+        }}
+        onEdit={(id) => {
+          setDetailSearchId(null);
+          setEditSearchId(id);
+        }}
+      />
+
+      <EditSearchModal
+        visible={!!editSearchId}
+        searchId={editSearchId}
+        onClose={(shouldRefresh) => {
+          setEditSearchId(null);
+          if (shouldRefresh) loadData();
+        }}
+      />
+
+      {/* About modal */}
+      <Modal visible={aboutVisible} transparent animationType="fade" onRequestClose={() => setAboutVisible(false)}>
+        <View style={styles.aboutOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAboutVisible(false)} />
+          <View style={styles.aboutCard}>
+            <Text style={styles.aboutTitle}>About ObitNOTE</Text>
+            <Text style={styles.aboutText}>
+              <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
             </Text>
-            <Text style={styles.disclaimerText}>
-              We are accurate, but two things can still happen:
+            <Text style={styles.aboutText}>
+              Add people's names and <Text style={styles.brandText}>ObitNOTE</Text> will search for them every day.  When an obituary is found in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', or '}{country}</React.Fragment>))}, we will <Text style={styles.boldText}>send you a text and email</Text>.
             </Text>
-            <Text style={styles.disclaimerText}>
-              We might sometimes <Text style={styles.boldText}>miss an obituary</Text>.
+            <Text style={styles.aboutText}>
+              We are accurate, but we might sometimes <Text style={styles.boldText}>miss an obituary</Text>.  We will try to text and email you, but <Text style={styles.boldText}>they might not reach you</Text> (for example, they could be blocked, filtered, or in spam).  This would be unusual, but it is still possible.
             </Text>
-            <Text style={styles.disclaimerText}>
-              We will try to text and email you, but <Text style={styles.boldText}>they might not reach you</Text> (for example, they could be blocked, filtered, or in spam).  This would be unusual, but it is still possible.
+            <Text style={styles.aboutText}>
+              <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
             </Text>
-            <Button title="Close" variant="secondary" onPress={() => setDisclaimerVisible(false)} />
+            <Button title="Close" variant="secondary" onPress={() => setAboutVisible(false)} />
           </View>
         </View>
       </Modal>
@@ -271,18 +256,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  welcomeCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.card,
-  },
-  welcomeText: {
-    fontSize: fontSize.base,
-    color: colors.textPrimary,
-    lineHeight: 26,
-    marginBottom: spacing.md,
-  },
   boldText: {
     fontWeight: '700',
   },
@@ -290,18 +263,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.brand,
   },
-  skipCheckboxRow: {
-    alignItems: 'flex-end',
-    marginTop: spacing.xs - 1,
+  aboutLinkWrap: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
-  disclaimerLinkWrap: {
-    display: 'inline' as any,
-  },
-  disclaimerLink: {
-    fontWeight: '700',
+  aboutLink: {
+    fontSize: fontSize.sm,
     color: colors.green,
-    fontSize: fontSize.base,
-    lineHeight: 26,
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   topButtons: {
@@ -325,24 +294,30 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     color: '#444444',
   },
-  disclaimerOverlay: {
+  aboutOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
   },
-  disclaimerCard: {
+  aboutCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    maxWidth: 400,
+    maxWidth: 420,
     width: '100%',
     ...shadows.modal,
   },
-  disclaimerText: {
+  aboutTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.brand,
+    marginBottom: spacing.md,
+  },
+  aboutText: {
     fontSize: fontSize.base,
-    color: colors.textPrimary,
+    color: '#444444',
     lineHeight: 26,
     marginBottom: spacing.md,
   },

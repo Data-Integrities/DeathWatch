@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as authService from '../services/authService';
 import { authMiddleware } from '../middleware/auth';
 import { pool } from '../db/pool';
+import { normalizePhone } from '../utils/phone';
 
 const router = Router();
 
@@ -28,6 +29,10 @@ const loginSchema = z.object({
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const data = registerSchema.parse(req.body);
+    if (data.phoneNumber && !normalizePhone(data.phoneNumber)) {
+      res.status(400).json({ error: 'Invalid phone number.  Please check the number and try again.' });
+      return;
+    }
     const result = await authService.register(data.email, data.password, data.firstName, data.lastName, data.phoneNumber);
     res.status(201).json(result);
   } catch (err: any) {
@@ -143,6 +148,10 @@ router.patch('/preferences', authMiddleware, async (req: Request, res: Response)
       await authService.updatePreference(req.userId!, 'sms_opt_in', data.smsOptIn);
     }
     if (data.phoneNumber !== undefined) {
+      if (data.phoneNumber && !normalizePhone(data.phoneNumber)) {
+        res.status(400).json({ error: 'Invalid phone number.  Please check the number and try again.' });
+        return;
+      }
       await authService.updatePhone(req.userId!, data.phoneNumber);
     }
     if (data.firstName !== undefined || data.lastName !== undefined) {
