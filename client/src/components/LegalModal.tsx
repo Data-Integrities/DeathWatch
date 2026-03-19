@@ -29,7 +29,7 @@ export function LegalModal({ visible, onClose, type }: Props) {
   );
 }
 
-function TermsContent() {
+export function TermsContent() {
   return (
     <>
       <Text style={styles.title}>Terms of Service</Text>
@@ -66,7 +66,12 @@ function TermsContent() {
 
       <Text style={styles.heading}>6. Subscriptions and Billing</Text>
       <Text style={styles.body}>
-        Paid subscriptions are billed annually through our payment partner, Paddle.com, who acts as the merchant of record.  Paddle handles all payment processing, tax collection, and invoicing.  By subscribing, you also agree to Paddle's terms of service.{'\n\n'}Subscription plans determine the maximum number of people you can monitor at one time.  You may upgrade your plan at any time.
+        Paid subscriptions are billed annually through our payment partner, Paddle.com, who acts as the merchant of record.  Paddle handles all payment processing, tax collection, and invoicing.  By subscribing, you also agree to Paddle's terms of service.{'\n\n'}Subscription plans determine the maximum number of people you can monitor at one time.  You may cancel, upgrade, or downgrade your plan at any time.{'\n\n'}
+        <Text style={styles.bold}>Auto-Renewal:</Text>  Subscriptions automatically renew each year at the then-current price.  We will send you a reminder email before each renewal.{'\n\n'}
+        <Text style={styles.bold}>Upgrade:</Text>  You may upgrade to a higher plan at any time.  You will be charged a prorated amount for the remainder of your billing period.{'\n\n'}
+        <Text style={styles.bold}>Downgrade:</Text>  You may downgrade to a lower plan at any time.  If you are currently monitoring more people than the new plan allows, you will need to remove searches before the downgrade takes effect.  A prorated credit will be applied to your next billing period.{'\n\n'}
+        <Text style={styles.bold}>Cancellation:</Text>  You may cancel your subscription at any time through your account settings or by contacting us at support@obitnote.com.  Cancellation takes effect immediately and you will receive a prorated refund for the unused portion of your subscription.{'\n\n'}
+        <Text style={styles.bold}>Refunds:</Text>  We want you to be happy with ObitNOTE.  If you are not satisfied, contact us at support@obitnote.com within 30 days of your payment for a full refund.  Refunds requested after 30 days will be prorated for the unused portion of your subscription.
       </Text>
 
       <Text style={styles.heading}>7. Acceptable Use</Text>
@@ -111,7 +116,7 @@ function TermsContent() {
   );
 }
 
-function PrivacyContent() {
+export function PrivacyContent() {
   return (
     <>
       <Text style={styles.title}>Privacy Policy</Text>
@@ -262,3 +267,5 @@ const styles = StyleSheet.create({
     color: '#444444',
   },
 });
+
+export const legalStyles = styles;

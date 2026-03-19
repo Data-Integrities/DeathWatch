@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, Platform, Pressable, Modal } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
@@ -8,6 +9,7 @@ import { Button } from '../../src/components/Button';
 import { Checkbox } from '../../src/components/Checkbox';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { SignUpModal } from '../../src/components/SignUpModal';
+import { LegalModal } from '../../src/components/LegalModal';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import { BUILD_VERSION } from '../../src/version';
 
@@ -27,6 +29,7 @@ export default function SignInScreen() {
   const [pricingVisible, setPricingVisible] = useState(false);
   const [signUpVisible, setSignUpVisible] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
+  const [legalType, setLegalType] = useState<'terms' | 'privacy' | null>(null);
   const [unreadTicketId, setUnreadTicketId] = useState('');
   const isReturning = Platform.OS === 'web' && (() => {
     try { return localStorage.getItem('obitnote_returning') === '1'; } catch { return false; }
@@ -162,6 +165,18 @@ export default function SignInScreen() {
         <Text style={styles.pricingLink}>See pricing</Text>
       </Pressable>
 
+      <View style={styles.legalLinks}>
+        <Pressable onPress={() => setLegalType('terms')}>
+          <Text style={styles.legalLink}>Terms of Service</Text>
+        </Pressable>
+        <Text style={styles.linkSpacer}>{'     '}</Text>
+        <Pressable onPress={() => setLegalType('privacy')}>
+          <Text style={styles.legalLink}>Privacy Policy</Text>
+        </Pressable>
+      </View>
+
+      <LegalModal visible={!!legalType} type={legalType || 'terms'} onClose={() => setLegalType(null)} />
+
       <ConfirmDialog
         visible={showReplyModal}
         title="Support Response"
@@ -186,6 +201,9 @@ export default function SignInScreen() {
         <View style={styles.tryFreeOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setPricingVisible(false)} />
           <View style={styles.pricingCard}>
+            <Pressable onPress={() => setPricingVisible(false)} style={styles.pricingCloseX} accessibilityRole="button" accessibilityLabel="Close">
+              <FontAwesome name="times" size={28} color={colors.green} />
+            </Pressable>
             <Text style={styles.pricingTitle}>Pricing</Text>
             <Text style={styles.pricingSubtitle}>Monitor people you care about</Text>
 
@@ -207,11 +225,13 @@ export default function SignInScreen() {
                   <Text style={[styles.pricingCell, styles.pricingPerCol]}>{row.per}</Text>
                 </View>
               ))}
+              <View style={[styles.pricingRow, styles.pricingRowAlt]}>
+                <Text style={[styles.pricingCell, styles.pricingPlanCol]}>Over 100</Text>
+                <Text style={[styles.pricingCell, styles.pricingContactCol]}>email support@obitnote.com</Text>
+              </View>
             </View>
 
-            <Text style={styles.pricingNote}>3 free trial searches before any payment is required.  Upgrade anytime.</Text>
-
-            <Button title="Close" variant="secondary" onPress={() => setPricingVisible(false)} />
+            <Text style={styles.pricingNote}>3 free trial searches before any payment is required.  Cancel, upgrade, or downgrade anytime.</Text>
           </View>
         </View>
       </Modal>
@@ -335,7 +355,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.green,
     fontWeight: '600',
-    textDecorationLine: 'underline',
+  },
+  legalLinks: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  legalLink: {
+    fontSize: fontSize.xs,
+    color: colors.green,
+    fontWeight: '600',
   },
   pricingCard: {
     backgroundColor: colors.surface,
@@ -344,6 +374,13 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     width: '100%',
     ...shadows.modal,
+  },
+  pricingCloseX: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    zIndex: 1,
+    padding: 8,
   },
   pricingTitle: {
     fontSize: fontSize.lg,
@@ -386,7 +423,8 @@ const styles = StyleSheet.create({
   },
   pricingCell: {
     fontSize: fontSize.base,
-    color: '#444444',
+    fontWeight: '700',
+    color: '#555555',
   },
   pricingPlanCol: {
     flex: 3,
@@ -402,6 +440,13 @@ const styles = StyleSheet.create({
   pricingPerCol: {
     flex: 2,
     textAlign: 'right',
+  },
+  pricingContactCol: {
+    flex: 4,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#555555',
+    textAlign: 'center',
   },
   pricingNote: {
     fontSize: fontSize.sm,
