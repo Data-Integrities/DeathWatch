@@ -10,9 +10,9 @@ import adminRoutes from './routes/admin';
 import messageRoutes from './routes/messages';
 import trialRoutes from './routes/trial';
 import errorRoutes from './routes/errors';
-import { runBatch, getUsersWithNewResults } from './services/batchService';
+import { runBatch, getUsersWithNewResults, getMonthlySummaryUsers } from './services/batchService';
 import { purgeOldRejectedResults } from './services/matchService';
-import { sendMatchNotification } from './services/emailService';
+import { sendMatchNotification, sendMonthlySummary } from './services/emailService';
 import { sendMatchSms } from './services/smsService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 
@@ -266,6 +266,24 @@ cron.schedule('0 16 * * *', async () => {
     console.log(`[Cron] Sent notifications to ${users.length} users`);
   } catch (err) {
     console.error('[Cron] Batch failed:', err);
+  }
+});
+
+// Monthly summary: 1st of each month at 9:00 AM ET (14:00 UTC)
+cron.schedule('0 14 1 * *', async () => {
+  console.log('[Cron] Starting monthly summary emails...');
+  try {
+    const users = await getMonthlySummaryUsers();
+    for (const u of users) {
+      await sendMonthlySummary(u.email, u.firstName, {
+        activeSearches: u.activeSearches,
+        searchesPerformed: u.searchesPerformed,
+        matchesFound: u.matchesFound,
+      });
+    }
+    console.log(`[Cron] Monthly summary sent to ${users.length} subscribers`);
+  } catch (err) {
+    console.error('[Cron] Monthly summary failed:', err);
   }
 });
 

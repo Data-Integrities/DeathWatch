@@ -197,6 +197,35 @@ export async function sendErrorAlert(details: {
   await sendEmail('support@obitnote.com', 'ObitNOTE: Client Error Report', html);
 }
 
+export async function sendMonthlySummary(toEmail: string, firstName: string, stats: {
+  activeSearches: number;
+  searchesPerformed: number;
+  matchesFound: number;
+}) {
+  const now = new Date();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthName = monthNames[now.getMonth()];
+  const subject = `ObitNOTE ${monthName} 1 Update`;
+
+  const searchWord = stats.activeSearches === 1 ? 'person' : 'people';
+  const matchLine = stats.matchesFound > 0
+    ? `<p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">${stats.matchesFound} possible ${stats.matchesFound === 1 ? 'match was' : 'matches were'} found.  Sign in to review.</p>`
+    : `<p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">No obituaries were found.</p>`;
+
+  const html = wrapHtml(`
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Hi ${escapeHtml(firstName)},</h2>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      Your subscription is active.  Last month we performed ${stats.searchesPerformed.toLocaleString()} searches across your ${stats.activeSearches} monitored ${searchWord}.
+    </p>
+    ${matchLine}
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      Thank you for using ObitNOTE.
+    </p>
+  `);
+
+  await sendEmail(toEmail, subject, html);
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')

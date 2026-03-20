@@ -139,3 +139,54 @@ export async function getUsersWithNewResults(): Promise<NotifyUser[]> {
     smsOptIn: r.sms_opt_in !== false,
   }));
 }
+
+/**
+ * Get monthly summary stats for all active subscribers.
+ * Called on the 1st of the month; reports on the previous month.
+ */
+export interface MonthlySummaryUser {
+  email: string;
+  firstName: string;
+  activeSearches: number;
+  searchesPerformed: number;
+  matchesFound: number;
+}
+
+export async function getMonthlySummaryUsers(): Promise<MonthlySummaryUser[]> {
+  // Previous month boundaries
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  // Days in previous month (for calculating total searches performed)
+  const daysInMonth = Math.round((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24));
+
+  const { rows } = await pool.query(
+    `SELECT
+       du.email,
+       du.first_name,
+       COUNT(DISTINCT uq.id) AS active_searches,
+       (SELECT COUNT(*) FROM user_result ur
+        JOIN user_query uq2 ON ur.user_query_id = uq2.id
+        WHERE uq2.login_id = du.id
+          AND ur.source_type = 'batch'
+          AND ur.created_at >= $1
+          AND ur.created_at < $2
+       ) AS matches_found
+     FROM dw_user du
+     JOIN user_query uq ON uq.login_id = du.id
+       AND uq.disabled = false
+       AND uq.confirmed = false
+     WHERE du.subscription_active = true
+       AND du.email IS NOT NULL
+     GROUP BY du.id, du.email, du.first_name`,
+    [monthStart.toISOString(), monthEnd.toISOString()]
+  );
+
+  return rows.map((r: any) => ({
+    email: r.email,
+    firstName: r.first_name,
+    activeSearches: parseInt(r.active_searches, 10),
+    searchesPerformed: parseInt(r.active_searches, 10) * daysInMonth,
+    matchesFound: parseInt(r.matches_found, 10),
+  }));
+}
