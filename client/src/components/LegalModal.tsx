@@ -46,7 +46,7 @@ export function TermsContent() {
 
       <Text style={styles.heading}>2. What ObitNOTE Does</Text>
       <Text style={styles.body}>
-        ObitNOTE is an obituary monitoring and notification service.  You add people's names and we search for their obituaries daily in the US, Canada, the UK, Australia, and New Zealand.  When we find a potential match, we notify you by email and, optionally, by text message.
+        ObitNOTE is an obituary monitor and alert service.  You add people's names and we search for their obituaries daily in the US, Canada, the UK, Australia, and New Zealand.  When we find a potential match, we notify you by email and, optionally, by text message.
       </Text>
 
       <Text style={styles.heading}>3. No Guarantee of Results</Text>

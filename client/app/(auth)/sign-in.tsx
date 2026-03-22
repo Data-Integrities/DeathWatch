@@ -83,7 +83,7 @@ export default function SignInScreen() {
       {(
         <View style={styles.introCard}>
           <Text style={styles.introText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
+            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitor and alert service</Text>.
           </Text>
           <Text style={styles.introText}>
             Add people's names and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>send you a text and email</Text> when an obituary for any of them is published in the US, Canada, the UK, Australia, or New Zealand.
@@ -130,7 +130,7 @@ export default function SignInScreen() {
           onToggle={setRememberMe}
           label="Remember Me"
         />
-        <Text style={styles.rememberHint}>(Do not use Remember Me on a public device.)</Text>
+        <Text style={styles.rememberHint}>(Don't use Remember Me on a public device.)</Text>
       </View>
 
       <Button

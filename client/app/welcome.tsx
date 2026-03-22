@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
@@ -6,12 +6,14 @@ import { AppHeader } from '../src/components/AppHeader';
 import { ScreenContainer } from '../src/components/ScreenContainer';
 import { Button } from '../src/components/Button';
 import { Card } from '../src/components/Card';
+import { TrialSearchModal } from '../src/components/TrialSearchModal';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../src/theme';
 
 export default function WelcomeScreen() {
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const subscribeTextStyle = width < 400 ? { fontSize: 14, fontWeight: '700' as const } : undefined;
+  const [trialVisible, setTrialVisible] = useState(false);
 
   return (
     <View style={{ flex: 1 }}>
@@ -33,7 +35,7 @@ export default function WelcomeScreen() {
           <Button
             title="Try for Free"
             variant="primary"
-            onPress={() => router.push('/trial/search')}
+            onPress={() => setTrialVisible(true)}
             style={styles.cardButton}
           />
         </Card>
@@ -52,6 +54,11 @@ export default function WelcomeScreen() {
           />
         </Card>
       </ScreenContainer>
+
+      <TrialSearchModal
+        visible={trialVisible}
+        onClose={() => setTrialVisible(false)}
+      />
     </View>
   );
 }

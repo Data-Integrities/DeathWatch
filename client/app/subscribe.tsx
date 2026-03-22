@@ -1,11 +1,10 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Button } from '../src/components/Button';
 import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 
-export default function PricingPage() {
+export default function SubscribePage() {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
@@ -13,7 +12,7 @@ export default function PricingPage() {
           <Text style={styles.brand}>ObitNOTE</Text>
           <Text style={styles.tm}>{'\u2122'}</Text>
         </View>
-        <Text style={styles.title}>Pricing</Text>
+        <Text style={styles.title}>Subscribe</Text>
         <Text style={styles.subtitle}>Monitor people you care about</Text>
 
         <View style={styles.table}>
@@ -46,10 +45,12 @@ export default function PricingPage() {
           <Text style={styles.brandInline}>ObitNOTE</Text> is an obituary monitor and alert service.  Add people's names and <Text style={styles.brandInline}>ObitNOTE</Text> will send you a text and email when an obituary for any of them is published in the US, Canada, the UK, Australia, or New Zealand.
         </Text>
 
+        <Text style={styles.comingSoon}>Payment option coming soon.</Text>
+
         <Button
-          title="Back to Sign In"
+          title="Go Back"
           variant="secondary"
-          onPress={() => router.push('/sign-in')}
+          onPress={() => router.back()}
           style={styles.backButton}
         />
       </View>
@@ -170,6 +171,13 @@ const styles = StyleSheet.create({
   brandInline: {
     fontWeight: '700',
     color: colors.brand,
+  },
+  comingSoon: {
+    fontSize: fontSize.base,
+    fontWeight: '700',
+    color: colors.brand,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   backButton: {
     marginTop: spacing.sm,

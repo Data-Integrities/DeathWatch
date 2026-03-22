@@ -29,6 +29,10 @@ function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserP
     trialSearchesUsed: row.trial_searches_used || 0,
     trialSearchesMax: 3,
     subscriptionActive: row.subscription_active || false,
+    planCode: row.plan_code || null,
+    planStartDate: row.plan_start_date ? row.plan_start_date.toISOString?.().slice(0, 10) ?? row.plan_start_date : null,
+    planRenewalDate: row.plan_renewal_date ? row.plan_renewal_date.toISOString?.().slice(0, 10) ?? row.plan_renewal_date : null,
+    usingGraceSlot: row.using_grace_slot || false,
     phoneNumber: row.phone_number || null,
     smsOptIn: row.sms_opt_in !== false,
   };
@@ -38,6 +42,23 @@ function generateVerificationToken(): { token: string; expires: Date } {
   const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
   return { token, expires };
+}
+
+export async function impersonate(targetUserId: string) {
+  const { rows } = await pool.query(
+    'SELECT * FROM dw_user WHERE login_id = $1',
+    [targetUserId]
+  );
+  if (rows.length === 0) {
+    throw Object.assign(new Error('User not found'), { status: 404 });
+  }
+  const [unreadReplies, unreadTickets] = await Promise.all([
+    getUnreadReplyCount(targetUserId),
+    getUnreadTicketIds(targetUserId),
+  ]);
+  const user = rowToUser(rows[0], unreadReplies, unreadTickets);
+  const token = makeToken(user.id);
+  return { token, user };
 }
 
 export async function register(email: string, password: string, firstName: string, lastName: string, phoneNumber?: string) {

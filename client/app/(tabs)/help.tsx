@@ -114,7 +114,7 @@ export default function HelpScreen() {
       <ConfirmDialog
         visible={showSentModal}
         title="Message Sent"
-        body={`Your message has been sent (#${sentTicketId}).  We will respond as soon as possible.`}
+        body={`Your message has been sent (#${sentTicketId}).  We'll respond as soon as possible.`}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setShowSentModal(false)}
@@ -156,7 +156,7 @@ export default function HelpScreen() {
                   {msg.status === 'replied' && msg.adminReply ? (
                     <View style={styles.replyBlock}>
                       <Text style={styles.replyLabel}>Our response:</Text>
-                      <Text style={styles.replyBody}>{msg.adminReply}{'\n\n'}ObitNOTE Support Team</Text>
+                      <Text style={styles.replyBody}>{msg.adminReply}{'\n\n'}<Text style={styles.brandText}>ObitNOTE</Text> Support Team</Text>
                       {msg.repliedAt && (
                         <Text style={styles.replyDate}>{formatDate(msg.repliedAt)}</Text>
                       )}
@@ -342,5 +342,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: spacing.sm,
+  },
+  brandText: {
+    color: colors.brand,
+    fontWeight: '700',
   },
 });

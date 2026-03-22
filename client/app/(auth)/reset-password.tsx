@@ -26,7 +26,7 @@ export default function ResetPasswordScreen() {
       return;
     }
     if (password !== passwordConfirm) {
-      setError('Passwords do not match.');
+      setError('Passwords don\'t match.');
       return;
     }
     setLoading(true);

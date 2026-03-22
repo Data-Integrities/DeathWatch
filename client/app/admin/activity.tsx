@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Platform, RefreshControl } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Platform, RefreshControl, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../src/services/api/client';
 import { AppHeader } from '../../src/components/AppHeader';
 import { Button } from '../../src/components/Button';
-import { colors, spacing } from '../../src/theme';
+import { colors, spacing, shadows, borderRadius } from '../../src/theme';
 
 interface ActivityRow {
+  loginId: string;
   location: string;
   ip: string;
   name: string;
@@ -15,6 +16,46 @@ interface ActivityRow {
   dateTime: string;
   action: string;
   detail: string;
+}
+
+interface UserRow {
+  id: string;
+  firstName: string;
+  lastName: string;
+  location: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: string;
+  signInCount: number;
+  searchesCount: number;
+  matchesCount: number;
+  searchesDeletedCount: number;
+  rightPersonCount: number;
+  wrongPersonCount: number;
+  searchEditCount: number;
+  subscriptionActive: boolean;
+  planCode: string | null;
+  lastSignIn: string | null;
+  emailVerified: boolean;
+  phoneNumber: string | null;
+  smsOptIn: boolean;
+  trialSearchesUsed: number;
+  planStartDate: string | null;
+  planRenewalDate: string | null;
+}
+
+const TIER_OPTIONS = [
+  { code: null, label: 'None' },
+  { code: 'PLAN_10', label: '10' },
+  { code: 'PLAN_25', label: '25' },
+  { code: 'PLAN_50', label: '50' },
+  { code: 'PLAN_100', label: '100' },
+] as const;
+
+function tierDisplayLabel(code: string | null): string {
+  if (!code) return 'None';
+  const opt = TIER_OPTIONS.find(o => o.code === code);
+  return opt ? `Plan ${opt.label}` : code;
 }
 
 type SortKey = 'location' | 'ip' | 'name' | 'dateTime' | 'action' | 'detail';
@@ -34,7 +75,7 @@ function defaultDates() {
   return { start: toLocalYMD(yesterday), end: toLocalYMD(today) };
 }
 
-function formatDateTime(iso: string): string {
+function formatDateTime(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   const yy = String(d.getFullYear()).slice(2);
@@ -134,6 +175,22 @@ export default function ActivityScreen() {
   const [endDate, setEndDate] = useState(defaults.end);
   const [search, setSearch] = useState('');
 
+  // User detail modal
+  const [usersMap, setUsersMap] = useState<Map<string, UserRow>>(new Map());
+  const [detailUser, setDetailUser] = useState<UserRow | null>(null);
+  const [editTier, setEditTier] = useState<string | null>(null);
+  const [tierConfirming, setTierConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await api.get<{ users: UserRow[] }>('/api/admin/users');
+      const map = new Map<string, UserRow>();
+      res.users.forEach(u => map.set(u.id, u));
+      setUsersMap(map);
+    } catch {}
+  }, []);
+
   const fetchActivity = useCallback(async (sd: string, ed: string) => {
     try {
       setError('');
@@ -147,7 +204,7 @@ export default function ActivityScreen() {
   }, []);
 
   useEffect(() => {
-    fetchActivity(defaults.start, defaults.end).finally(() => setLoading(false));
+    Promise.all([fetchActivity(defaults.start, defaults.end), fetchUsers()]).finally(() => setLoading(false));
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -159,6 +216,56 @@ export default function ActivityScreen() {
   const handleGo = () => {
     fetchActivity(startDate, endDate);
   };
+
+  const openDetail = (loginId: string) => {
+    const user = usersMap.get(loginId);
+    if (!user) return;
+    setDetailUser(user);
+    setEditTier(user.planCode);
+    setTierConfirming(false);
+  };
+
+  const handleTierChange = (newCode: string | null) => {
+    if (!detailUser || newCode === (detailUser.planCode || null)) return;
+    setEditTier(newCode);
+    setTierConfirming(true);
+  };
+
+  const handleConfirmTier = async () => {
+    if (!detailUser) return;
+    setSaving(true);
+    try {
+      const isActivating = editTier !== null;
+      await api.patch(`/api/admin/users/${detailUser.id}/subscription`, {
+        planCode: editTier,
+        subscriptionActive: isActivating,
+      });
+      await fetchUsers();
+      setTierConfirming(false);
+      const res = await api.get<{ users: UserRow[] }>('/api/admin/users');
+      const updated = res.users.find(u => u.id === detailUser.id);
+      if (updated) {
+        setDetailUser(updated);
+        setEditTier(updated.planCode);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update tier');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelTier = () => {
+    if (detailUser) setEditTier(detailUser.planCode);
+    setTierConfirming(false);
+  };
+
+  const infoRow = (label: string, value: string | null | undefined) => (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value || '--'}</Text>
+    </View>
+  );
 
   const filtered = search
     ? rows.filter(r => {
@@ -208,7 +315,8 @@ export default function ActivityScreen() {
           <Text style={styles.goButtonText}>Go</Text>
         </Pressable>
         <SearchInput value={search} onChange={setSearch} />
-        <Button title="Back" variant="ghost" onPress={() => router.replace('/settings')} style={styles.backButton} />
+        <Button title="Users" variant="ghost" onPress={() => router.replace('/admin/users')} style={styles.backButton} />
+        <Button title="Back" variant="secondary" onPress={() => router.replace('/settings')} style={styles.backButton} />
       </View>
 
       {error ? (
@@ -218,7 +326,7 @@ export default function ActivityScreen() {
       ) : null}
 
       <View style={styles.tableContainer}>
-        <ScrollView horizontal style={styles.scrollHorizontal}>
+        <ScrollView horizontal style={styles.scrollHorizontal} contentContainerStyle={styles.scrollHorizontalContent}>
           <View>
             {/* Frozen header row */}
             <View style={styles.headerRow}>
@@ -243,7 +351,9 @@ export default function ActivityScreen() {
                 <View key={i} style={[styles.dataRow, i % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
                   <Text style={[styles.cell, { width: COL_WIDTHS.location }]} numberOfLines={1}>{row.location}</Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.ip }]} numberOfLines={1}>{row.ip}</Text>
-                  <Text style={[styles.cell, { width: COL_WIDTHS.name }]} numberOfLines={1}>{row.name}</Text>
+                  <Pressable style={{ width: COL_WIDTHS.name }} onPress={() => openDetail(row.loginId)}>
+                    <Text style={[styles.cell, styles.nameLink]} numberOfLines={1}>{row.name}</Text>
+                  </Pressable>
                   <Text style={[styles.cell, { width: COL_WIDTHS.dateTime }]} numberOfLines={1}>{formatDateTime(row.dateTime)}</Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.action }]} numberOfLines={1}>{row.action}</Text>
                   <Text style={[styles.cell, styles.flexCell]} numberOfLines={1}>{row.detail}</Text>
@@ -259,6 +369,90 @@ export default function ActivityScreen() {
           </View>
         </ScrollView>
       </View>
+
+      {/* User detail modal */}
+      {detailUser ? (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setDetailUser(null)}>
+          <Pressable style={styles.overlay} onPress={() => setDetailUser(null)}>
+            <Pressable style={styles.detailDialog} onPress={(e) => e.stopPropagation()}>
+              <Text style={styles.detailTitle}>
+                {detailUser.firstName} {detailUser.lastName}
+              </Text>
+
+              <Text style={styles.sectionLabel}>Account</Text>
+              {infoRow('Email', detailUser.email)}
+              {infoRow('Email Verified', detailUser.emailVerified ? 'Yes' : 'No')}
+              {infoRow('Phone', detailUser.phoneNumber)}
+              {infoRow('SMS Opt-In', detailUser.smsOptIn ? 'Yes' : 'No')}
+              {infoRow('Admin', detailUser.isAdmin ? 'Yes' : 'No')}
+              {infoRow('Location', detailUser.location)}
+              {infoRow('Created', formatDateTime(detailUser.createdAt))}
+              {infoRow('Last Sign In', formatDateTime(detailUser.lastSignIn))}
+
+              <Text style={styles.sectionLabel}>Billing</Text>
+              {infoRow('Subscription', detailUser.subscriptionActive ? 'Active' : 'Inactive')}
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Tier</Text>
+                <View style={{ flex: 1 }}>
+                  {Platform.OS === 'web' ? (
+                    <select
+                      value={editTier || ''}
+                      onChange={(e: any) => handleTierChange(e.target.value || null)}
+                      style={{
+                        fontSize: 13,
+                        padding: '2px 4px',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        color: '#444444',
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      } as any}
+                    >
+                      <option value="">None</option>
+                      <option value="PLAN_10">Plan 10 ($20/yr)</option>
+                      <option value="PLAN_25">Plan 25 ($39/yr)</option>
+                      <option value="PLAN_50">Plan 50 ($69/yr)</option>
+                      <option value="PLAN_100">Plan 100 ($119/yr)</option>
+                    </select>
+                  ) : (
+                    <Text style={styles.infoValue}>{tierDisplayLabel(detailUser.planCode)}</Text>
+                  )}
+                </View>
+              </View>
+              {tierConfirming ? (
+                <View style={styles.tierConfirmRow}>
+                  <Text style={styles.tierConfirmText}>
+                    Change to {tierDisplayLabel(editTier)}?
+                  </Text>
+                  <View style={styles.tierConfirmButtons}>
+                    <Pressable onPress={handleConfirmTier} style={styles.tierYesBtn}>
+                      <Text style={styles.tierYesBtnText}>{saving ? '...' : 'Yes'}</Text>
+                    </Pressable>
+                    <Pressable onPress={handleCancelTier} style={styles.tierNoBtn}>
+                      <Text style={styles.tierNoBtnText}>No</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
+              {infoRow('Plan Start', detailUser.planStartDate || '--')}
+              {infoRow('Plan Renewal', detailUser.planRenewalDate || '--')}
+              {infoRow('Trial Searches Used', String(detailUser.trialSearchesUsed))}
+
+              <Text style={styles.sectionLabel}>Activity</Text>
+              {infoRow('Sign Ins', String(detailUser.signInCount))}
+              {infoRow('Searches', String(detailUser.searchesCount))}
+              {infoRow('Obituaries Found', String(detailUser.matchesCount))}
+              {infoRow('Right Person', String(detailUser.rightPersonCount))}
+              {infoRow('Wrong Person', String(detailUser.wrongPersonCount))}
+              {infoRow('Searches Deleted', String(detailUser.searchesDeletedCount))}
+              {infoRow('Search Edits', String(detailUser.searchEditCount))}
+
+              <View style={styles.detailClose}>
+                <Button title="Close" variant="secondary" onPress={() => setDetailUser(null)} style={styles.backButton} />
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : null}
     </View>
   );
 }
@@ -297,9 +491,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   backButton: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    minHeight: 0,
+    minHeight: 32,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
   },
   center: {
     flex: 1,
@@ -332,20 +526,27 @@ const styles = StyleSheet.create({
   scrollHorizontal: {
     flex: 1,
   },
+  scrollHorizontalContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   headerRow: {
     flexDirection: 'row',
     backgroundColor: colors.purple,
     paddingVertical: 6,
     paddingHorizontal: 4,
+    alignItems: 'center',
   },
   headerCell: {
     paddingHorizontal: 4,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   headerText: {
     color: colors.white,
     fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
     ...gridFont,
   },
   dataRow: {
@@ -354,6 +555,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
+    alignItems: 'center',
   },
   rowEven: {
     backgroundColor: colors.white,
@@ -365,7 +567,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textPrimary,
     paddingHorizontal: 4,
+    textAlign: 'center',
     ...gridFont,
+  },
+  nameLink: {
+    color: colors.purple,
+    textDecorationLine: 'underline',
   },
   flexCell: {
     flex: 1,
@@ -378,5 +585,98 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#444444',
     fontSize: 13,
+  },
+
+  // User detail modal
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  detailDialog: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    maxWidth: 420,
+    width: '100%',
+    maxHeight: '80%',
+    ...shadows.modal,
+  },
+  detailTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.purple,
+    marginTop: spacing.sm,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+  },
+  infoLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    width: 130,
+    ...gridFont,
+  },
+  infoValue: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    flex: 1,
+    ...gridFont,
+  },
+  detailClose: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  tierConfirmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    gap: spacing.sm,
+  },
+  tierConfirmText: {
+    fontSize: 13,
+    color: colors.warning,
+    fontWeight: '600',
+    flex: 1,
+  },
+  tierConfirmButtons: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  tierYesBtn: {
+    backgroundColor: colors.green,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+  },
+  tierYesBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  tierNoBtn: {
+    backgroundColor: colors.error,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+  },
+  tierNoBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
   },
 });

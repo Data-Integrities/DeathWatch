@@ -17,7 +17,7 @@ const registerSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   phoneNumber: z.string().optional(),
 }).refine(d => d.password === d.passwordConfirm, {
-  message: 'Passwords do not match',
+  message: 'Passwords don\'t match',
   path: ['passwordConfirm'],
 });
 
@@ -79,7 +79,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       password: z.string().min(8, 'Password must be at least 8 characters'),
       passwordConfirm: z.string(),
     }).refine(d => d.password === d.passwordConfirm, {
-      message: 'Passwords do not match',
+      message: 'Passwords don\'t match',
       path: ['passwordConfirm'],
     }).parse(req.body);
     await authService.resetPassword(data.token, data.password);
@@ -100,7 +100,7 @@ router.post('/change-password', authMiddleware, async (req: Request, res: Respon
       passwordNew: z.string().min(8, 'New password must be at least 8 characters'),
       passwordNewConfirm: z.string(),
     }).refine(d => d.passwordNew === d.passwordNewConfirm, {
-      message: 'New passwords do not match',
+      message: 'New passwords don\'t match',
       path: ['passwordNewConfirm'],
     }).parse(req.body);
     await authService.changePassword(req.userId!, data.passwordCurrent, data.passwordNew);

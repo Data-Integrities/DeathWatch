@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
-import { api, setAuthToken, setOnUnauthorized } from '../services/api/client';
+import { api, setAuthToken, getAuthToken, setOnUnauthorized } from '../services/api/client';
 import type { UserProfile, LoginResponse } from '../types';
 
 interface AuthContextType {
@@ -10,6 +10,9 @@ interface AuthContextType {
   signUp: (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string, phoneNumber?: string) => Promise<void>;
   signOut: () => void;
   refreshUser: () => Promise<void>;
+  impersonating: string | null;
+  startImpersonating: (userId: string) => Promise<void>;
+  stopImpersonating: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -47,6 +50,8 @@ function storeToken(token: string | null, remember?: boolean) {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [impersonating, setImpersonating] = useState<string | null>(null);
+  const adminStash = useRef<{ token: string; user: UserProfile } | null>(null);
 
   // In development, always start at login. In production, restore session.
   useEffect(() => {
@@ -99,13 +104,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(user);
   }, []);
 
+  const startImpersonating = useCallback(async (userId: string) => {
+    const currentToken = getAuthToken();
+    if (!currentToken || !user) return;
+    adminStash.current = { token: currentToken, user };
+    const res = await api.post<LoginResponse>(`/api/admin/users/${userId}/impersonate`);
+    setAuthToken(res.token);
+    setUser(res.user);
+    setImpersonating(`${res.user.firstName} ${res.user.lastName}`);
+  }, [user]);
+
+  const stopImpersonating = useCallback(() => {
+    if (!adminStash.current) return;
+    setAuthToken(adminStash.current.token);
+    setUser(adminStash.current.user);
+    adminStash.current = null;
+    setImpersonating(null);
+  }, []);
+
   useEffect(() => {
     setOnUnauthorized(signOut);
     return () => setOnUnauthorized(null);
   }, [signOut]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, refreshUser, impersonating, startImpersonating, stopImpersonating }}>
       {children}
     </AuthContext.Provider>
   );

@@ -22,6 +22,10 @@ export interface UserProfile {
   trialSearchesUsed: number;
   trialSearchesMax: number;
   subscriptionActive: boolean;
+  planCode: string | null;
+  planStartDate: string | null;
+  planRenewalDate: string | null;
+  usingGraceSlot: boolean;
   phoneNumber: string | null;
   smsOptIn: boolean;
 }

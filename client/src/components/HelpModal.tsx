@@ -187,7 +187,7 @@ export function HelpModal({ visible, onClose, autoExpandTicket }: Props) {
                           {msg.status === 'replied' && msg.adminReply ? (
                             <View style={styles.replyBlock}>
                               <Text style={styles.replyLabel}>Our response:</Text>
-                              <Text style={styles.replyBody}>{msg.adminReply}{'\n\n'}ObitNOTE Support Team</Text>
+                              <Text style={styles.replyBody}>{msg.adminReply}{'\n\n'}<Text style={styles.brandText}>ObitNOTE</Text> Support Team</Text>
                               {msg.repliedAt && (
                                 <Text style={styles.replyDate}>{formatDate(msg.repliedAt)}</Text>
                               )}
@@ -210,7 +210,7 @@ export function HelpModal({ visible, onClose, autoExpandTicket }: Props) {
       <ConfirmDialog
         visible={showSentModal}
         title="Message Sent"
-        body={`Your message has been sent (#${sentTicketId}).  We will respond soon.`}
+        body={`Your message has been sent (#${sentTicketId}).  We'll respond soon.`}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setShowSentModal(false)}
@@ -398,5 +398,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: spacing.sm,
+  },
+  brandText: {
+    color: colors.brand,
+    fontWeight: '700',
   },
 });

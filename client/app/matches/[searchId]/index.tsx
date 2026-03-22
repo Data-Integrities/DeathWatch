@@ -255,7 +255,7 @@ export default function SearchMatchesScreen() {
             {buttonsEnabled ? (
               <>
                 <Text style={styles.googleCardContinue}>
-                  We will search again tomorrow and every day and notify you of any new results.
+                  We'll search again tomorrow and every day and notify you of any new results.
                 </Text>
                 <Pressable
                   onPress={handleSearchGoogle}
@@ -295,7 +295,7 @@ export default function SearchMatchesScreen() {
 
         <View style={styles.disclaimerCard}>
           <Text style={styles.disclaimerText}>
-            ObitNOTE does not guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
+            <Text style={styles.brandText}>ObitNOTE</Text> doesn't guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
           </Text>
         </View>
       </ScrollView>
@@ -570,5 +570,9 @@ const styles = StyleSheet.create({
   },
   emptyButton: {
     alignSelf: 'flex-start',
+  },
+  brandText: {
+    color: colors.brand,
+    fontWeight: '700',
   },
 });

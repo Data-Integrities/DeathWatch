@@ -38,6 +38,7 @@ export function logActivity(loginId: string, action: string, detail?: string): v
 }
 
 export interface ActivityRow {
+  loginId: string;
   location: string;
   ip: string;
   name: string;
@@ -53,6 +54,7 @@ export interface ActivityRow {
  * UNIONs login_history (SignIn) with activity_log (other actions).
  */
 export interface UserSummaryRow {
+  id: string;
   firstName: string;
   lastName: string;
   location: string;
@@ -66,6 +68,15 @@ export interface UserSummaryRow {
   rightPersonCount: number;
   wrongPersonCount: number;
   searchEditCount: number;
+  subscriptionActive: boolean;
+  planCode: string | null;
+  lastSignIn: string | null;
+  emailVerified: boolean;
+  phoneNumber: string | null;
+  smsOptIn: boolean;
+  trialSearchesUsed: number;
+  planStartDate: string | null;
+  planRenewalDate: string | null;
 }
 
 /**
@@ -73,9 +84,12 @@ export interface UserSummaryRow {
  */
 export async function getUsersSummary(): Promise<UserSummaryRow[]> {
   const { rows } = await pool.query(
-    `SELECT u.first_name, u.last_name, u.email, u.is_admin, u.created_at,
+    `SELECT u.login_id, u.first_name, u.last_name, u.email, u.is_admin, u.created_at,
+       u.subscription_active, u.plan_code, u.email_verified, u.phone_number, u.sms_opt_in,
+       u.trial_searches_used, u.plan_start_date, u.plan_renewal_date,
        (SELECT CONCAT_WS(', ', NULLIF(lh.geo_city, ''), NULLIF(lh.geo_region, ''))
         FROM login_history lh WHERE lh.login_id = u.login_id ORDER BY lh.login_at ASC LIMIT 1) AS signup_location,
+       (SELECT MAX(lh.login_at) FROM login_history lh WHERE lh.login_id = u.login_id) AS last_sign_in,
        (SELECT COUNT(*) FROM login_history lh WHERE lh.login_id = u.login_id) AS sign_in_count,
        (SELECT COUNT(*) FROM user_query uq WHERE uq.login_id = u.login_id AND uq.disabled = false) AS searches_count,
        (SELECT COUNT(*) FROM user_result ur JOIN user_query uq ON ur.user_query_id = uq.id WHERE uq.login_id = u.login_id) AS matches_count,
@@ -88,6 +102,7 @@ export async function getUsersSummary(): Promise<UserSummaryRow[]> {
   );
 
   return rows.map(row => ({
+    id: row.login_id,
     firstName: row.first_name,
     lastName: row.last_name,
     location: row.signup_location || '',
@@ -101,12 +116,22 @@ export async function getUsersSummary(): Promise<UserSummaryRow[]> {
     rightPersonCount: Number(row.right_person_count),
     wrongPersonCount: Number(row.wrong_person_count),
     searchEditCount: Number(row.search_edit_count),
+    subscriptionActive: row.subscription_active || false,
+    planCode: row.plan_code || null,
+    lastSignIn: row.last_sign_in?.toISOString?.() || row.last_sign_in || null,
+    emailVerified: row.email_verified || false,
+    phoneNumber: row.phone_number || null,
+    smsOptIn: row.sms_opt_in !== false,
+    trialSearchesUsed: Number(row.trial_searches_used || 0),
+    planStartDate: row.plan_start_date ? (row.plan_start_date.toISOString?.().slice(0, 10) ?? row.plan_start_date) : null,
+    planRenewalDate: row.plan_renewal_date ? (row.plan_renewal_date.toISOString?.().slice(0, 10) ?? row.plan_renewal_date) : null,
   }));
 }
 
 export async function getRecentActivity(startDate: string, endDate: string): Promise<ActivityRow[]> {
   const { rows } = await pool.query(
     `SELECT
+       u.login_id,
        COALESCE(lh.geo_city, '') AS geo_city,
        COALESCE(lh.geo_region, '') AS geo_region,
        COALESCE(lh.ip_address, '') AS ip_address,
@@ -122,6 +147,7 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
      UNION ALL
 
      SELECT
+       u.login_id,
        COALESCE(latest_login.geo_city, '') AS geo_city,
        COALESCE(latest_login.geo_region, '') AS geo_region,
        COALESCE(latest_login.ip_address, '') AS ip_address,
@@ -151,6 +177,7 @@ export async function getRecentActivity(startDate: string, endDate: string): Pro
     if (row.geo_region) locParts.push(row.geo_region);
 
     return {
+      loginId: row.login_id,
       location: locParts.join(', '),
       ip: row.ip_address || '',
       name: `${row.first_name} ${row.last_name}`,

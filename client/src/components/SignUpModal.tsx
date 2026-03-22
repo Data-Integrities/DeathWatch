@@ -106,7 +106,7 @@ export function SignUpModal({ visible, onClose }: Props) {
     if (!password) { setError('Password is required.'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (!passwordConfirm) { setError('Please confirm your password.'); return; }
-    if (password !== passwordConfirm) { setError('Passwords do not match.'); return; }
+    if (password !== passwordConfirm) { setError('Passwords don\'t match.'); return; }
 
     if (!phoneNumber.trim()) {
       setPhoneWarningVisible(true);
@@ -132,7 +132,7 @@ export function SignUpModal({ visible, onClose }: Props) {
                 <Text style={styles.checkEmailSent}>We sent a verification email to</Text>
                 <Text style={styles.checkEmailAddress}>{email}</Text>
                 <Text style={styles.checkEmailNote}>
-                  <Text style={styles.checkEmailBold}>Click the link in the email to verify your account.</Text>  You can still use ObitNOTE while you wait.
+                  <Text style={styles.checkEmailBold}>Click the link in the email to verify your account.</Text>  You can still use <Text style={styles.brandText}>ObitNOTE</Text> while you wait.
                   {'\n\n'}<Text style={styles.checkEmailBold}>Don't see it?</Text>  Check your spam folder.
                 </Text>
                 <Button
@@ -264,7 +264,7 @@ export function SignUpModal({ visible, onClose }: Props) {
       <ConfirmDialog
         visible={phoneWarningVisible}
         title="No Phone Number"
-        body="Without a mobile number, we can only send you notification emails when an obituary is found.  We will not be able to send you text messages.  Continue without a phone number?"
+        body="Without a mobile number, we can only send you notification emails when an obituary is found.  We won't be able to send you text messages.  Continue without a phone number?"
         confirmLabel="Continue"
         cancelLabel="Go Back"
         onConfirm={() => {
@@ -376,5 +376,9 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     minWidth: 200,
+  },
+  brandText: {
+    color: colors.brand,
+    fontWeight: '700',
   },
 });

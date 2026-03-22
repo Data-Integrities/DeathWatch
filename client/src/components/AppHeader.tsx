@@ -14,39 +14,56 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ minimal, onHelp, onSettings }: AppHeaderProps = {}) {
-  const { user } = useAuth();
+  const { user, impersonating, stopImpersonating } = useAuth();
   const hasUnread = (user?.unreadReplyCount ?? 0) > 0;
 
+  const handleStopImpersonating = () => {
+    stopImpersonating();
+    router.replace('/admin/users' as any);
+  };
+
   return (
-    <View style={styles.headerBar}>
-      <View style={styles.barContent}>
-        <Pressable onPress={() => router.replace('/matches')} accessibilityRole="link" accessibilityLabel="Home">
-          <View style={styles.logoRow}>
-            <Text style={styles.logoText}>ObitNOTE</Text>
-            <Text style={styles.tm}>{'\u2122'}</Text>
-          </View>
-        </Pressable>
-        {!minimal ? (
-          <View style={styles.navRow}>
-            <Pressable onPress={onHelp || (() => router.replace('/help' as any))} accessibilityRole="button" accessibilityLabel="Help" style={styles.navItem}>
+    <View>
+      <View style={styles.headerBar}>
+        <View style={styles.barContent}>
+          <Pressable onPress={() => router.replace('/matches')} accessibilityRole="link" accessibilityLabel="Home">
+            <View style={styles.logoRow}>
+              <Text style={styles.logoText}>ObitNOTE</Text>
+              <Text style={styles.tm}>{'\u2122'}</Text>
+            </View>
+          </Pressable>
+          {!minimal ? (
+            <View style={styles.navRow}>
+              <Pressable onPress={onHelp || (() => router.replace('/help' as any))} accessibilityRole="button" accessibilityLabel="Help" style={styles.navItem}>
+                <View>
+                  <FontAwesome name="question-circle" size={20} color={colors.white} />
+                  {hasUnread && <View style={styles.badgeDot} />}
+                </View>
+              </Pressable>
+              <Pressable onPress={onSettings || (() => router.replace('/settings' as any))} accessibilityRole="button" accessibilityLabel="Settings" style={styles.navItem}>
+                <Ionicons name="settings-sharp" size={20} color={colors.white} />
+              </Pressable>
+            </View>
+          ) : onHelp ? (
+            <Pressable onPress={onHelp} accessibilityRole="button" accessibilityLabel="Help" style={styles.navItem}>
               <View>
                 <FontAwesome name="question-circle" size={20} color={colors.white} />
                 {hasUnread && <View style={styles.badgeDot} />}
               </View>
             </Pressable>
-            <Pressable onPress={onSettings || (() => router.replace('/settings' as any))} accessibilityRole="button" accessibilityLabel="Settings" style={styles.navItem}>
-              <Ionicons name="settings-sharp" size={20} color={colors.white} />
-            </Pressable>
-          </View>
-        ) : onHelp ? (
-          <Pressable onPress={onHelp} accessibilityRole="button" accessibilityLabel="Help" style={styles.navItem}>
-            <View>
-              <FontAwesome name="question-circle" size={20} color={colors.white} />
-              {hasUnread && <View style={styles.badgeDot} />}
-            </View>
-          </Pressable>
-        ) : null}
+          ) : null}
+        </View>
       </View>
+      {impersonating ? (
+        <View style={styles.impersonationBar}>
+          <Text style={styles.impersonationText}>
+            Admin impersonating {impersonating}
+          </Text>
+          <Pressable onPress={handleStopImpersonating} style={styles.impersonationButton}>
+            <Text style={styles.impersonationButtonText}>Return to Admin</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -101,5 +118,30 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
     borderWidth: 1.5,
     borderColor: colors.brand,
+  },
+  impersonationBar: {
+    backgroundColor: '#FFD600',
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: spacing.md,
+  },
+  impersonationText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#333333',
+  },
+  impersonationButton: {
+    backgroundColor: '#333333',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+  },
+  impersonationButtonText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
   },
 });

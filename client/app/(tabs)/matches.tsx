@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { SearchDetailModal } from '../../src/components/SearchDetailModal';
 import { EditSearchModal } from '../../src/components/EditSearchModal';
+import { TrialSearchModal } from '../../src/components/TrialSearchModal';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import type { SearchQuery } from '../../src/types';
 
@@ -71,6 +72,7 @@ export default function HomeScreen() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [detailSearchId, setDetailSearchId] = useState<string | null>(null);
   const [editSearchId, setEditSearchId] = useState<string | null>(null);
+  const [trialVisible, setTrialVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -127,7 +129,7 @@ export default function HomeScreen() {
           <>
             <Button
               title="Try for Free"
-              onPress={() => router.push('/trial/search')}
+              onPress={() => setTrialVisible(true)}
               style={{ flex: 1 }}
             />
             <Button
@@ -218,6 +220,11 @@ export default function HomeScreen() {
         }}
       />
 
+      <TrialSearchModal
+        visible={trialVisible}
+        onClose={() => { setTrialVisible(false); loadData(); refreshUser(); }}
+      />
+
       {/* About modal */}
       <Modal visible={aboutVisible} transparent animationType="fade" onRequestClose={() => setAboutVisible(false)}>
         <View style={styles.aboutOverlay}>
@@ -225,13 +232,10 @@ export default function HomeScreen() {
           <View style={styles.aboutCard}>
             <Text style={styles.aboutTitle}>About ObitNOTE</Text>
             <Text style={styles.aboutText}>
-              <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitoring and notification service</Text>.
+              <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitor and alert service</Text>.
             </Text>
             <Text style={styles.aboutText}>
-              Add people's names and <Text style={styles.brandText}>ObitNOTE</Text> will search for them every day.  When an obituary is found in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', or '}{country}</React.Fragment>))}, we will <Text style={styles.boldText}>send you a text and email</Text>.
-            </Text>
-            <Text style={styles.aboutText}>
-              We are accurate, but we might sometimes <Text style={styles.boldText}>miss an obituary</Text>.  We will try to text and email you, but <Text style={styles.boldText}>they might not reach you</Text> (for example, they could be blocked, filtered, or in spam).  This would be unusual, but it is still possible.
+              Add people's names and <Text style={styles.brandText}>ObitNOTE</Text> will search for them every day.  When an obituary is found in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', or '}{country}</React.Fragment>))}, we'll <Text style={styles.boldText}>send you a text and email</Text>.
             </Text>
             <Text style={styles.aboutText}>
               <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.

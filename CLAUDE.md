@@ -31,12 +31,12 @@ cd search && npm start
 - **Results View** — `client/app/matches/[searchId]/index.tsx` — Obituary results for a search; "Your Search" card at top with edit icon (hidden when confirmed); MatchCard shows domain only; More Info opens domain homepage; Right/Wrong Person buttons appear only after investigating; disclaimer card at bottom; unconfirm flow with modal
 - **More Info** — `client/app/matches/[searchId]/[resultId].tsx` — Simplified detail: user's search input, domain link, disclaimer (no snippet data, no deep links)
 - **Welcome** — `client/app/welcome.tsx` — Post-registration choice: Try Free or Subscribe
-- **Trial Search** — `client/app/trial/search.tsx` — Ephemeral trial search form, results with Google integration and verdict tracking
+- **Trial Search** — `client/src/components/TrialSearchModal.tsx` — Modal-based ephemeral trial search form, results with Google integration and verdict tracking
 - **New Search** — `client/app/search/new.tsx` — Compact form with left-side labels (subscription required)
 - **Edit Search** — `client/app/search/[id].tsx` — Edit form with Save/Delete/Cancel row
 - **Help** — `client/app/(tabs)/help.tsx` — Send us a message form
-- **Admin Activity** — `client/app/admin/activity.tsx` — User activity report (800px grid, system font 14px, sortable columns)
-- **Admin Users** — `client/app/admin/users.tsx` — All users with stats (800px grid, system font 14px, hover tooltips on abbreviated columns)
+- **Admin Activity** — `client/app/admin/activity.tsx` — User activity report (centered grid, system font 12px, sortable columns, clickable names open user detail modal, cross-nav to Users)
+- **Admin Users** — `client/app/admin/users.tsx` — All users with stats (centered grid, system font 12px, hover tooltips on abbreviated columns, impersonation, clickable names open user detail modal with tier management and trial reset, cross-nav to Activity)
 - **Admin Messages** — `client/app/admin/messages.tsx` — Support messages with reply
 
 ## UI Patterns

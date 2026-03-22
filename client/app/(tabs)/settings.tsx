@@ -105,7 +105,7 @@ export default function SettingsScreen() {
     setPwError('');
     if (!currentPassword || !newPassword || !confirmPassword) { setPwError('Please fill in all fields.'); return; }
     if (newPassword.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
-    if (newPassword !== confirmPassword) { setPwError('New passwords do not match.'); return; }
+    if (newPassword !== confirmPassword) { setPwError('New passwords don\'t match.'); return; }
     setPwLoading(true);
     try {
       await api.post('/api/auth/change-password', {

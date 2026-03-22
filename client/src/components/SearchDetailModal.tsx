@@ -235,7 +235,7 @@ export function SearchDetailModal({ visible, searchId, onClose, onEdit }: Props)
                   {buttonsEnabled ? (
                     <>
                       <Text style={styles.googleContinue}>
-                        We will search again tomorrow and every day and notify you of any new results.
+                        We'll search again tomorrow and every day and notify you of any new results.
                       </Text>
                       <Pressable
                         onPress={handleSearchGoogle}
@@ -271,7 +271,7 @@ export function SearchDetailModal({ visible, searchId, onClose, onEdit }: Props)
 
               <View style={styles.disclaimerWrap}>
                 <Text style={styles.disclaimerText}>
-                  ObitNOTE does not guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
+                  <Text style={styles.brandText}>ObitNOTE</Text> doesn't guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
                 </Text>
               </View>
             </ScrollView>
@@ -542,5 +542,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#555555',
     lineHeight: 17,
+  },
+  brandText: {
+    color: colors.brand,
+    fontWeight: '700',
   },
 });
