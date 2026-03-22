@@ -5,6 +5,8 @@
   "scripts": {
     "start": "expo start",
     "web": "expo start --web",
+    "stamp": "node scripts/stamp.js",
+    "build:web": "node scripts/build-web.js",
     "lint": "eslint app/ src/",
     "typecheck": "tsc --noEmit"
   },

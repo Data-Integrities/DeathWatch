@@ -179,7 +179,7 @@ export default function MessagesScreen() {
       ) : null}
 
       <View style={styles.tableContainer}>
-        <ScrollView horizontal style={styles.scrollHorizontal}>
+        <ScrollView horizontal style={styles.scrollHorizontal} contentContainerStyle={styles.scrollHorizontalContent}>
           <View>
             <View style={styles.headerRow}>
               {headerCell('Status', 'status', COL_WIDTHS.status)}
@@ -320,20 +320,27 @@ const styles = StyleSheet.create({
   scrollHorizontal: {
     flex: 1,
   },
+  scrollHorizontalContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   headerRow: {
     flexDirection: 'row',
     backgroundColor: colors.purple,
     paddingVertical: 6,
     paddingHorizontal: 4,
+    alignItems: 'center',
   },
   headerCell: {
     paddingHorizontal: 4,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   headerText: {
     color: colors.white,
     fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
     ...gridFont,
   },
   dataRow: {
@@ -342,6 +349,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
+    alignItems: 'center',
   },
   rowEven: {
     backgroundColor: colors.white,
@@ -353,6 +361,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textPrimary,
     paddingHorizontal: 4,
+    textAlign: 'center',
     ...gridFont,
   },
   boldCell: {

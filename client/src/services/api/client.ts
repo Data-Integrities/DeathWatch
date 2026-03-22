@@ -73,7 +73,7 @@ async function request<T>(
       // Never resolve — signOut will redirect to sign-in and unmount the caller
       return new Promise<T>(() => {});
     }
-    if (res.status >= 500 && path !== '/api/errors') {
+    if (res.status >= 400 && res.status !== 401 && res.status !== 404 && path !== '/api/errors') {
       reportError(`${method} ${path}: ${res.status} ${json.error || 'Server error'}`, path);
     }
     const error = new Error(json.error || 'Request failed') as any;

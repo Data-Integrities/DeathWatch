@@ -42,6 +42,7 @@ interface UserRow {
   trialSearchesUsed: number;
   planStartDate: string | null;
   planRenewalDate: string | null;
+  tierCustomCap: number | null;
 }
 
 const TIER_OPTIONS = [
@@ -50,10 +51,12 @@ const TIER_OPTIONS = [
   { code: 'PLAN_25', label: '25' },
   { code: 'PLAN_50', label: '50' },
   { code: 'PLAN_100', label: '100' },
+  { code: 'PLAN_CUSTOM', label: 'Custom' },
 ] as const;
 
 function tierDisplayLabel(code: string | null): string {
   if (!code) return 'None';
+  if (code === 'PLAN_CUSTOM') return 'Custom';
   const opt = TIER_OPTIONS.find(o => o.code === code);
   return opt ? `Plan ${opt.label}` : code;
 }
@@ -181,6 +184,7 @@ export default function ActivityScreen() {
   const [editTier, setEditTier] = useState<string | null>(null);
   const [tierConfirming, setTierConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editCustomCap, setEditCustomCap] = useState<string>('');
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -222,6 +226,7 @@ export default function ActivityScreen() {
     if (!user) return;
     setDetailUser(user);
     setEditTier(user.planCode);
+    setEditCustomCap(user.tierCustomCap != null ? String(user.tierCustomCap) : '');
     setTierConfirming(false);
   };
 
@@ -236,9 +241,11 @@ export default function ActivityScreen() {
     setSaving(true);
     try {
       const isActivating = editTier !== null;
+      const capNum = editTier === 'PLAN_CUSTOM' && editCustomCap ? Number(editCustomCap) : null;
       await api.patch(`/api/admin/users/${detailUser.id}/subscription`, {
         planCode: editTier,
         subscriptionActive: isActivating,
+        tierCustomCap: capNum,
       });
       await fetchUsers();
       setTierConfirming(false);
@@ -256,7 +263,10 @@ export default function ActivityScreen() {
   };
 
   const handleCancelTier = () => {
-    if (detailUser) setEditTier(detailUser.planCode);
+    if (detailUser) {
+      setEditTier(detailUser.planCode);
+      setEditCustomCap(detailUser.tierCustomCap != null ? String(detailUser.tierCustomCap) : '');
+    }
     setTierConfirming(false);
   };
 
@@ -412,12 +422,43 @@ export default function ActivityScreen() {
                       <option value="PLAN_25">Plan 25 ($39/yr)</option>
                       <option value="PLAN_50">Plan 50 ($69/yr)</option>
                       <option value="PLAN_100">Plan 100 ($119/yr)</option>
+                      <option value="PLAN_CUSTOM">Custom</option>
                     </select>
                   ) : (
                     <Text style={styles.infoValue}>{tierDisplayLabel(detailUser.planCode)}</Text>
                   )}
                 </View>
               </View>
+              {editTier === 'PLAN_CUSTOM' ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Custom Cap</Text>
+                  <View style={{ flex: 1 }}>
+                    {Platform.OS === 'web' ? (
+                      React.createElement('input', {
+                        type: 'number',
+                        value: editCustomCap,
+                        placeholder: 'Max people',
+                        onChange: (e: any) => {
+                          const v = e.target.value.replace(/[^0-9]/g, '');
+                          setEditCustomCap(v);
+                          if (!tierConfirming) setTierConfirming(true);
+                        },
+                        style: {
+                          fontSize: '13px',
+                          padding: '2px 4px',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          width: '80px',
+                          color: '#444444',
+                          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                        },
+                      })
+                    ) : (
+                      <Text style={styles.infoValue}>{editCustomCap || '--'}</Text>
+                    )}
+                  </View>
+                </View>
+              ) : null}
               {tierConfirming ? (
                 <View style={styles.tierConfirmRow}>
                   <Text style={styles.tierConfirmText}>

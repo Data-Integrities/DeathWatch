@@ -14,15 +14,18 @@ const TIER_OPTIONS = [
   { code: 'PLAN_25', label: '25' },
   { code: 'PLAN_50', label: '50' },
   { code: 'PLAN_100', label: '100' },
+  { code: 'PLAN_CUSTOM', label: 'Custom' },
 ] as const;
 
-function tierLabel(code: string | null): string {
+function tierLabel(code: string | null, customCap: number | null): string {
   if (!code) return '--';
+  if (code === 'PLAN_CUSTOM') return customCap != null ? `C${customCap}` : 'C';
   return code.replace('PLAN_', '');
 }
 
 function tierDisplayLabel(code: string | null): string {
   if (!code) return 'None';
+  if (code === 'PLAN_CUSTOM') return 'Custom';
   const opt = TIER_OPTIONS.find(o => o.code === code);
   return opt ? `Plan ${opt.label}` : code;
 }
@@ -51,6 +54,7 @@ interface UserRow {
   trialSearchesUsed: number;
   planStartDate: string | null;
   planRenewalDate: string | null;
+  tierCustomCap: number | null;
 }
 
 type SortKey = 'name' | 'location' | 'email' | 'admin' | 'createdAt' | 'tier' | 'lastSi' | 'tr' | 'si' | 'se' | 'ma' | 'sd' | 'rp' | 'wp' | 'sedit';
@@ -179,6 +183,7 @@ export default function UsersScreen() {
   const [tierConfirming, setTierConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [resettingTrials, setResettingTrials] = useState(false);
+  const [editCustomCap, setEditCustomCap] = useState<string>('');
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -223,6 +228,7 @@ export default function UsersScreen() {
   const openDetail = (row: UserRow) => {
     setDetailUser(row);
     setEditTier(row.planCode);
+    setEditCustomCap(row.tierCustomCap != null ? String(row.tierCustomCap) : '');
     setTierConfirming(false);
   };
 
@@ -237,9 +243,11 @@ export default function UsersScreen() {
     setSaving(true);
     try {
       const isActivating = editTier !== null;
+      const capNum = editTier === 'PLAN_CUSTOM' && editCustomCap ? Number(editCustomCap) : null;
       await api.patch(`/api/admin/users/${detailUser.id}/subscription`, {
         planCode: editTier,
         subscriptionActive: isActivating,
+        tierCustomCap: capNum,
       });
       await fetchUsers();
       setTierConfirming(false);
@@ -258,7 +266,10 @@ export default function UsersScreen() {
   };
 
   const handleCancelTier = () => {
-    if (detailUser) setEditTier(detailUser.planCode);
+    if (detailUser) {
+      setEditTier(detailUser.planCode);
+      setEditCustomCap(detailUser.tierCustomCap != null ? String(detailUser.tierCustomCap) : '');
+    }
     setTierConfirming(false);
   };
 
@@ -392,7 +403,7 @@ export default function UsersScreen() {
                     {row.isAdmin ? 'Y' : ''}
                   </Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.tier }]} numberOfLines={1}>
-                    {tierLabel(row.planCode)}
+                    {tierLabel(row.planCode, row.tierCustomCap)}
                   </Text>
                   <Text style={[styles.cell, { width: COL_WIDTHS.created }]} numberOfLines={1}>
                     {formatDate(row.createdAt)}
@@ -479,12 +490,43 @@ export default function UsersScreen() {
                       <option value="PLAN_25">Plan 25 ($39/yr)</option>
                       <option value="PLAN_50">Plan 50 ($69/yr)</option>
                       <option value="PLAN_100">Plan 100 ($119/yr)</option>
+                      <option value="PLAN_CUSTOM">Custom</option>
                     </select>
                   ) : (
                     <Text style={styles.infoValue}>{tierDisplayLabel(detailUser.planCode)}</Text>
                   )}
                 </View>
               </View>
+              {editTier === 'PLAN_CUSTOM' ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Custom Cap</Text>
+                  <View style={{ flex: 1 }}>
+                    {Platform.OS === 'web' ? (
+                      React.createElement('input', {
+                        type: 'number',
+                        value: editCustomCap,
+                        placeholder: 'Max people',
+                        onChange: (e: any) => {
+                          const v = e.target.value.replace(/[^0-9]/g, '');
+                          setEditCustomCap(v);
+                          if (!tierConfirming) setTierConfirming(true);
+                        },
+                        style: {
+                          fontSize: '13px',
+                          padding: '2px 4px',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          width: '80px',
+                          color: '#444444',
+                          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                        },
+                      })
+                    ) : (
+                      <Text style={styles.infoValue}>{editCustomCap || '--'}</Text>
+                    )}
+                  </View>
+                </View>
+              ) : null}
               {tierConfirming ? (
                 <View style={styles.tierConfirmRow}>
                   <Text style={styles.tierConfirmText}>

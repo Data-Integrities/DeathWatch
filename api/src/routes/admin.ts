@@ -8,7 +8,7 @@ import { sendReplySms } from '../services/smsService';
 import { pool } from '../db/pool';
 import { impersonate } from '../services/authService';
 
-const VALID_PLAN_CODES = ['PLAN_10', 'PLAN_25', 'PLAN_50', 'PLAN_100'] as const;
+const VALID_PLAN_CODES = ['PLAN_10', 'PLAN_25', 'PLAN_50', 'PLAN_100', 'PLAN_CUSTOM'] as const;
 
 const router = Router();
 router.use(authMiddleware);
@@ -94,7 +94,7 @@ router.post('/users/:id/impersonate', async (req: Request, res: Response) => {
 router.patch('/users/:id/subscription', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { planCode, subscriptionActive } = req.body;
+    const { planCode, subscriptionActive, tierCustomCap } = req.body;
 
     // Validate user exists
     const { rows } = await pool.query('SELECT login_id FROM dw_user WHERE login_id = $1', [id]);
@@ -117,6 +117,7 @@ router.patch('/users/:id/subscription', async (req: Request, res: Response) => {
       `UPDATE dw_user SET
         plan_code = COALESCE($1, plan_code),
         subscription_active = COALESCE($2, subscription_active),
+        tier_custom_cap = $4,
         plan_start_date = CASE
           WHEN $2 = true AND plan_start_date IS NULL THEN CURRENT_DATE
           WHEN $2 = false THEN NULL
@@ -130,7 +131,7 @@ router.patch('/users/:id/subscription', async (req: Request, res: Response) => {
         using_grace_slot = CASE WHEN $2 = false THEN false ELSE using_grace_slot END,
         updated_at = NOW()
       WHERE login_id = $3`,
-      [planCode ?? null, subscriptionActive ?? null, id]
+      [planCode ?? null, subscriptionActive ?? null, id, tierCustomCap !== undefined ? (tierCustomCap ?? null) : null]
     );
 
     res.json({ success: true });
@@ -149,6 +150,56 @@ router.post('/users/:id/reset-trials', async (req: Request, res: Response) => {
     }
     await pool.query('UPDATE dw_user SET trial_searches_used = 0, updated_at = NOW() WHERE login_id = $1', [id]);
     res.json({ success: true });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.get('/errors', async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const startDate = (req.query.startDate as string) || weekAgo.toISOString().slice(0, 10);
+    const endDate = (req.query.endDate as string) || today.toISOString().slice(0, 10);
+
+    const { rows } = await pool.query(
+      `SELECT e.id, e.login_id, e.error_message, e.page, e.user_agent, e.created_at,
+              u.first_name, u.last_name, u.email
+       FROM error_log e
+       LEFT JOIN dw_user u ON u.login_id = e.login_id
+       WHERE e.created_at >= $1::date AND e.created_at < ($2::date + interval '1 day')
+       ORDER BY e.created_at DESC
+       LIMIT 500`,
+      [startDate, endDate]
+    );
+
+    const errors = rows.map(row => ({
+      id: row.id,
+      loginId: row.login_id || null,
+      userName: row.first_name ? `${row.first_name} ${row.last_name}` : 'Unknown',
+      email: row.email || '',
+      errorMessage: row.error_message,
+      page: row.page || '',
+      userAgent: row.user_agent || '',
+      createdAt: row.created_at?.toISOString?.() || row.created_at || '',
+    }));
+
+    res.json({ errors });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.get('/errors/count', async (_req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const startOfDay = today.toISOString().slice(0, 10);
+    const { rows } = await pool.query(
+      `SELECT COUNT(*) FROM error_log WHERE created_at >= $1::date`,
+      [startOfDay]
+    );
+    res.json({ count: Number(rows[0].count) });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
   }

@@ -40,6 +40,7 @@ export default function SettingsScreen() {
   const [resendMessage, setResendMessage] = useState('');
   const [toast, setToast] = useState('');
   const [unrepliedCount, setUnrepliedCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
 
   // Sync fields when user data changes
   useEffect(() => {
@@ -52,6 +53,9 @@ export default function SettingsScreen() {
     if (user?.isAdmin) {
       api.get<{ count: number }>('/api/admin/messages/unreplied-count')
         .then(res => setUnrepliedCount(res.count))
+        .catch(() => {});
+      api.get<{ count: number }>('/api/admin/errors/count')
+        .then(res => setErrorCount(res.count))
         .catch(() => {});
     }
   }, [user?.isAdmin]);
@@ -160,6 +164,16 @@ export default function SettingsScreen() {
             <View style={styles.adminRowRight}>
               {unrepliedCount > 0 && (
                 <Text style={styles.unrepliedBadge}>{unrepliedCount} unreplied</Text>
+              )}
+              <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+            </View>
+          </Pressable>
+          <View style={styles.adminDivider} />
+          <Pressable onPress={() => router.push('/admin/errors')} style={styles.adminRow}>
+            <Text style={styles.adminRowText}>Error Log</Text>
+            <View style={styles.adminRowRight}>
+              {errorCount > 0 && (
+                <Text style={styles.errorBadge}>{errorCount} today</Text>
               )}
               <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
             </View>
@@ -440,6 +454,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.warning,
+  },
+  errorBadge: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.error,
   },
   adminRowArrow: {
     fontSize: fontSize.lg,

@@ -46,6 +46,12 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     sendErrorAlert(details).catch(err => console.error('[ErrorReport] Email failed:', err));
     sendErrorAlertSms(ADMIN_PHONE, `${data.error} | User: ${userEmail} | Page: ${data.page || 'Unknown'}`).catch(err => console.error('[ErrorReport] SMS failed:', err));
 
+    // Store in error_log table
+    pool.query(
+      `INSERT INTO error_log (login_id, error_message, page, user_agent) VALUES ($1, $2, $3, $4)`,
+      [req.userId || null, data.error, data.page || null, data.userAgent || null]
+    ).catch(err => console.error('[ErrorReport] DB insert failed:', err.message));
+
     console.error(`[ErrorReport] ${data.error} | User: ${userEmail} | Page: ${data.page}`);
     res.json({ received: true });
   } catch (err: any) {
