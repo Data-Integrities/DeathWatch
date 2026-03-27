@@ -22,7 +22,7 @@ cd search && npm start
 - Database columns: snake_case (name_first, score_final)
 - TypeScript/JS: camelCase (nameFirst, scoreFinal)
 - Category-first naming: name{Type}, score{Type}, date{Type}, url{Type}
-- API endpoints: /api/auth/*, /api/searches/*, /api/matches/*, /api/notifications/*, /api/messages/*, /api/trial/*, /api/admin/*
+- API endpoints: /api/auth/*, /api/searches/*, /api/matches/*, /api/notifications/*, /api/messages/*, /api/trial/*, /api/admin/*, /api/errors/*
 - All match/search endpoints require JWT auth (Bearer token)
 
 ## View Names
@@ -38,6 +38,7 @@ cd search && npm start
 - **Admin Activity** — `client/app/admin/activity.tsx` — User activity report (centered grid, system font 12px, sortable columns, clickable names open user detail modal, cross-nav to Users)
 - **Admin Users** — `client/app/admin/users.tsx` — All users with stats (centered grid, system font 12px, hover tooltips on abbreviated columns, impersonation, clickable names open user detail modal with tier management and trial reset, cross-nav to Activity)
 - **Admin Messages** — `client/app/admin/messages.tsx` — Support messages with reply
+- **Admin Error Log** — `client/app/admin/errors.tsx` — Error log with date range filters, search, sortable grid
 
 ## UI Patterns
 - TextField uses left-side labels (100px wide) instead of placeholders
@@ -50,7 +51,7 @@ cd search && npm start
 - SearchCard: shows match count badges (green for new), status text, magnifying glass / green check icons, edit (32px) + trash (32px) icons with 9px gap
 - MatchCard: shows domain name only (no snippet data); buttons: More Info (green outline), Right Person (solid green), Wrong Person (solid red); Right/Wrong only visible after user investigates (clicks More Info); Wrong Person acts immediately without confirmation; 150ms hover tooltip shows full domain name; confirmed results show "Confirmed as Right Person" with red "Undo" link
 - AppHeader: logo (tap → home) + help icon + settings icon only (no text nav links)
-- Build version: `ver YYMMDD-HHmm` from `client/src/version.ts`, shown on sign-in footer and settings page
+- Build version: `ver YYMMDD-HHmm` stamped via `npm run stamp` in client/, baked into bundle at build time via `EXPO_PUBLIC_BUILD_VERSION`; shown on sign-in footer and settings page
 
 ## Source Compliance (Legal)
 - **Never** fetch or scrape obituary source pages directly
@@ -65,10 +66,12 @@ cd search && npm start
 ## Database
 - PostgreSQL on localhost:5432, database: dw
 - Migrations in api/src/db/migrations/ (006+) and search/src/db/migrations/ (001-005)
-- Key tables: dw_user, user_query, user_result, exclusions, support_message, activity_log, login_history, trial_search
+- Key tables: dw_user, user_query, user_result, exclusions, support_message, activity_log, login_history, trial_search, error_log
 
 ## Safe Commands
 - `cd api && npm run dev` — Start API dev server
 - `cd client && npx expo start --web` — Start client web
 - `cd api && npm run migrate` — Run DB migrations
+- `cd client && npm run stamp` — Stamp build version (writes .build-version + updates .env)
+- `cd client && npm run build:web` — Production web build with stamped version
 - `npm run lint`, `npm run typecheck`, `npm test` — In either project

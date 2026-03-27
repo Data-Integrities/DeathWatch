@@ -10,6 +10,7 @@ import adminRoutes from './routes/admin';
 import messageRoutes from './routes/messages';
 import trialRoutes from './routes/trial';
 import errorRoutes from './routes/errors';
+import webhookRoutes from './routes/webhooks';
 import { runBatch, getUsersWithNewResults, getMonthlySummaryUsers } from './services/batchService';
 import { purgeOldRejectedResults } from './services/matchService';
 import { sendMatchNotification, sendMonthlySummary } from './services/emailService';
@@ -43,6 +44,12 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.set('trust proxy', 1);
 app.use(cors());
+
+// Webhook route needs raw body for signature verification — register before express.json()
+app.use('/api/webhooks', express.json({
+  verify: (req: any, _res, buf) => { req.rawBody = buf.toString(); },
+}), webhookRoutes);
+
 app.use(express.json());
 
 // Routes

@@ -14,7 +14,7 @@ export default function PricingPage() {
           <Text style={styles.tm}>{'\u2122'}</Text>
         </View>
         <Text style={styles.title}>Pricing</Text>
-        <Text style={styles.subtitle}>Monitor people you care about</Text>
+        <Text style={styles.subtitle}>Monitor people you care about.</Text>
 
         <View style={styles.table}>
           <View style={styles.headerRow}>
@@ -22,6 +22,7 @@ export default function PricingPage() {
             <Text style={[styles.headerCell, styles.priceCol]}>Per Year</Text>
             <Text style={[styles.headerCell, styles.perCol]}>Per Person</Text>
           </View>
+          <Text style={styles.billedNote}>All plans billed yearly (cancel anytime)</Text>
           {[
             { plan: 'Up to 10 people', price: '$20', per: '$2.00' },
             { plan: 'Up to 25 people', price: '$39', per: '$1.56' },
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: fontSize.sm,
-    color: '#444444',
+    color: colors.brand,
     marginBottom: spacing.md,
   },
   table: {
@@ -155,6 +156,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#555555',
     textAlign: 'center',
+  },
+  billedNote: {
+    fontSize: 12,
+    color: '#444444',
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingVertical: 6,
+    backgroundColor: '#F8F5FC',
   },
   note: {
     fontSize: fontSize.sm,

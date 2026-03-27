@@ -205,7 +205,7 @@ export default function SignInScreen() {
               <FontAwesome name="times" size={28} color={colors.green} />
             </Pressable>
             <Text style={styles.pricingTitle}>Pricing</Text>
-            <Text style={styles.pricingSubtitle}>Monitor people you care about</Text>
+            <Text style={styles.pricingSubtitle}>Monitor people you care about.</Text>
 
             <View style={styles.pricingTable}>
               <View style={styles.pricingHeaderRow}>
@@ -213,6 +213,7 @@ export default function SignInScreen() {
                 <Text style={[styles.pricingHeaderCell, styles.pricingPriceCol]}>Per Year</Text>
                 <Text style={[styles.pricingHeaderCell, styles.pricingPerCol]}>Per Person</Text>
               </View>
+              <Text style={styles.pricingBilledNote}>All plans billed yearly (cancel anytime)</Text>
               {[
                 { plan: 'Up to 10 people', price: '$20', per: '$2.00' },
                 { plan: 'Up to 25 people', price: '$39', per: '$1.56' },
@@ -251,19 +252,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     marginTop: spacing.xl,
   },
+  titleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+  },
   title: {
     fontSize: fontSize.xxl,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     color: colors.brand,
-    marginBottom: spacing.xs,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
   },
   tm: {
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: '400' as const,
     color: colors.brand,
     marginTop: 8,
   },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   pricingSubtitle: {
     fontSize: fontSize.sm,
-    color: '#444444',
+    color: colors.brand,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
@@ -447,6 +447,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#555555',
     textAlign: 'center',
+  },
+  pricingBilledNote: {
+    fontSize: 12,
+    color: '#444444',
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingVertical: 6,
+    backgroundColor: '#F8F5FC',
   },
   pricingNote: {
     fontSize: fontSize.sm,

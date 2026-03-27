@@ -84,14 +84,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as const,
     paddingHorizontal: spacing.md,
   },
+  logoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+  },
   logoText: {
     fontSize: fontSize.lg,
     fontWeight: '700' as const,
     color: colors.white,
-  },
-  logoRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-start' as const,
   },
   tm: {
     fontSize: 11,
