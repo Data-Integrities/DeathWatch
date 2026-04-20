@@ -7,6 +7,13 @@ import { sendMatchNotification } from '../services/emailService';
 import { sendMatchSms } from '../services/smsService';
 import { pool } from '../db/pool';
 
+const PLAN_LIMITS: Record<string, { limit: number; grace: number }> = {
+  PLAN_10:  { limit: 10,  grace: 11 },
+  PLAN_25:  { limit: 25,  grace: 26 },
+  PLAN_50:  { limit: 50,  grace: 51 },
+  PLAN_100: { limit: 100, grace: 101 },
+};
+
 const router = Router();
 router.use(authMiddleware);
 
@@ -18,10 +25,11 @@ const US_STATES = [
 ];
 
 const searchCreateSchema = z.object({
-  nameLast: z.string().min(1, 'Last name is required'),
+  nameLast: z.string().nullable().default(null),
   nameFirst: z.string().nullable().default(null),
   nameNickname: z.string().nullable().default(null),
   nameMiddle: z.string().nullable().default(null),
+  nameMaiden: z.string().nullable().default(null),
   ageApx: z.number().int().min(0, 'Approximate age is required').max(150),
   city: z.string().nullable().default(null),
   state: z.string().length(2).refine(s => US_STATES.includes(s.toUpperCase()), 'Invalid state code').nullable().default(null),
@@ -29,6 +37,9 @@ const searchCreateSchema = z.object({
 }).refine(d => d.nameFirst || d.nameNickname, {
   message: 'Either first name or nickname is required',
   path: ['nameFirst'],
+}).refine(d => d.nameLast || d.nameMaiden, {
+  message: 'Last name or maiden name is required',
+  path: ['nameLast'],
 });
 
 router.get('/', async (req: Request, res: Response) => {
@@ -42,14 +53,49 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    // Subscription gate: only subscribers can create monitored searches
+    // Subscription + plan limit gate
     const { rows: userRows } = await pool.query(
-      'SELECT subscription_active FROM dw_user WHERE login_id = $1',
+      'SELECT subscription_active, plan_code, tier_custom_cap, using_grace_slot FROM dw_user WHERE login_id = $1',
       [req.userId!]
     );
-    if (userRows.length > 0 && !userRows[0].subscription_active) {
+    if (userRows.length === 0) {
+      res.status(403).json({ error: 'User not found.' });
+      return;
+    }
+    const userRow = userRows[0];
+    if (!userRow.subscription_active) {
       res.status(403).json({ error: 'Subscription required to create monitored searches.' });
       return;
+    }
+
+    // Count active searches (not confirmed — confirmed searches don't count against the limit)
+    const { rows: countRows } = await pool.query(
+      'SELECT COUNT(*)::int AS cnt FROM user_query WHERE user_id = $1 AND confirmed = false',
+      [req.userId!]
+    );
+    const activeCount = countRows[0].cnt;
+
+    const planCode = userRow.plan_code;
+    const plan = planCode ? PLAN_LIMITS[planCode] : null;
+    const planLimit = plan ? plan.limit : (userRow.tier_custom_cap || 0);
+    const graceLimit = plan ? plan.grace : (userRow.tier_custom_cap ? userRow.tier_custom_cap + 1 : 0);
+
+    if (activeCount >= graceLimit) {
+      res.status(403).json({
+        error: 'You\'ve reached your plan limit.  Please upgrade to monitor more people.',
+        code: 'PLAN_LIMIT_REACHED',
+        activeCount,
+        planLimit,
+      });
+      return;
+    }
+
+    // Set grace slot flag if at the plan limit
+    if (activeCount >= planLimit && !userRow.using_grace_slot) {
+      await pool.query(
+        'UPDATE dw_user SET using_grace_slot = true, updated_at = NOW() WHERE login_id = $1',
+        [req.userId!]
+      );
     }
 
     const data = searchCreateSchema.parse(req.body);
@@ -70,7 +116,8 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    res.status(201).json(result);
+    const usingGraceSlot = activeCount >= planLimit;
+    res.status(201).json({ ...result, usingGraceSlot, activeCount: activeCount + 1, planLimit });
   } catch (err: any) {
     if (err.name === 'ZodError') {
       res.status(400).json({ error: err.errors[0].message });

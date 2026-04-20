@@ -132,11 +132,11 @@ export function SignUpModal({ visible, onClose }: Props) {
                 <Text style={styles.checkEmailSent}>We sent a verification email to</Text>
                 <Text style={styles.checkEmailAddress}>{email}</Text>
                 <Text style={styles.checkEmailNote}>
-                  <Text style={styles.checkEmailBold}>Click the link in the email to verify your account.</Text>  You can still use <Text style={styles.brandText}>ObitNOTE</Text> while you wait.
+                  <Text style={styles.checkEmailBold}>Click the link in the email to verify your account.</Text>  You can still use <Text style={styles.brandText}>ObitNote</Text> while you wait.
                   {'\n\n'}<Text style={styles.checkEmailBold}>Don't see it?</Text>  Check your spam folder.
                 </Text>
                 <Button
-                  title="Continue to ObitNOTE"
+                  title="Continue to ObitNote"
                   variant="primary"
                   onPress={() => { onClose(); router.replace('/welcome'); }}
                   style={styles.continueButton}

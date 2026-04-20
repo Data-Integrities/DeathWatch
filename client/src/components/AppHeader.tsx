@@ -27,9 +27,12 @@ export function AppHeader({ minimal, onHelp, onSettings }: AppHeaderProps = {}) 
       <View style={styles.headerBar}>
         <View style={styles.barContent}>
           <Pressable onPress={() => router.replace('/matches')} accessibilityRole="link" accessibilityLabel="Home">
-            <View style={styles.logoRow}>
-              <Text style={styles.logoText}>ObitNOTE</Text>
-              <Text style={styles.tm}>{'\u2122'}</Text>
+            <View style={styles.logoBlock}>
+              <View style={styles.logoRow}>
+                <Text style={styles.logoText}>ObitNote</Text>
+                <Text style={styles.tm}>{'\u2122'}</Text>
+              </View>
+              <Text style={styles.tagline}>We'll let you know</Text>
             </View>
           </Pressable>
           {!minimal ? (
@@ -84,12 +87,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as const,
     paddingHorizontal: spacing.md,
   },
+  logoBlock: {
+    flexDirection: 'column' as const,
+  },
   logoRow: {
     flexDirection: 'row' as const,
     alignItems: 'flex-start' as const,
   },
+  tagline: {
+    fontSize: 11,
+    fontWeight: '400' as const,
+    color: colors.white,
+    marginTop: -4,
+    letterSpacing: 0.3,
+  },
   logoText: {
-    fontSize: fontSize.lg,
+    fontSize: 26,
     fontWeight: '700' as const,
     color: colors.white,
   },

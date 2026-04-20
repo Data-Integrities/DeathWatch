@@ -1,15 +1,112 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { useAuth } from '../src/context/AuthContext';
 import { Button } from '../src/components/Button';
+import { ConfirmDialog } from '../src/components/ConfirmDialog';
+import { HelpModal } from '../src/components/HelpModal';
+import { usePaddle } from '../src/hooks/usePaddle';
+import { getAuthToken } from '../src/services/api/client';
 import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+
+const PLANS = [
+  { code: 'PLAN_10', label: 'Up to 10 people', price: '$20', per: '$2.00', priceId: 'pri_01kmdt5pf8bzna0582hpbs9r2y' },
+  { code: 'PLAN_25', label: 'Up to 25 people', price: '$39', per: '$1.56', priceId: 'pri_01kmdt8791qqhk16vmgn9h7e17' },
+  { code: 'PLAN_50', label: 'Up to 50 people', price: '$69', per: '$1.38', priceId: 'pri_01kmdtaq61d4vwkt6pqgtz03vb' },
+  { code: 'PLAN_100', label: 'Up to 100 people', price: '$119', per: '$1.19', priceId: 'pri_01kmdtm81b7rtbw77xm7xqharw' },
+];
+
 export default function SubscribePage() {
+  const { user, refreshUser } = useAuth();
+  const [searchInfoVisible, setSearchInfoVisible] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [activationFailed, setActivationFailed] = useState(false);
+  const [helpVisible, setHelpVisible] = useState(false);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pollForSubscription = useCallback(() => {
+    const MAX_ATTEMPTS = 15;
+    const INTERVAL_MS = 2000;
+    let attempt = 0;
+
+    const poll = () => {
+      attempt++;
+      const token = getAuthToken();
+      fetch(`${API_BASE}/api/auth/me`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(json => {
+          if (json?.user?.subscriptionActive) {
+            setActivating(false);
+            refreshUser().then(() => router.replace('/matches'));
+            return;
+          }
+          if (attempt >= MAX_ATTEMPTS) {
+            setActivating(false);
+            setActivationFailed(true);
+            return;
+          }
+          pollTimer.current = setTimeout(poll, INTERVAL_MS);
+        })
+        .catch(() => {
+          if (attempt >= MAX_ATTEMPTS) {
+            setActivating(false);
+            setActivationFailed(true);
+            return;
+          }
+          pollTimer.current = setTimeout(poll, INTERVAL_MS);
+        });
+    };
+
+    poll();
+  }, [refreshUser]);
+
+  const handleCheckoutComplete = useCallback(() => {
+    setActivating(true);
+    setActivationFailed(false);
+    pollForSubscription();
+  }, [pollForSubscription]);
+
+  const paddle = usePaddle(handleCheckoutComplete);
+
+  const openCheckout = (priceId: string) => {
+    if (paddle) {
+      const opts: any = {
+        items: [{ priceId, quantity: 1 }],
+      };
+      if (user?.id) {
+        opts.customData = { userId: String(user.id) };
+      }
+      paddle.Checkout.open(opts);
+    } else {
+      console.error('Paddle not initialized');
+    }
+  };
+
+  if (activating) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <View style={styles.activatingContent}>
+            <ActivityIndicator size="large" color={colors.brand} />
+            <Text style={styles.activatingTitle}>Activating your subscription...</Text>
+            <Text style={styles.activatingBody}>
+              This usually takes just a few seconds.  <Text style={styles.yellowHighlight}>Please don't close this page.</Text>
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.titleRow}>
-          <Text style={styles.brand}>ObitNOTE</Text>
+          <Text style={styles.brand}>ObitNote</Text>
           <Text style={styles.tm}>{'\u2122'}</Text>
         </View>
         <Text style={styles.title}>Subscribe</Text>
@@ -20,18 +117,19 @@ export default function SubscribePage() {
             <Text style={[styles.headerCell, styles.planCol]}>Plan</Text>
             <Text style={[styles.headerCell, styles.priceCol]}>Per Year</Text>
             <Text style={[styles.headerCell, styles.perCol]}>Per Person</Text>
+            <Text style={[styles.headerCell, styles.selectCol]}></Text>
           </View>
           <Text style={styles.billedNote}>All plans billed yearly (cancel anytime)</Text>
-          {[
-            { plan: 'Up to 10 people', price: '$20', per: '$2.00' },
-            { plan: 'Up to 25 people', price: '$39', per: '$1.56' },
-            { plan: 'Up to 50 people', price: '$69', per: '$1.38' },
-            { plan: 'Up to 100 people', price: '$119', per: '$1.19' },
-          ].map((row, i) => (
-            <View key={i} style={[styles.row, i % 2 === 0 && styles.rowAlt]}>
-              <Text style={[styles.cell, styles.planCol]}>{row.plan}</Text>
+          {PLANS.map((row, i) => (
+            <View key={row.code} style={[styles.row, i % 2 === 0 && styles.rowAlt]}>
+              <Text style={[styles.cell, styles.planCol]}>{row.label}</Text>
               <Text style={[styles.cell, styles.priceCol, styles.priceText]}>{row.price}</Text>
               <Text style={[styles.cell, styles.perCol]}>{row.per}</Text>
+              <View style={styles.selectCol}>
+                <Pressable onPress={() => openCheckout(row.priceId)} style={styles.selectButton}>
+                  <Text style={styles.selectButtonText}>Select</Text>
+                </Pressable>
+              </View>
             </View>
           ))}
           <View style={[styles.row, styles.rowAlt]}>
@@ -42,11 +140,17 @@ export default function SubscribePage() {
 
         <Text style={styles.note}>3 free trial searches before any payment is required.  Cancel, upgrade, or downgrade anytime.</Text>
 
-        <Text style={styles.description}>
-          <Text style={styles.brandInline}>ObitNOTE</Text> is an obituary monitor and alert service.  Add people's names and <Text style={styles.brandInline}>ObitNOTE</Text> will send you a text and email when an obituary for any of them is published in the US, Canada, the UK, Australia, or New Zealand.
-        </Text>
+        {activationFailed && (
+          <View style={styles.failedCard}>
+            <Text style={styles.failedText}>
+              We received your payment but activation is taking longer than expected.  Please sign out and sign back in.  If the problem persists, <Pressable onPress={() => setHelpVisible(true)} style={styles.supportLinkWrap}><Text style={styles.supportLink}>message ObitNote support</Text></Pressable>.
+            </Text>
+          </View>
+        )}
 
-        <Text style={styles.comingSoon}>Payment option coming soon.</Text>
+        <Text style={styles.description}>
+          <Text style={styles.brandInline}>ObitNote</Text> is an obituary monitor and alert service.  Add people's names and <Text style={styles.brandInline}>ObitNote</Text> will send you a text and email when an obituary for any of them is published.  <Pressable onPress={() => setSearchInfoVisible(true)} style={styles.searchInfoLinkWrap}><Text style={styles.searchInfoLink}>Daily obituary searches</Text></Pressable>.
+        </Text>
 
         <Button
           title="Go Back"
@@ -55,6 +159,21 @@ export default function SubscribePage() {
           style={styles.backButton}
         />
       </View>
+
+      <ConfirmDialog
+        visible={searchInfoVisible}
+        title="Daily obituary searches"
+        body={"ObitNote searches online newspapers and memorial websites for obituaries every day in the US, Canada, the UK, Australia, and New Zealand using the names, locations, ages, and keywords you provide.  When one of your people is found, we'll let you know right away by text and email."}
+        confirmLabel="OK"
+        cancelLabel=""
+        onConfirm={() => setSearchInfoVisible(false)}
+        onCancel={() => setSearchInfoVisible(false)}
+      />
+
+      <HelpModal
+        visible={helpVisible}
+        onClose={() => setHelpVisible(false)}
+      />
 
       <Text style={styles.footer}>
         Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
@@ -117,6 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand,
     paddingVertical: 10,
     paddingHorizontal: 12,
+    alignItems: 'center',
   },
   headerCell: {
     fontSize: fontSize.sm,
@@ -125,8 +245,9 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 12,
+    alignItems: 'center',
   },
   rowAlt: {
     backgroundColor: '#F8F5FC',
@@ -151,8 +272,23 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: 'right',
   },
+  selectCol: {
+    flex: 1.5,
+    alignItems: 'flex-end' as const,
+  },
+  selectButton: {
+    backgroundColor: colors.green,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+  },
+  selectButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   contactCol: {
-    flex: 4,
+    flex: 5.5,
     fontSize: 14,
     fontWeight: '700',
     color: '#555555',
@@ -181,12 +317,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.brand,
   },
-  comingSoon: {
-    fontSize: fontSize.base,
+  searchInfoLinkWrap: {
+    display: 'inline' as any,
+  },
+  searchInfoLink: {
     fontWeight: '700',
-    color: colors.brand,
-    textAlign: 'center',
-    marginBottom: spacing.md,
+    color: colors.green,
+    fontSize: fontSize.base,
+    lineHeight: 26,
+    textDecorationLine: 'underline' as const,
   },
   backButton: {
     marginTop: spacing.sm,
@@ -196,5 +335,47 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: fontSize.sm,
     color: '#444444',
+  },
+  activatingContent: {
+    alignItems: 'center' as const,
+    padding: spacing.xl,
+  },
+  activatingTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700' as const,
+    color: '#444444',
+    marginTop: spacing.lg,
+    textAlign: 'center' as const,
+  },
+  activatingBody: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    marginTop: spacing.sm,
+    textAlign: 'center' as const,
+    lineHeight: 24,
+  },
+  yellowHighlight: {
+    backgroundColor: '#FFFF00',
+  },
+  failedCard: {
+    marginBottom: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: '#FFF8E1',
+    borderRadius: borderRadius.md,
+  },
+  failedText: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    lineHeight: 24,
+    textAlign: 'center' as const,
+  },
+  supportLinkWrap: {
+    display: 'inline' as any,
+  },
+  supportLink: {
+    color: colors.green,
+    fontWeight: '700' as const,
+    fontSize: fontSize.base,
+    textDecorationLine: 'underline' as const,
   },
 });

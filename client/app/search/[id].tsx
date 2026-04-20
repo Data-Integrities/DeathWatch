@@ -20,6 +20,7 @@ export default function EditSearchScreen() {
   const [nameFirst, setNameFirst] = useState('');
   const [nameNickname, setNameNickname] = useState('');
   const [nameMiddle, setNameMiddle] = useState('');
+  const [nameMaiden, setNameMaiden] = useState('');
   const [ageApx, setAgeApx] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export default function EditSearchScreen() {
       setNameFirst(res.search.nameFirst || '');
       setNameNickname(res.search.nameNickname || '');
       setNameMiddle(res.search.nameMiddle || '');
+      setNameMaiden(res.search.nameMaiden || '');
       setAgeApx(res.search.ageApx?.toString() || '');
       setCity(res.search.city || '');
       setState(res.search.state);
@@ -55,8 +57,8 @@ export default function EditSearchScreen() {
 
   const handleSave = async () => {
     setError('');
-    if (!nameLast.trim()) {
-      setError('Last name is required.');
+    if (!nameLast.trim() && !nameMaiden.trim()) {
+      setError('Last name or maiden name is required.');
       return;
     }
     if (!nameFirst.trim() && !nameNickname.trim()) {
@@ -71,10 +73,11 @@ export default function EditSearchScreen() {
     setSaving(true);
     try {
       await api.patch(`/api/searches/${id}`, {
-        nameLast: nameLast.trim(),
+        nameLast: nameLast.trim() || null,
         nameFirst: nameFirst.trim() || null,
         nameNickname: nameNickname.trim() || null,
         nameMiddle: nameMiddle.trim() || null,
+        nameMaiden: nameMaiden.trim() || null,
         ageApx: ageApx ? parseInt(ageApx, 10) : null,
         city: city.trim() || null,
         state,
@@ -133,6 +136,7 @@ export default function EditSearchScreen() {
 
       <TextField label="First Name" labelWidth={90} value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" />
       <TextField label="Last Name" labelWidth={90} value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
+      <TextField label="Maiden" labelWidth={90} value={nameMaiden} onChangeText={setNameMaiden} autoCapitalize="words" placeholder="If applicable" />
       <TextField label="Nickname" labelWidth={90} value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" />
       <TextField label="Middle" labelWidth={90} value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" />
       <TextField label="Approx Age" labelWidth={90} value={ageApx} onChangeText={v => setAgeApx(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" />

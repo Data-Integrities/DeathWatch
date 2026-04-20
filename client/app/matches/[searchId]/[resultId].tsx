@@ -111,7 +111,7 @@ export default function MoreInfoScreen() {
             {' '}to search.
           </Text>
           <Text style={styles.disclaimer}>
-            {'\n'}{domainLabel} isn't affiliated with <Text style={styles.brandText}>ObitNOTE</Text>.  <Text style={styles.brandText}>ObitNOTE</Text> doesn't guarantee the accuracy of search results.  Use of third-party websites is subject to their own terms and privacy policies.
+            {'\n'}{domainLabel} isn't affiliated with <Text style={styles.brandText}>ObitNote</Text>.  <Text style={styles.brandText}>ObitNote</Text> doesn't guarantee the accuracy of search results.  Use of third-party websites is subject to their own terms and privacy policies.
           </Text>
         </View>
 

@@ -10,6 +10,7 @@ import adminRoutes from './routes/admin';
 import messageRoutes from './routes/messages';
 import trialRoutes from './routes/trial';
 import errorRoutes from './routes/errors';
+import subscriptionRoutes from './routes/subscription';
 import webhookRoutes from './routes/webhooks';
 import { runBatch, getUsersWithNewResults, getMonthlySummaryUsers } from './services/batchService';
 import { purgeOldRejectedResults } from './services/matchService';
@@ -61,6 +62,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/trial', trialRoutes);
 app.use('/api/errors', errorRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 // Proxy: serves obituary pages in an iframe-friendly way.
 // If the real page can be fetched, serve it with headers stripped.
@@ -249,7 +251,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 });
 
 app.listen(PORT, () => {
-  console.log(`ObitNOTE API running on http://localhost:${PORT}`);
+  console.log(`ObitNote API running on http://localhost:${PORT}`);
 });
 
 // Daily batch: run at 11:00 AM ET (16:00 UTC)

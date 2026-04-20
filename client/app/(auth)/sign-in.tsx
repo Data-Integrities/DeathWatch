@@ -30,6 +30,7 @@ export default function SignInScreen() {
   const [signUpVisible, setSignUpVisible] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [legalType, setLegalType] = useState<'terms' | 'privacy' | null>(null);
+  const [searchInfoVisible, setSearchInfoVisible] = useState(false);
   const [unreadTicketId, setUnreadTicketId] = useState('');
   const isReturning = Platform.OS === 'web' && (() => {
     try { return localStorage.getItem('obitnote_returning') === '1'; } catch { return false; }
@@ -73,9 +74,12 @@ export default function SignInScreen() {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>ObitNOTE</Text>
-          <Text style={styles.tm}>{'\u2122'}</Text>
+        <View style={styles.titleBlock}>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>ObitNote</Text>
+            <Text style={styles.tm}>{'\u2122'}</Text>
+          </View>
+          <Text style={styles.tagline}>We'll let you know</Text>
         </View>
       </View>
 
@@ -83,13 +87,13 @@ export default function SignInScreen() {
       {(
         <View style={styles.introCard}>
           <Text style={styles.introText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitor and alert service</Text>.
+            <Text style={styles.brandText}>ObitNote</Text> is an <Text style={styles.boldText}>obituary monitor and alert service</Text>.
           </Text>
           <Text style={styles.introText}>
-            Add people's names and <Text style={styles.brandText}>ObitNOTE</Text> will <Text style={styles.boldText}>send you a text and email</Text> when an obituary for any of them is published in the US, Canada, the UK, Australia, or New Zealand.
+            Add people's names and <Text style={styles.brandText}>ObitNote</Text> will <Text style={styles.boldText}>send you a text and email</Text> when an obituary for any of them is published.  <Pressable onPress={() => setSearchInfoVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>Daily obituary searches</Text></Pressable>.
           </Text>
           <Text style={styles.introText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
+            <Text style={styles.brandText}>ObitNote</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
           </Text>
           <Text style={[styles.introText, { marginBottom: 0 }]}>
             To begin, tap <Pressable onPress={() => setSignUpVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>Create account and try for free</Text></Pressable>.  <Pressable onPress={() => setPricingVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>See pricing</Text></Pressable>.
@@ -197,6 +201,16 @@ export default function SignInScreen() {
         onCancel={() => setSupportVisible(false)}
       />
 
+      <ConfirmDialog
+        visible={searchInfoVisible}
+        title="Daily obituary searches"
+        body={"ObitNote searches online newspapers and memorial websites for obituaries every day in the US, Canada, the UK, Australia, and New Zealand using the names, locations, ages, and keywords you provide.  When one of your people is found, we'll let you know right away by text and email."}
+        confirmLabel="OK"
+        cancelLabel=""
+        onConfirm={() => setSearchInfoVisible(false)}
+        onCancel={() => setSearchInfoVisible(false)}
+      />
+
       <Modal visible={pricingVisible} transparent animationType="fade" onRequestClose={() => setPricingVisible(false)}>
         <View style={styles.tryFreeOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setPricingVisible(false)} />
@@ -266,6 +280,17 @@ const styles = StyleSheet.create({
     fontWeight: '400' as const,
     color: colors.brand,
     marginTop: 8,
+  },
+  titleBlock: {
+    alignItems: 'flex-start' as const,
+  },
+  tagline: {
+    fontSize: 13.8,
+    fontWeight: '700' as const,
+    color: colors.brand,
+    marginTop: -11,
+    marginLeft: 2,
+    letterSpacing: 0.3,
   },
 
   error: {

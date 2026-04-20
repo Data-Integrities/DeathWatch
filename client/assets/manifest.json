@@ -1,6 +1,6 @@
 {
-  "name": "ObitNOTE",
-  "short_name": "ObitNOTE",
+  "name": "ObitNote",
+  "short_name": "ObitNote",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#663399",

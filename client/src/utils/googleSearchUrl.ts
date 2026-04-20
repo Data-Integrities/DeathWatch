@@ -36,8 +36,13 @@ export function buildGoogleSearchUrl(search: SearchQuery): string {
     parts.push(search.nameFirst);
   }
 
-  if (search.nameLast) {
+  if (search.nameLast && search.nameMaiden &&
+      search.nameLast.toLowerCase() !== search.nameMaiden.toLowerCase()) {
+    parts.push(`(${search.nameLast} OR ${capitalize(search.nameMaiden)})`);
+  } else if (search.nameLast) {
     parts.push(search.nameLast);
+  } else if (search.nameMaiden) {
+    parts.push(search.nameMaiden);
   }
 
   parts.push('obituary');

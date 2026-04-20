@@ -15,6 +15,15 @@ function makeToken(userId: string): string {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
 }
 
+const PLAN_LIMITS: Record<string, number> = {
+  PLAN_10: 10, PLAN_25: 25, PLAN_50: 50, PLAN_100: 100,
+};
+
+function getPlanLimit(planCode: string | null, tierCustomCap: number | null): number | null {
+  if (!planCode) return null;
+  return PLAN_LIMITS[planCode] ?? tierCustomCap ?? null;
+}
+
 function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserProfile {
   return {
     id: row.login_id,
@@ -33,6 +42,7 @@ function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserP
     planStartDate: row.plan_start_date ? row.plan_start_date.toISOString?.().slice(0, 10) ?? row.plan_start_date : null,
     planRenewalDate: row.plan_renewal_date ? row.plan_renewal_date.toISOString?.().slice(0, 10) ?? row.plan_renewal_date : null,
     usingGraceSlot: row.using_grace_slot || false,
+    planLimit: getPlanLimit(row.plan_code, row.tier_custom_cap),
     phoneNumber: row.phone_number || null,
     smsOptIn: row.sms_opt_in !== false,
   };
@@ -67,7 +77,7 @@ export async function register(email: string, password: string, firstName: strin
     [email.toLowerCase()]
   );
   if (existing.rows.length > 0) {
-    throw Object.assign(new Error('This email already has an account in ObitNOTE.'), { status: 409 });
+    throw Object.assign(new Error('This email already has an account in ObitNote.'), { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);

@@ -75,7 +75,14 @@ class SerperProvider {
       parts.push(query.nameFirst);
     }
 
-    parts.push(query.nameLast);
+    if (query.nameMaiden && query.nameLast &&
+        query.nameMaiden.toLowerCase() !== query.nameLast.toLowerCase()) {
+      parts.push(buildOrClause([query.nameLast, query.nameMaiden]));
+    } else if (query.nameLast) {
+      parts.push(query.nameLast);
+    } else if (query.nameMaiden) {
+      parts.push(query.nameMaiden);
+    }
     parts.push('obituary');
 
     if (query.city) {

@@ -16,6 +16,7 @@ function rowToSearch(row: any): SearchQuery {
     nameFirst: row.name_first,
     nameNickname: row.name_nickname,
     nameMiddle: row.name_middle,
+    nameMaiden: row.name_maiden,
     ageApx: row.age_apx,
     city: row.city,
     state: row.state,
@@ -98,18 +99,19 @@ export async function createSearch(userId: string, data: SearchQueryCreate) {
 
   // Insert the user_query
   const { rows } = await pool.query(
-    `INSERT INTO user_query (id, login_id, name_last, name_first, name_nickname, name_middle, age_apx, city, state, key_words, disabled)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)
+    `INSERT INTO user_query (id, login_id, name_last, name_first, name_nickname, name_middle, name_maiden, age_apx, city, state, key_words, disabled)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false)
      RETURNING *`,
-    [id, userId, data.nameLast, data.nameFirst, data.nameNickname, data.nameMiddle, data.ageApx, data.city, data.state, data.keyWords]
+    [id, userId, data.nameLast, data.nameFirst, data.nameNickname, data.nameMiddle, data.nameMaiden, data.ageApx, data.city, data.state, data.keyWords]
   );
 
   // Immediately run search via the search engine
   const params = new URLSearchParams();
-  params.set('lastName', data.nameLast);
+  if (data.nameLast) params.set('lastName', data.nameLast);
   if (data.nameFirst) params.set('firstName', data.nameFirst);
   if (data.nameNickname) params.set('nickname', data.nameNickname);
   if (data.nameMiddle) params.set('middleName', data.nameMiddle);
+  if (data.nameMaiden) params.set('maidenName', data.nameMaiden);
   if (data.ageApx) params.set('age', data.ageApx.toString());
   if (data.city) params.set('city', data.city);
   if (data.state) params.set('state', data.state);
@@ -199,6 +201,7 @@ export async function updateSearch(userId: string, searchId: string, data: Parti
   if (data.nameFirst !== undefined) { fields.push(`name_first = $${idx++}`); values.push(data.nameFirst); }
   if (data.nameNickname !== undefined) { fields.push(`name_nickname = $${idx++}`); values.push(data.nameNickname); }
   if (data.nameMiddle !== undefined) { fields.push(`name_middle = $${idx++}`); values.push(data.nameMiddle); }
+  if (data.nameMaiden !== undefined) { fields.push(`name_maiden = $${idx++}`); values.push(data.nameMaiden); }
   if (data.ageApx !== undefined) { fields.push(`age_apx = $${idx++}`); values.push(data.ageApx); }
   if (data.city !== undefined) { fields.push(`city = $${idx++}`); values.push(data.city); }
   if (data.state !== undefined) { fields.push(`state = $${idx++}`); values.push(data.state); }
@@ -225,10 +228,11 @@ export async function updateSearch(userId: string, searchId: string, data: Parti
   );
 
   const params = new URLSearchParams();
-  params.set('lastName', updated.name_last);
+  if (updated.name_last) params.set('lastName', updated.name_last);
   if (updated.name_first) params.set('firstName', updated.name_first);
   if (updated.name_nickname) params.set('nickname', updated.name_nickname);
   if (updated.name_middle) params.set('middleName', updated.name_middle);
+  if (updated.name_maiden) params.set('maidenName', updated.name_maiden);
   if (updated.age_apx) params.set('age', updated.age_apx.toString());
   if (updated.city) params.set('city', updated.city);
   if (updated.state) params.set('state', updated.state);

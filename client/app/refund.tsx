@@ -9,7 +9,7 @@ export default function RefundPage() {
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.titleRow}>
-          <Text style={styles.brand}>ObitNOTE</Text>
+          <Text style={styles.brand}>ObitNote</Text>
           <Text style={styles.tm}>{'\u2122'}</Text>
         </View>
 
@@ -17,7 +17,7 @@ export default function RefundPage() {
         <Text style={styles.updated}>Last updated: March 18, 2026</Text>
 
         <Text style={styles.body}>
-          We want you to be happy with ObitNOTE.  If you are not satisfied with your subscription, you may request a refund by contacting us at support@obitnote.com.
+          We want you to be happy with ObitNote.  If you are not satisfied with your subscription, you may request a refund by contacting us at support@obitnote.com.
         </Text>
 
         <Text style={styles.heading}>Cancellation</Text>

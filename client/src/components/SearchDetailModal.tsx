@@ -29,10 +29,12 @@ export function SearchDetailModal({ visible, searchId, onClose, onEdit }: Props)
   const activeResults = results.filter(r => r.status !== 'rejected');
   const hasMatches = activeResults.length > 0;
 
-  const displayName = search ? [search.nameFirst, search.nameLast].filter(Boolean).join(' ') : '';
+  const lastName = search ? (search.nameLast || search.nameMaiden || '') : '';
+  const maidenSuffix = search?.nameLast && search?.nameMaiden ? ` (${search.nameMaiden})` : '';
+  const displayName = search ? [search.nameFirst, `${lastName}${maidenSuffix}`].filter(Boolean).join(' ') : '';
   const nicknameDisplay = search?.nameNickname ? ` "${search.nameNickname}"` : '';
   const fullDisplayName = search?.nameFirst
-    ? `${search.nameFirst}${search.nameMiddle ? ' ' + search.nameMiddle : ''}${nicknameDisplay} ${search?.nameLast || ''}`
+    ? `${search.nameFirst}${search.nameMiddle ? ' ' + search.nameMiddle : ''}${nicknameDisplay} ${lastName}${maidenSuffix}`
     : displayName;
 
   const loadResults = useCallback(async () => {
@@ -119,6 +121,7 @@ export function SearchDetailModal({ visible, searchId, onClose, onEdit }: Props)
   if (!visible) return null;
 
   const details: { label: string; value: string }[] = [];
+  if (search?.nameMaiden) details.push({ label: 'Maiden', value: search.nameMaiden });
   if (search?.nameNickname) details.push({ label: 'Nickname', value: search.nameNickname });
   if (search?.nameMiddle) details.push({ label: 'Middle', value: search.nameMiddle });
   if (search?.ageApx) details.push({ label: 'Age', value: `around ${search.ageApx}` });
@@ -271,7 +274,7 @@ export function SearchDetailModal({ visible, searchId, onClose, onEdit }: Props)
 
               <View style={styles.disclaimerWrap}>
                 <Text style={styles.disclaimerText}>
-                  <Text style={styles.brandText}>ObitNOTE</Text> doesn't guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
+                  <Text style={styles.brandText}>ObitNote</Text> doesn't guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
                 </Text>
               </View>
             </ScrollView>

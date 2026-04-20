@@ -27,6 +27,7 @@ export function TrialSearchModal({ visible, onClose }: Props) {
   const [nameFirst, setNameFirst] = useState('');
   const [nameNickname, setNameNickname] = useState('');
   const [nameMiddle, setNameMiddle] = useState('');
+  const [nameMaiden, setNameMaiden] = useState('');
   const [ageApx, setAgeApx] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState<string | null>(null);
@@ -60,6 +61,7 @@ export function TrialSearchModal({ visible, onClose }: Props) {
     setNameFirst('');
     setNameNickname('');
     setNameMiddle('');
+    setNameMaiden('');
     setAgeApx('');
     setCity('');
     setState(null);
@@ -80,8 +82,8 @@ export function TrialSearchModal({ visible, onClose }: Props) {
   const handleSearch = async () => {
     setError('');
 
-    if (!nameLast.trim()) {
-      setError('Last name is required.');
+    if (!nameLast.trim() && !nameMaiden.trim()) {
+      setError('Last name or maiden name is required.');
       return;
     }
     if (!nameFirst.trim() && !nameNickname.trim()) {
@@ -96,10 +98,11 @@ export function TrialSearchModal({ visible, onClose }: Props) {
     setLoading(true);
     try {
       const body: SearchQueryCreate = {
-        nameLast: nameLast.trim(),
+        nameLast: nameLast.trim() || null,
         nameFirst: nameFirst.trim() || null,
         nameNickname: nameNickname.trim() || null,
         nameMiddle: nameMiddle.trim() || null,
+        nameMaiden: nameMaiden.trim() || null,
         ageApx: ageApx ? parseInt(ageApx, 10) : null,
         city: city.trim() || null,
         state,
@@ -233,7 +236,7 @@ export function TrialSearchModal({ visible, onClose }: Props) {
               )}
 
               <Text style={styles.resultNote}>
-                This was a one-time demo search.  When you subscribe, <Text style={styles.brandText}>ObitNOTE</Text> will monitor living people and alert you when a new obituary is found.
+                This was a one-time demo search.  When you subscribe, <Text style={styles.brandText}>ObitNote</Text> will monitor living people and alert you when a new obituary is found.
               </Text>
 
               <View style={styles.resultButtons}>
@@ -246,7 +249,7 @@ export function TrialSearchModal({ visible, onClose }: Props) {
                   />
                 )}
                 <Button
-                  title="Subscribe to ObitNOTE obituary monitoring"
+                  title="Subscribe to ObitNote obituary monitoring"
                   variant="primary"
                   onPress={() => { handleClose(); router.push('/subscribe' as any); }}
                   style={styles.resultButton}
@@ -301,7 +304,7 @@ export function TrialSearchModal({ visible, onClose }: Props) {
               </Card>
               <View style={styles.resultButtons}>
                 <Button
-                  title="Subscribe to ObitNOTE obituary monitoring"
+                  title="Subscribe to ObitNote obituary monitoring"
                   variant="primary"
                   onPress={() => { handleClose(); router.push('/subscribe' as any); }}
                   style={styles.resultButton}
@@ -331,7 +334,7 @@ export function TrialSearchModal({ visible, onClose }: Props) {
           <ScrollView style={styles.scrollInner} showsVerticalScrollIndicator={false}>
             <Text style={styles.title}>Free Trial Search</Text>
             <Text style={styles.hint}>
-              This is a <Text style={styles.hintHighlight}>trial search of a <Text style={styles.greenText}>deceased</Text> person</Text> so you can see how <Text style={styles.brandText}>ObitNOTE</Text> works.  <Text style={styles.hintHighlight}>After you subscribe, you will enter <Text style={styles.greenText}>living</Text> people.</Text>  <Text style={styles.brandText}>ObitNOTE</Text> will search for those people daily and alert you when an obituary is found.
+              This is a <Text style={styles.hintHighlight}>trial search of a <Text style={styles.greenText}>deceased</Text> person</Text> so you can see how <Text style={styles.brandText}>ObitNote</Text> works.  <Text style={styles.hintHighlight}>After you subscribe, you will enter <Text style={styles.greenText}>living</Text> people.</Text>  <Text style={styles.brandText}>ObitNote</Text> will search for those people daily and alert you when an obituary is found.
             </Text>
             <Text style={styles.counter}>Search {trialUsed + 1} of {trialMax} free tries</Text>
 
@@ -339,6 +342,7 @@ export function TrialSearchModal({ visible, onClose }: Props) {
 
             <TextField label="First Name" labelWidth={90} value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" autoFocus />
             <TextField label="Last Name" labelWidth={90} value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
+            <TextField label="Maiden" labelWidth={90} value={nameMaiden} onChangeText={setNameMaiden} autoCapitalize="words" placeholder="If applicable" />
             <TextField label="Nickname" labelWidth={90} value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" placeholder="Optional" />
             <TextField label="Middle" labelWidth={90} value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" placeholder="Optional" />
             <TextField label="Approx Age" labelWidth={90} value={ageApx} onChangeText={v => setAgeApx(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" placeholder="Best guess of age today" />

@@ -1,7 +1,7 @@
 {
   "name": "obit-note-api",
   "version": "1.0.0",
-  "description": "ObitNOTE API server",
+  "description": "ObitNote API server",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

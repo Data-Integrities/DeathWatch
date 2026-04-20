@@ -27,7 +27,7 @@ function wrapHtml(body: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF;">
     <tr>
       <td style="padding: 32px 24px; text-align: center; background-color: #663399;">
-        <h1 style="margin: 0; color: #FFFFFF; font-size: 28px;">ObitNOTE<span style="font-size: 14px; font-weight: 400; vertical-align: super; line-height: 1;">&trade;</span></h1>
+        <h1 style="margin: 0; color: #FFFFFF; font-size: 28px;">ObitNote<span style="font-size: 14px; font-weight: 400; vertical-align: super; line-height: 1;">&trade;</span></h1>
       </td>
     </tr>
     <tr>
@@ -62,7 +62,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 
   try {
     await transporter.sendMail({
-      from: `"ObitNOTE" <${FROM_EMAIL}>`,
+      from: `"ObitNote" <${FROM_EMAIL}>`,
       to,
       subject,
       html,
@@ -76,9 +76,9 @@ async function sendEmail(to: string, subject: string, html: string) {
 export async function sendWelcomeEmail(toEmail: string, firstName: string, verificationToken: string) {
   const verifyUrl = `${API_URL}/api/auth/verify-email?token=${verificationToken}`;
   const html = wrapHtml(`
-    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Welcome to ObitNOTE, ${escapeHtml(firstName)}!</h2>
+    <h2 style="margin: 0 0 16px; color: #444444; font-size: 22px;">Welcome to ObitNote, ${escapeHtml(firstName)}!</h2>
     <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
-      Your account has been created. ObitNOTE monitors obituary listings and notifies you when potential matches are found for your searches.
+      Your account has been created. ObitNote monitors obituary listings and notifies you when potential matches are found for your searches.
     </p>
     <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
       Please verify your email address to complete your setup:
@@ -93,7 +93,7 @@ export async function sendWelcomeEmail(toEmail: string, firstName: string, verif
     </p>
   `);
 
-  await sendEmail(toEmail, 'Welcome to ObitNOTE', html);
+  await sendEmail(toEmail, 'Welcome to ObitNote', html);
 }
 
 export async function sendVerificationEmail(toEmail: string, firstName: string, token: string) {
@@ -113,7 +113,7 @@ export async function sendVerificationEmail(toEmail: string, firstName: string, 
     </p>
   `);
 
-  await sendEmail(toEmail, 'ObitNOTE: Verify your email address', html);
+  await sendEmail(toEmail, 'ObitNote: Verify your email address', html);
 }
 
 export async function sendPasswordResetEmail(toEmail: string, token: string) {
@@ -133,7 +133,7 @@ export async function sendPasswordResetEmail(toEmail: string, token: string) {
     </p>
   `);
 
-  await sendEmail(toEmail, 'ObitNOTE: Reset your password', html);
+  await sendEmail(toEmail, 'ObitNote: Reset your password', html);
 }
 
 export async function sendMatchNotification(toEmail: string) {
@@ -145,7 +145,7 @@ export async function sendMatchNotification(toEmail: string) {
     ${ctaButton(`${APP_URL}/sign-in`, 'Sign In')}
   `);
 
-  await sendEmail(toEmail, 'ObitNOTE: New obituary found', html);
+  await sendEmail(toEmail, 'ObitNote: New obituary found', html);
 }
 
 export async function sendReplyNotification(toEmail: string, firstName: string, ticketId: string) {
@@ -157,7 +157,7 @@ export async function sendReplyNotification(toEmail: string, firstName: string, 
     ${ctaButton(`${APP_URL}/sign-in`, 'Sign In')}
   `);
 
-  await sendEmail(toEmail, `ObitNOTE: Response to your support message #${ticketId}`, html);
+  await sendEmail(toEmail, `ObitNote: Response to your support message #${ticketId}`, html);
 }
 
 export async function sendSupportReply(toEmail: string, firstName: string, subject: string, originalBody: string, replyText: string) {
@@ -194,7 +194,7 @@ export async function sendErrorAlert(details: {
     </table>
   `);
 
-  await sendEmail('support@obitnote.com', 'ObitNOTE: Client Error Report', html);
+  await sendEmail('support@obitnote.com', 'ObitNote: Client Error Report', html);
 }
 
 export async function sendMonthlySummary(toEmail: string, firstName: string, stats: {
@@ -205,7 +205,7 @@ export async function sendMonthlySummary(toEmail: string, firstName: string, sta
   const now = new Date();
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const monthName = monthNames[now.getMonth()];
-  const subject = `ObitNOTE ${monthName} 1 Update`;
+  const subject = `ObitNote ${monthName} 1 Update`;
 
   const searchWord = stats.activeSearches === 1 ? 'person' : 'people';
   const matchLine = stats.matchesFound > 0
@@ -219,7 +219,7 @@ export async function sendMonthlySummary(toEmail: string, firstName: string, sta
     </p>
     ${matchLine}
     <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
-      Thank you for using ObitNOTE.
+      Thank you for using ObitNote.
     </p>
   `);
 

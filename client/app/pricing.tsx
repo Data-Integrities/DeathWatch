@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Button } from '../src/components/Button';
+import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 
 export default function PricingPage() {
+  const [searchInfoVisible, setSearchInfoVisible] = useState(false);
   return (
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.titleRow}>
-          <Text style={styles.brand}>ObitNOTE</Text>
+          <Text style={styles.brand}>ObitNote</Text>
           <Text style={styles.tm}>{'\u2122'}</Text>
         </View>
         <Text style={styles.title}>Pricing</Text>
@@ -44,7 +46,7 @@ export default function PricingPage() {
         <Text style={styles.note}>3 free trial searches before any payment is required.  Cancel, upgrade, or downgrade anytime.</Text>
 
         <Text style={styles.description}>
-          <Text style={styles.brandInline}>ObitNOTE</Text> is an obituary monitor and alert service.  Add people's names and <Text style={styles.brandInline}>ObitNOTE</Text> will send you a text and email when an obituary for any of them is published in the US, Canada, the UK, Australia, or New Zealand.
+          <Text style={styles.brandInline}>ObitNote</Text> is an obituary monitor and alert service.  Add people's names and <Text style={styles.brandInline}>ObitNote</Text> will send you a text and email when an obituary for any of them is published.  <Pressable onPress={() => setSearchInfoVisible(true)} style={styles.searchInfoLinkWrap}><Text style={styles.searchInfoLink}>Daily obituary searches</Text></Pressable>.
         </Text>
 
         <Button
@@ -54,6 +56,16 @@ export default function PricingPage() {
           style={styles.backButton}
         />
       </View>
+
+      <ConfirmDialog
+        visible={searchInfoVisible}
+        title="Daily obituary searches"
+        body={"ObitNote searches online newspapers and memorial websites for obituaries every day in the US, Canada, the UK, Australia, and New Zealand using the names, locations, ages, and keywords you provide.  When one of your people is found, we'll let you know right away by text and email."}
+        confirmLabel="OK"
+        cancelLabel=""
+        onConfirm={() => setSearchInfoVisible(false)}
+        onCancel={() => setSearchInfoVisible(false)}
+      />
 
       <Text style={styles.footer}>
         Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
@@ -179,6 +191,16 @@ const styles = StyleSheet.create({
   brandInline: {
     fontWeight: '700',
     color: colors.brand,
+  },
+  searchInfoLinkWrap: {
+    display: 'inline' as any,
+  },
+  searchInfoLink: {
+    fontWeight: '700',
+    color: colors.green,
+    fontSize: fontSize.base,
+    lineHeight: 26,
+    textDecorationLine: 'underline' as const,
   },
   backButton: {
     marginTop: spacing.sm,

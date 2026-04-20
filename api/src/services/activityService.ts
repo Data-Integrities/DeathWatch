@@ -4,16 +4,19 @@ import { pool } from '../db/pool';
  * Build a search fingerprint string like "Jones, John - Austin, TX"
  */
 export function buildFingerprint(search: {
-  nameLast: string;
+  nameLast: string | null;
   nameFirst: string | null;
+  nameMaiden?: string | null;
   city: string | null;
   state: string | null;
 }): string {
   const parts: string[] = [];
+  const lastName = search.nameLast || search.nameMaiden || '';
+  const maidenSuffix = search.nameLast && search.nameMaiden ? ` (${search.nameMaiden})` : '';
   if (search.nameFirst) {
-    parts.push(`${search.nameLast}, ${search.nameFirst}`);
+    parts.push(`${lastName}${maidenSuffix}, ${search.nameFirst}`);
   } else {
-    parts.push(search.nameLast);
+    parts.push(`${lastName}${maidenSuffix}`);
   }
 
   const locParts: string[] = [];

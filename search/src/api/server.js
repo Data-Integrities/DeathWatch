@@ -22,6 +22,7 @@ app.get('/search', async (req, res, next) => {
       firstName: req.query.firstName,
       lastName: req.query.lastName,
       middleName: req.query.middleName,
+      maidenName: req.query.maidenName,
       nickname: req.query.nickname,
       city: req.query.city,
       state: req.query.state,
@@ -29,8 +30,8 @@ app.get('/search', async (req, res, next) => {
       keyWords: req.query.keyWords
     };
 
-    if ((!query.firstName && !query.nickname) || !query.lastName) {
-      res.status(400).json({ error: '(firstName or nickname) and lastName are required' });
+    if ((!query.firstName && !query.nickname) || (!query.lastName && !query.maidenName)) {
+      res.status(400).json({ error: '(firstName or nickname) and (lastName or maidenName) are required' });
       return;
     }
 

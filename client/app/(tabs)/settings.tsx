@@ -9,8 +9,17 @@ import { TextField } from '../../src/components/TextField';
 import { Card } from '../../src/components/Card';
 import { Checkbox } from '../../src/components/Checkbox';
 import { Toast } from '../../src/components/Toast';
+import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { colors, fontSize, spacing } from '../../src/theme';
 import { BUILD_VERSION } from '../../src/version';
+
+const PLAN_LABELS: Record<string, string> = {
+  PLAN_10: 'Up to 10 people ($20/yr)',
+  PLAN_25: 'Up to 25 people ($39/yr)',
+  PLAN_50: 'Up to 50 people ($69/yr)',
+  PLAN_100: 'Up to 100 people ($119/yr)',
+  PLAN_CUSTOM: 'Custom',
+};
 
 export default function SettingsScreen() {
   const { user, signOut, refreshUser } = useAuth();
@@ -34,6 +43,13 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwError, setPwError] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+
+  // Subscription management
+  const [cancelVisible, setCancelVisible] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [changePlanVisible, setChangePlanVisible] = useState(false);
+  const [changePlanLoading, setChangePlanLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('');
 
   // Misc
   const [resendLoading, setResendLoading] = useState(false);
@@ -138,6 +154,36 @@ export default function SettingsScreen() {
       setResendMessage(err.message || 'Failed to resend.');
     } finally {
       setResendLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setCancelLoading(true);
+    try {
+      await api.post('/api/subscription/cancel');
+      await refreshUser();
+      setCancelVisible(false);
+      setToast('Subscription cancelled');
+    } catch (err: any) {
+      setCancelVisible(false);
+      setToast(err.message || 'Failed to cancel.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const handleChangePlan = async (planCode: string) => {
+    setChangePlanLoading(true);
+    try {
+      const res = await api.post<{ message: string; isUpgrade: boolean }>('/api/subscription/change-plan', { planCode });
+      await refreshUser();
+      setChangePlanVisible(false);
+      setToast(res.message);
+    } catch (err: any) {
+      setChangePlanVisible(false);
+      setToast(err.message || 'Failed to change plan.');
+    } finally {
+      setChangePlanLoading(false);
     }
   };
 
@@ -258,6 +304,80 @@ export default function SettingsScreen() {
           />
         )}
       </Card>
+
+      {user?.subscriptionActive && (
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Subscription</Text>
+          <View style={styles.subRow}>
+            <Text style={styles.subLabel}>Plan</Text>
+            <Text style={styles.subValue}>{PLAN_LABELS[user.planCode || ''] || user.planCode || 'Active'}</Text>
+          </View>
+          {user.planRenewalDate && (
+            <View style={styles.subRow}>
+              <Text style={styles.subLabel}>Renews</Text>
+              <Text style={styles.subValue}>{user.planRenewalDate}</Text>
+            </View>
+          )}
+          {user.usingGraceSlot && (
+            <Text style={styles.graceWarning}>You've exceeded your plan limit by 1 person.  Please upgrade or remove a person.</Text>
+          )}
+          <View style={styles.subActions}>
+            <Button
+              title="Change Plan"
+              variant="secondary"
+              onPress={() => setChangePlanVisible(true)}
+              style={styles.subButton}
+            />
+            <Button
+              title="Cancel Subscription"
+              variant="danger"
+              onPress={() => setCancelVisible(true)}
+              style={styles.subButton}
+            />
+          </View>
+        </Card>
+      )}
+
+      <ConfirmDialog
+        visible={cancelVisible}
+        title="Cancel subscription"
+        body={"Are you sure you want to cancel your subscription?  This takes effect immediately and you'll receive a prorated refund.  Your monitored searches will stop."}
+        confirmLabel={cancelLoading ? 'Cancelling...' : 'Yes, Cancel'}
+        confirmVariant="danger"
+        onConfirm={handleCancel}
+        onCancel={() => setCancelVisible(false)}
+      />
+
+      {changePlanVisible && (
+        <ConfirmDialog
+          visible={changePlanVisible}
+          title="Change plan"
+          body={
+            <View>
+              <Text style={styles.changePlanIntro}>Select a new plan:</Text>
+              {Object.entries(PLAN_LABELS).filter(([code]) => code !== 'PLAN_CUSTOM' && code !== user?.planCode).map(([code, label]) => (
+                <Pressable
+                  key={code}
+                  onPress={() => setSelectedPlan(code)}
+                  style={[styles.planOption, selectedPlan === code && styles.planOptionSelected]}
+                >
+                  <Text style={[styles.planOptionText, selectedPlan === code && styles.planOptionTextSelected]}>{label}</Text>
+                </Pressable>
+              ))}
+              {selectedPlan && (
+                <Text style={styles.changePlanNote}>
+                  {['PLAN_10', 'PLAN_25', 'PLAN_50', 'PLAN_100'].indexOf(selectedPlan) > ['PLAN_10', 'PLAN_25', 'PLAN_50', 'PLAN_100'].indexOf(user?.planCode || '')
+                    ? 'Upgrade takes effect immediately.  You\'ll be charged the prorated difference.'
+                    : 'Downgrade takes effect at your next renewal date.'}
+                </Text>
+              )}
+            </View>
+          }
+          confirmLabel={changePlanLoading ? 'Processing...' : 'Confirm'}
+          onConfirm={() => { if (selectedPlan) handleChangePlan(selectedPlan); }}
+          onCancel={() => { setChangePlanVisible(false); setSelectedPlan(''); }}
+        />
+      )}
 
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Change Email</Text>
@@ -476,6 +596,70 @@ const styles = StyleSheet.create({
   backButton: {
     alignSelf: 'flex-start',
     marginBottom: spacing.md,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  subLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: '#444444',
+    width: 90,
+  },
+  subValue: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    flex: 1,
+  },
+  graceWarning: {
+    fontSize: fontSize.sm,
+    color: colors.warning,
+    fontWeight: '600',
+    backgroundColor: '#FFF8E1',
+    padding: spacing.sm,
+    borderRadius: 6,
+    marginVertical: spacing.sm,
+  },
+  subActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  subButton: {
+    flex: 1,
+  },
+  changePlanIntro: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    marginBottom: spacing.sm,
+  },
+  planOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 6,
+  },
+  planOptionSelected: {
+    borderColor: colors.brand,
+    backgroundColor: '#F8F5FC',
+  },
+  planOptionText: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    fontWeight: '600',
+  },
+  planOptionTextSelected: {
+    color: colors.brand,
+  },
+  changePlanNote: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
   },
   signOut: {
     marginTop: spacing.lg,

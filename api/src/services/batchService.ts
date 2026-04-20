@@ -29,15 +29,16 @@ export async function runBatch() {
 
   for (let i = 0; i < queries.length; i++) {
     const q = queries[i];
-    const label = `${q.name_first || q.name_nickname || ''} ${q.name_last}`.trim();
+    const label = `${q.name_first || q.name_nickname || ''} ${q.name_last || q.name_maiden || ''}`.trim();
 
     try {
       // Build search engine request
       const params = new URLSearchParams();
-      params.set('lastName', q.name_last);
+      if (q.name_last) params.set('lastName', q.name_last);
       if (q.name_first) params.set('firstName', q.name_first);
       if (q.name_nickname) params.set('nickname', q.name_nickname);
       if (q.name_middle) params.set('middleName', q.name_middle);
+      if (q.name_maiden) params.set('maidenName', q.name_maiden);
       if (q.age_apx) params.set('age', q.age_apx.toString());
       if (q.city) params.set('city', q.city);
       if (q.state) params.set('state', q.state);

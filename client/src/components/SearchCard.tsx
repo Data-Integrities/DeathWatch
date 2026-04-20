@@ -13,7 +13,9 @@ interface SearchCardProps {
 }
 
 export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }: SearchCardProps) {
-  const displayName = [search.nameFirst, search.nameLast].filter(Boolean).join(' ');
+  const lastName = search.nameLast || search.nameMaiden || '';
+  const maidenSuffix = search.nameLast && search.nameMaiden ? ` (${search.nameMaiden})` : '';
+  const displayName = [search.nameFirst, `${lastName}${maidenSuffix}`].filter(Boolean).join(' ');
   const locationParts = [search.city, search.state].filter(Boolean);
   const location = locationParts.length > 0 ? locationParts.join(', ') : null;
   const hasMatchBadge = !search.confirmed && search.matchCntTotal > 0;

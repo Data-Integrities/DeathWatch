@@ -40,13 +40,13 @@ export async function sendSms(to: string, body: string) {
 }
 
 export async function sendMatchSms(phone: string) {
-  await sendSms(phone, 'ObitNOTE: New potential obituary match found.  Sign in to see: https://ObitNOTE.com');
+  await sendSms(phone, 'ObitNote: New potential obituary match found.  Sign in to see: https://ObitNote.com');
 }
 
 export async function sendReplySms(phone: string) {
-  await sendSms(phone, 'ObitNOTE: You have a new support reply.  Sign in to read: https://ObitNOTE.com');
+  await sendSms(phone, 'ObitNote: You have a new support reply.  Sign in to read: https://ObitNote.com');
 }
 
 export async function sendErrorAlertSms(phone: string, summary: string) {
-  await sendSms(phone, `ObitNOTE ERROR: ${summary}`);
+  await sendSms(phone, `ObitNote ERROR: ${summary}`);
 }

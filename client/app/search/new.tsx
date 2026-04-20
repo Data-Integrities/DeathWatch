@@ -25,6 +25,7 @@ export default function NewSearchScreen() {
   const [nameFirst, setNameFirst] = useState('');
   const [nameNickname, setNameNickname] = useState('');
   const [nameMiddle, setNameMiddle] = useState('');
+  const [nameMaiden, setNameMaiden] = useState('');
   const [ageApx, setAgeApx] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState<string | null>(null);
@@ -35,8 +36,8 @@ export default function NewSearchScreen() {
   const handleCreate = async () => {
     setError('');
 
-    if (!nameLast.trim()) {
-      setError('Last name is required.');
+    if (!nameLast.trim() && !nameMaiden.trim()) {
+      setError('Last name or maiden name is required.');
       return;
     }
     if (!nameFirst.trim() && !nameNickname.trim()) {
@@ -51,10 +52,11 @@ export default function NewSearchScreen() {
     setLoading(true);
     try {
       const body: SearchQueryCreate = {
-        nameLast: nameLast.trim(),
+        nameLast: nameLast.trim() || null,
         nameFirst: nameFirst.trim() || null,
         nameNickname: nameNickname.trim() || null,
         nameMiddle: nameMiddle.trim() || null,
+        nameMaiden: nameMaiden.trim() || null,
         ageApx: ageApx ? parseInt(ageApx, 10) : null,
         city: city.trim() || null,
         state,
@@ -102,6 +104,15 @@ export default function NewSearchScreen() {
         value={nameLast}
         onChangeText={setNameLast}
         autoCapitalize="words"
+      />
+
+      <TextField
+        label="Maiden"
+        labelWidth={90}
+        value={nameMaiden}
+        onChangeText={setNameMaiden}
+        autoCapitalize="words"
+        placeholder="If applicable"
       />
 
       <TextField

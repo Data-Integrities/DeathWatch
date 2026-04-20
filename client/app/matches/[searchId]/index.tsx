@@ -295,7 +295,7 @@ export default function SearchMatchesScreen() {
 
         <View style={styles.disclaimerCard}>
           <Text style={styles.disclaimerText}>
-            <Text style={styles.brandText}>ObitNOTE</Text> doesn't guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
+            <Text style={styles.brandText}>ObitNote</Text> doesn't guarantee the accuracy of search results.  Search results are provided by Google.  Use of third-party websites is subject to their own terms and privacy policies.
           </Text>
         </View>
       </ScrollView>

@@ -187,7 +187,7 @@ export function HelpModal({ visible, onClose, autoExpandTicket }: Props) {
                           {msg.status === 'replied' && msg.adminReply ? (
                             <View style={styles.replyBlock}>
                               <Text style={styles.replyLabel}>Our response:</Text>
-                              <Text style={styles.replyBody}>{msg.adminReply}{'\n\n'}<Text style={styles.brandText}>ObitNOTE</Text> Support Team</Text>
+                              <Text style={styles.replyBody}>{msg.adminReply}{'\n\n'}<Text style={styles.brandText}>ObitNote</Text> Support Team</Text>
                               {msg.repliedAt && (
                                 <Text style={styles.replyDate}>{formatDate(msg.repliedAt)}</Text>
                               )}

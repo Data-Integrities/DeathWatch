@@ -133,10 +133,9 @@ router.post('/paddle', async (req: Request, res: Response) => {
 function mapPriceToTier(priceId: string | undefined): string | null {
   const map: Record<string, string> = {
     'pri_01kmdt5pf8bzna0582hpbs9r2y': 'PLAN_10',
-    // Add other price IDs as they're created in Paddle:
-    // 'pri_xxx': 'PLAN_25',
-    // 'pri_xxx': 'PLAN_50',
-    // 'pri_xxx': 'PLAN_100',
+    'pri_01kmdt8791qqhk16vmgn9h7e17': 'PLAN_25',
+    'pri_01kmdtaq61d4vwkt6pqgtz03vb': 'PLAN_50',
+    'pri_01kmdtm81b7rtbw77xm7xqharw': 'PLAN_100',
   };
   return priceId ? (map[priceId] || null) : null;
 }

@@ -36,22 +36,22 @@ export function TermsContent() {
       <Text style={styles.updated}>Last updated: March 18, 2026</Text>
 
       <Text style={styles.body}>
-        These Terms of Service ("Terms") govern your use of ObitNOTE, operated by UltraSafe Data, LLC, a Florida limited liability company ("we", "us", "our").  By creating an account or using ObitNOTE, you agree to these Terms.
+        These Terms of Service ("Terms") govern your use of ObitNote, operated by UltraSafe Data, LLC, a Florida limited liability company ("we", "us", "our").  By creating an account or using ObitNote, you agree to these Terms.
       </Text>
 
       <Text style={styles.heading}>1. Eligibility</Text>
       <Text style={styles.body}>
-        You must be at least 18 years old to use ObitNOTE.  By creating an account, you confirm that you are 18 or older.
+        You must be at least 18 years old to use ObitNote.  By creating an account, you confirm that you are 18 or older.
       </Text>
 
-      <Text style={styles.heading}>2. What ObitNOTE Does</Text>
+      <Text style={styles.heading}>2. What ObitNote Does</Text>
       <Text style={styles.body}>
-        ObitNOTE is an obituary monitor and alert service.  You add people's names and we search for their obituaries daily in the US, Canada, the UK, Australia, and New Zealand.  When we find a potential match, we notify you by email and, optionally, by text message.
+        ObitNote is an obituary monitor and alert service.  You add people's names and we search for their obituaries daily in the US, Canada, the UK, Australia, and New Zealand.  When we find a potential match, we notify you by email and, optionally, by text message.
       </Text>
 
       <Text style={styles.heading}>3. No Guarantee of Results</Text>
       <Text style={styles.body}>
-        We do our best to find obituaries, but we cannot guarantee that we will find every obituary or that every result will be accurate.  We may miss obituaries.  Notifications may not reach you due to spam filters, carrier blocking, or other factors outside our control.  ObitNOTE is not a substitute for other methods of learning about someone's passing.
+        We do our best to find obituaries, but we cannot guarantee that we will find every obituary or that every result will be accurate.  We may miss obituaries.  Notifications may not reach you due to spam filters, carrier blocking, or other factors outside our control.  ObitNote is not a substitute for other methods of learning about someone's passing.
       </Text>
 
       <Text style={styles.heading}>4. Your Account</Text>
@@ -71,22 +71,22 @@ export function TermsContent() {
         <Text style={styles.bold}>Upgrade:</Text>  You may upgrade to a higher plan at any time.  You will be charged a prorated amount for the remainder of your billing period.{'\n\n'}
         <Text style={styles.bold}>Downgrade:</Text>  You may downgrade to a lower plan at any time.  If you are currently monitoring more people than the new plan allows, you will need to remove searches before the downgrade takes effect.  A prorated credit will be applied to your next billing period.{'\n\n'}
         <Text style={styles.bold}>Cancellation:</Text>  You may cancel your subscription at any time through your account settings or by contacting us at support@obitnote.com.  Cancellation takes effect immediately and you will receive a prorated refund for the unused portion of your subscription.{'\n\n'}
-        <Text style={styles.bold}>Refunds:</Text>  We want you to be happy with ObitNOTE.  If you are not satisfied, contact us at support@obitnote.com within 30 days of your payment for a full refund.  Refunds requested after 30 days will be prorated for the unused portion of your subscription.
+        <Text style={styles.bold}>Refunds:</Text>  We want you to be happy with ObitNote.  If you are not satisfied, contact us at support@obitnote.com within 30 days of your payment for a full refund.  Refunds requested after 30 days will be prorated for the unused portion of your subscription.
       </Text>
 
       <Text style={styles.heading}>7. Acceptable Use</Text>
       <Text style={styles.body}>
-        You may not use ObitNOTE for any unlawful purpose.  You may not use automated tools, bots, or scripts to access ObitNOTE.  You may not attempt to interfere with the service or access other users' accounts.  We reserve the right to suspend or terminate accounts that violate these terms.
+        You may not use ObitNote for any unlawful purpose.  You may not use automated tools, bots, or scripts to access ObitNote.  You may not attempt to interfere with the service or access other users' accounts.  We reserve the right to suspend or terminate accounts that violate these terms.
       </Text>
 
       <Text style={styles.heading}>8. Intellectual Property</Text>
       <Text style={styles.body}>
-        ObitNOTE and its content, features, and design are owned by UltraSafe Data, LLC.  You may not copy, modify, or distribute any part of the service without our written permission.
+        ObitNote and its content, features, and design are owned by UltraSafe Data, LLC.  You may not copy, modify, or distribute any part of the service without our written permission.
       </Text>
 
       <Text style={styles.heading}>9. Limitation of Liability</Text>
       <Text style={styles.body}>
-        To the fullest extent permitted by law, UltraSafe Data, LLC is not liable for any indirect, incidental, special, or consequential damages arising from your use of ObitNOTE.  Our total liability for any claim related to the service is limited to the amount you paid us in the 12 months before the claim.{'\n\n'}We are not liable for missed obituaries, delayed or undelivered notifications, or any decisions you make based on information provided by the service.
+        To the fullest extent permitted by law, UltraSafe Data, LLC is not liable for any indirect, incidental, special, or consequential damages arising from your use of ObitNote.  Our total liability for any claim related to the service is limited to the amount you paid us in the 12 months before the claim.{'\n\n'}We are not liable for missed obituaries, delayed or undelivered notifications, or any decisions you make based on information provided by the service.
       </Text>
 
       <Text style={styles.heading}>10. Termination</Text>
@@ -96,7 +96,7 @@ export function TermsContent() {
 
       <Text style={styles.heading}>11. Changes to These Terms</Text>
       <Text style={styles.body}>
-        We may update these Terms from time to time.  If we make significant changes, we will notify you by email or through the app.  Your continued use of ObitNOTE after changes take effect means you accept the updated Terms.
+        We may update these Terms from time to time.  If we make significant changes, we will notify you by email or through the app.  Your continued use of ObitNote after changes take effect means you accept the updated Terms.
       </Text>
 
       <Text style={styles.heading}>12. Governing Law</Text>
@@ -123,7 +123,7 @@ export function PrivacyContent() {
       <Text style={styles.updated}>Last updated: March 18, 2026</Text>
 
       <Text style={styles.body}>
-        This Privacy Policy describes how UltraSafe Data, LLC, a Florida limited liability company ("we", "us", "our"), collects, uses, and protects your information when you use ObitNOTE.
+        This Privacy Policy describes how UltraSafe Data, LLC, a Florida limited liability company ("we", "us", "our"), collects, uses, and protects your information when you use ObitNote.
       </Text>
 
       <Text style={styles.heading}>1. Information We Collect</Text>
@@ -138,7 +138,7 @@ export function PrivacyContent() {
       <Text style={styles.heading}>2. How We Use Your Information</Text>
       <Text style={styles.body}>
         We use your information to:{'\n\n'}
-        {'\u2022'}  Provide the ObitNOTE service — searching for obituaries and sending you notifications{'\n'}
+        {'\u2022'}  Provide the ObitNote service — searching for obituaries and sending you notifications{'\n'}
         {'\u2022'}  Send you email and text message notifications when obituaries are found{'\n'}
         {'\u2022'}  Manage your account and respond to your messages{'\n'}
         {'\u2022'}  Improve the service and fix problems{'\n'}
@@ -147,7 +147,7 @@ export function PrivacyContent() {
 
       <Text style={styles.heading}>3. Third-Party Services</Text>
       <Text style={styles.body}>
-        We share limited information with the following services to operate ObitNOTE:{'\n\n'}
+        We share limited information with the following services to operate ObitNote:{'\n\n'}
         <Text style={styles.bold}>Paddle.com</Text> — processes payments and handles billing.  Paddle receives your email address and payment details when you subscribe.{'\n\n'}
         <Text style={styles.bold}>Sinch</Text> — delivers text message notifications.  Sinch receives your phone number when you opt in to SMS notifications.{'\n\n'}
         <Text style={styles.bold}>Zoho Mail</Text> — delivers email notifications and verification emails.  Zoho processes your email address.{'\n\n'}
@@ -176,17 +176,17 @@ export function PrivacyContent() {
 
       <Text style={styles.heading}>7. Cookies and Local Storage</Text>
       <Text style={styles.body}>
-        ObitNOTE uses local storage in your browser to keep you signed in and to remember your preferences (such as your email address if you choose "Remember Me").  We do not use third-party tracking cookies or advertising cookies.
+        ObitNote uses local storage in your browser to keep you signed in and to remember your preferences (such as your email address if you choose "Remember Me").  We do not use third-party tracking cookies or advertising cookies.
       </Text>
 
       <Text style={styles.heading}>8. Children's Privacy</Text>
       <Text style={styles.body}>
-        ObitNOTE is not intended for anyone under the age of 18.  We do not knowingly collect information from children.  If we learn that we have collected information from someone under 18, we will delete it promptly.
+        ObitNote is not intended for anyone under the age of 18.  We do not knowingly collect information from children.  If we learn that we have collected information from someone under 18, we will delete it promptly.
       </Text>
 
       <Text style={styles.heading}>9. International Users</Text>
       <Text style={styles.body}>
-        ObitNOTE is operated from the United States.  If you use the service from outside the US, your information will be transferred to and processed in the United States.  By using ObitNOTE, you consent to this transfer.
+        ObitNote is operated from the United States.  If you use the service from outside the US, your information will be transferred to and processed in the United States.  By using ObitNote, you consent to this transfer.
       </Text>
 
       <Text style={styles.heading}>10. Changes to This Policy</Text>

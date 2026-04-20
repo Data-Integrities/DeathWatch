@@ -26,6 +26,7 @@ export interface UserProfile {
   planStartDate: string | null;
   planRenewalDate: string | null;
   usingGraceSlot: boolean;
+  planLimit: number | null;
   phoneNumber: string | null;
   smsOptIn: boolean;
 }
@@ -38,10 +39,11 @@ export interface RegisterRequest {
 
 // Search
 export interface SearchQueryCreate {
-  nameLast: string;
+  nameLast: string | null;
   nameFirst: string | null;
   nameNickname: string | null;
   nameMiddle: string | null;
+  nameMaiden: string | null;
   ageApx: number | null;
   city: string | null;
   state: string | null;

@@ -47,12 +47,18 @@ function normalizeQuery(query) {
   // Accept both user-facing (firstName) and internal (nameFirst) formats
   const nameNickname = query.nameNickname || query.nickname || null;
   let nameFirst = query.nameFirst || query.firstName;
-  const nameLast = query.nameLast || query.lastName;
+  let nameLast = query.nameLast || query.lastName;
   const nameMiddle = query.nameMiddle || query.middleName;
+  const nameMaiden = query.nameMaiden || query.maidenName || null;
 
   // If nameFirst is missing but nickname is provided, use nickname as nameFirst (for scoring)
   if (!nameFirst && nameNickname) {
     nameFirst = nameNickname;
+  }
+
+  // If nameLast is missing but maiden name is provided, use maiden as nameLast (for scoring)
+  if (!nameLast && nameMaiden) {
+    nameLast = nameMaiden;
   }
 
   const nameFirstNorm = normalizeName(nameFirst);
@@ -78,6 +84,7 @@ function normalizeQuery(query) {
     nameFirst,
     nameLast,
     nameMiddle,
+    nameMaiden,
     nameNickname,
     nameFirstNorm,
     nameLastNorm,

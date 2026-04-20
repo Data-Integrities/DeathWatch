@@ -23,10 +23,11 @@ const US_STATES = [
 ];
 
 const searchCreateSchema = z.object({
-  nameLast: z.string().min(1, 'Last name is required'),
+  nameLast: z.string().nullable().default(null),
   nameFirst: z.string().nullable().default(null),
   nameNickname: z.string().nullable().default(null),
   nameMiddle: z.string().nullable().default(null),
+  nameMaiden: z.string().nullable().default(null),
   ageApx: z.number().int().min(0, 'Approximate age is required').max(150),
   city: z.string().nullable().default(null),
   state: z.string().length(2).refine(s => US_STATES.includes(s.toUpperCase()), 'Invalid state code').nullable().default(null),
@@ -34,6 +35,9 @@ const searchCreateSchema = z.object({
 }).refine(d => d.nameFirst || d.nameNickname, {
   message: 'Either first name or nickname is required',
   path: ['nameFirst'],
+}).refine(d => d.nameLast || d.nameMaiden, {
+  message: 'Last name or maiden name is required',
+  path: ['nameLast'],
 });
 
 const router = Router();
@@ -72,10 +76,11 @@ router.post('/search', async (req: Request, res: Response) => {
 
     // Call search engine
     const params = new URLSearchParams();
-    params.set('lastName', data.nameLast);
+    if (data.nameLast) params.set('lastName', data.nameLast);
     if (data.nameFirst) params.set('firstName', data.nameFirst);
     if (data.nameNickname) params.set('nickname', data.nameNickname);
     if (data.nameMiddle) params.set('middleName', data.nameMiddle);
+    if (data.nameMaiden) params.set('maidenName', data.nameMaiden);
     if (data.ageApx) params.set('age', data.ageApx.toString());
     if (data.city) params.set('city', data.city);
     if (data.state) params.set('state', data.state);
@@ -108,10 +113,10 @@ router.post('/search', async (req: Request, res: Response) => {
 
     // Store trial search for analysis
     const { rows: trialRows } = await pool.query(
-      `INSERT INTO trial_search (login_id, name_last, name_first, name_nickname, name_middle, age_apx, city, state, key_words, result_count, result_fingerprints)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO trial_search (login_id, name_last, name_first, name_nickname, name_middle, name_maiden, age_apx, city, state, key_words, result_count, result_fingerprints)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id`,
-      [req.userId!, data.nameLast, data.nameFirst, data.nameNickname, data.nameMiddle, data.ageApx, data.city, data.state, data.keyWords, results.length, JSON.stringify(fingerprints)]
+      [req.userId!, data.nameLast, data.nameFirst, data.nameNickname, data.nameMiddle, data.nameMaiden, data.ageApx, data.city, data.state, data.keyWords, results.length, JSON.stringify(fingerprints)]
     );
 
     logActivity(req.userId!, 'Trial Search', buildFingerprint(data));

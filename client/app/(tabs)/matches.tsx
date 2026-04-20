@@ -133,7 +133,7 @@ export default function HomeScreen() {
               style={{ flex: 1 }}
             />
             <Button
-              title="Subscribe to ObitNOTE obituary monitoring"
+              title="Subscribe to ObitNote obituary monitoring"
               variant="secondary"
               onPress={() => router.push('/subscribe' as any)}
               style={{ flex: 1 }}
@@ -142,7 +142,7 @@ export default function HomeScreen() {
           </>
         ) : (
           <Button
-            title="Subscribe to ObitNOTE obituary monitoring"
+            title="Subscribe to ObitNote obituary monitoring"
             onPress={() => router.push('/subscribe' as any)}
             textStyle={{ ...subscribeTextStyle, textAlign: 'center' }}
           />
@@ -150,7 +150,7 @@ export default function HomeScreen() {
       </View>
 
       <Pressable onPress={() => setAboutVisible(true)} style={styles.aboutLinkWrap}>
-        <Text style={styles.aboutLink}>About ObitNOTE</Text>
+        <Text style={styles.aboutLink}>About ObitNote</Text>
       </Pressable>
 
       {/* Section title */}
@@ -230,15 +230,15 @@ export default function HomeScreen() {
         <View style={styles.aboutOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setAboutVisible(false)} />
           <View style={styles.aboutCard}>
-            <Text style={styles.aboutTitle}>About ObitNOTE</Text>
+            <Text style={styles.aboutTitle}>About ObitNote</Text>
             <Text style={styles.aboutText}>
-              <Text style={styles.brandText}>ObitNOTE</Text> is an <Text style={styles.boldText}>obituary monitor and alert service</Text>.
+              <Text style={styles.brandText}>ObitNote</Text> is an <Text style={styles.boldText}>obituary monitor and alert service</Text>.
             </Text>
             <Text style={styles.aboutText}>
-              Add people's names and <Text style={styles.brandText}>ObitNOTE</Text> will search for them every day.  When an obituary is found in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', or '}{country}</React.Fragment>))}, we'll <Text style={styles.boldText}>send you a text and email</Text>.
+              Add people's names and <Text style={styles.brandText}>ObitNote</Text> will search for them every day.  When an obituary is found in {countries.map((country, i) => (<React.Fragment key={country}>{i > 0 && i < countries.length - 1 && ', '}{i === countries.length - 1 && ', or '}{country}</React.Fragment>))}, we'll <Text style={styles.boldText}>send you a text and email</Text>.
             </Text>
             <Text style={styles.aboutText}>
-              <Text style={styles.brandText}>ObitNOTE</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
+              <Text style={styles.brandText}>ObitNote</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
             </Text>
             <Button title="Close" variant="secondary" onPress={() => setAboutVisible(false)} />
           </View>
