@@ -1,0 +1,2 @@
+ALTER TABLE user_query ADD COLUMN IF NOT EXISTS name_maiden TEXT;
+ALTER TABLE trial_search ADD COLUMN IF NOT EXISTS name_maiden TEXT;
