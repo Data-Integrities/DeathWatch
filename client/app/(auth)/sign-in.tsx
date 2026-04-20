@@ -229,10 +229,9 @@ export default function SignInScreen() {
               </View>
               <Text style={styles.pricingBilledNote}>All plans billed yearly (cancel anytime)</Text>
               {[
-                { plan: 'Up to 10 people', price: '$20', per: '$2.00' },
-                { plan: 'Up to 25 people', price: '$39', per: '$1.56' },
-                { plan: 'Up to 50 people', price: '$69', per: '$1.38' },
-                { plan: 'Up to 100 people', price: '$119', per: '$1.19' },
+                { plan: 'Basic - up to 5', price: '$20', per: '$4.00' },
+                { plan: 'Plus - up to 10', price: '$40', per: '$4.00' },
+                { plan: 'Premium - 11+', price: '$40+', per: '$2.00*' },
               ].map((row, i) => (
                 <View key={i} style={[styles.pricingRow, i % 2 === 0 && styles.pricingRowAlt]}>
                   <Text style={[styles.pricingCell, styles.pricingPlanCol]}>{row.plan}</Text>
@@ -241,8 +240,10 @@ export default function SignInScreen() {
                 </View>
               ))}
               <View style={[styles.pricingRow, styles.pricingRowAlt]}>
-                <Text style={[styles.pricingCell, styles.pricingPlanCol]}>Over 100</Text>
-                <Text style={[styles.pricingCell, styles.pricingContactCol]}>email support@obitnote.com</Text>
+                <Text style={[styles.pricingCell, { flex: 7 }]}>*Premium: $40 base (11-15 people) + $2 per person over 15</Text>
+              </View>
+              <View style={styles.pricingRow}>
+                <Text style={[styles.pricingCell, { flex: 7 }]}>Pro: for professionals.  email support@obitnote.com</Text>
               </View>
             </View>
 

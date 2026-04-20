@@ -16,7 +16,7 @@ function makeToken(userId: string): string {
 }
 
 const PLAN_LIMITS: Record<string, number> = {
-  PLAN_10: 10, PLAN_25: 25, PLAN_50: 50, PLAN_100: 100,
+  PLAN_5: 5, PLAN_10: 10, PLAN_PREMIUM: 9999,
 };
 
 function getPlanLimit(planCode: string | null, tierCustomCap: number | null): number | null {

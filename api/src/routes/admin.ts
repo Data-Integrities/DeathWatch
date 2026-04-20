@@ -8,7 +8,7 @@ import { sendReplySms } from '../services/smsService';
 import { pool } from '../db/pool';
 import { impersonate } from '../services/authService';
 
-const VALID_PLAN_CODES = ['PLAN_10', 'PLAN_25', 'PLAN_50', 'PLAN_100', 'PLAN_CUSTOM'] as const;
+const VALID_PLAN_CODES = ['PLAN_5', 'PLAN_10', 'PLAN_PREMIUM', 'PLAN_CUSTOM'] as const;
 
 const router = Router();
 router.use(authMiddleware);

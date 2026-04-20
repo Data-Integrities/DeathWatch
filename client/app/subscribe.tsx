@@ -12,10 +12,9 @@ import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 const PLANS = [
-  { code: 'PLAN_10', label: 'Up to 10 people', price: '$20', per: '$2.00', priceId: 'pri_01kmdt5pf8bzna0582hpbs9r2y' },
-  { code: 'PLAN_25', label: 'Up to 25 people', price: '$39', per: '$1.56', priceId: 'pri_01kmdt8791qqhk16vmgn9h7e17' },
-  { code: 'PLAN_50', label: 'Up to 50 people', price: '$69', per: '$1.38', priceId: 'pri_01kmdtaq61d4vwkt6pqgtz03vb' },
-  { code: 'PLAN_100', label: 'Up to 100 people', price: '$119', per: '$1.19', priceId: 'pri_01kmdtm81b7rtbw77xm7xqharw' },
+  { code: 'PLAN_5', label: 'Basic - up to 5', price: '$20', per: '$4.00', priceId: 'pri_01kppcr7dpr63g3j9y1wf9hd29' },
+  { code: 'PLAN_10', label: 'Plus - up to 10', price: '$40', per: '$4.00', priceId: 'pri_01kppcrkwcpz1rz7m1hsht15wt' },
+  { code: 'PLAN_PREMIUM', label: 'Premium - 11+', price: '$40+', per: '$2.00*', priceId: 'pri_01kppcs2qh0hhpkqtm3yj47kkf' },
 ];
 
 export default function SubscribePage() {
@@ -133,8 +132,10 @@ export default function SubscribePage() {
             </View>
           ))}
           <View style={[styles.row, styles.rowAlt]}>
-            <Text style={[styles.cell, styles.planCol]}>Over 100</Text>
-            <Text style={[styles.cell, styles.contactCol]}>email support@obitnote.com</Text>
+            <Text style={[styles.cell, styles.planCol, { flex: 7.5 }]}>*Premium: $40 base (11-15 people) + $2 per person over 15</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.cell, styles.planCol, { flex: 7.5 }]}>Pro: for professionals.  email support@obitnote.com</Text>
           </View>
         </View>
 

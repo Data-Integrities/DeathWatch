@@ -59,7 +59,7 @@ router.post('/paddle', async (req: Request, res: Response) => {
       case 'subscription.activated': {
         const userId = data.custom_data?.userId;
         const subscriptionId = data.id;
-        const planCode = mapPriceToTier(data.items?.[0]?.price?.id);
+        const planCode = mapItemsToPlan(data.items);
         const startDate = data.started_at ? data.started_at.slice(0, 10) : null;
         const renewalDate = data.next_billed_at ? data.next_billed_at.slice(0, 10) : null;
 
@@ -86,7 +86,7 @@ router.post('/paddle', async (req: Request, res: Response) => {
       case 'subscription.updated': {
         const subscriptionId = data.id;
         const status = data.status;
-        const planCode = mapPriceToTier(data.items?.[0]?.price?.id);
+        const planCode = mapItemsToPlan(data.items);
         const renewalDate = data.next_billed_at ? data.next_billed_at.slice(0, 10) : null;
         const isActive = status === 'active' || status === 'trialing';
 
@@ -132,12 +132,20 @@ router.post('/paddle', async (req: Request, res: Response) => {
 // Map Paddle price IDs to plan tier codes
 function mapPriceToTier(priceId: string | undefined): string | null {
   const map: Record<string, string> = {
-    'pri_01kmdt5pf8bzna0582hpbs9r2y': 'PLAN_10',
-    'pri_01kmdt8791qqhk16vmgn9h7e17': 'PLAN_25',
-    'pri_01kmdtaq61d4vwkt6pqgtz03vb': 'PLAN_50',
-    'pri_01kmdtm81b7rtbw77xm7xqharw': 'PLAN_100',
+    'pri_01kppcr7dpr63g3j9y1wf9hd29': 'PLAN_5',
+    'pri_01kppcrkwcpz1rz7m1hsht15wt': 'PLAN_10',
+    'pri_01kppcs2qh0hhpkqtm3yj47kkf': 'PLAN_PREMIUM',
   };
   return priceId ? (map[priceId] || null) : null;
+}
+
+function mapItemsToPlan(items: any[]): string | null {
+  if (!items || items.length === 0) return null;
+  const priceIds = items.map((i: any) => i.price?.id);
+  if (priceIds.includes('pri_01kppcs2qh0hhpkqtm3yj47kkf')) return 'PLAN_PREMIUM';
+  if (priceIds.includes('pri_01kppcrkwcpz1rz7m1hsht15wt')) return 'PLAN_10';
+  if (priceIds.includes('pri_01kppcr7dpr63g3j9y1wf9hd29')) return 'PLAN_5';
+  return mapPriceToTier(priceIds[0]);
 }
 
 export default router;

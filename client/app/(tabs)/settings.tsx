@@ -14,10 +14,9 @@ import { colors, fontSize, spacing } from '../../src/theme';
 import { BUILD_VERSION } from '../../src/version';
 
 const PLAN_LABELS: Record<string, string> = {
-  PLAN_10: 'Up to 10 people ($20/yr)',
-  PLAN_25: 'Up to 25 people ($39/yr)',
-  PLAN_50: 'Up to 50 people ($69/yr)',
-  PLAN_100: 'Up to 100 people ($119/yr)',
+  PLAN_5: 'Basic - up to 5 people ($20/yr)',
+  PLAN_10: 'Plus - up to 10 people ($40/yr)',
+  PLAN_PREMIUM: 'Premium - 11+ people ($40+/yr)',
   PLAN_CUSTOM: 'Custom',
 };
 
@@ -366,7 +365,7 @@ export default function SettingsScreen() {
               ))}
               {selectedPlan && (
                 <Text style={styles.changePlanNote}>
-                  {['PLAN_10', 'PLAN_25', 'PLAN_50', 'PLAN_100'].indexOf(selectedPlan) > ['PLAN_10', 'PLAN_25', 'PLAN_50', 'PLAN_100'].indexOf(user?.planCode || '')
+                  {['PLAN_5', 'PLAN_10', 'PLAN_PREMIUM'].indexOf(selectedPlan) > ['PLAN_5', 'PLAN_10', 'PLAN_PREMIUM'].indexOf(user?.planCode || '')
                     ? 'Upgrade takes effect immediately.  You\'ll be charged the prorated difference.'
                     : 'Downgrade takes effect at your next renewal date.'}
                 </Text>

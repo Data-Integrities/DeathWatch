@@ -8,10 +8,9 @@ import { sendMatchSms } from '../services/smsService';
 import { pool } from '../db/pool';
 
 const PLAN_LIMITS: Record<string, { limit: number; grace: number }> = {
-  PLAN_10:  { limit: 10,  grace: 11 },
-  PLAN_25:  { limit: 25,  grace: 26 },
-  PLAN_50:  { limit: 50,  grace: 51 },
-  PLAN_100: { limit: 100, grace: 101 },
+  PLAN_5:      { limit: 5,  grace: 6 },
+  PLAN_10:     { limit: 10, grace: 11 },
+  PLAN_PREMIUM: { limit: 9999, grace: 9999 },
 };
 
 const router = Router();
