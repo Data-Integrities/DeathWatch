@@ -16,7 +16,7 @@ const PLAN_PRICE_IDS: Record<string, string> = {
   PLAN_PREMIUM: 'pri_01kppcs2qh0hhpkqtm3yj47kkf',
 };
 
-const PREMIUM_PER_PERSON_PRICE_ID = 'pri_01kppcse8rassqt6ecny5wj632';
+const PREMIUM_PER_PERSON_PRICE_ID = 'pri_01kppf909cxfhkha763dakw7vh';
 
 const PLAN_ORDER = ['PLAN_5', 'PLAN_10', 'PLAN_PREMIUM'];
 

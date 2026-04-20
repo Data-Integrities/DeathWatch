@@ -28,7 +28,7 @@ export default function PricingPage() {
           {[
             { plan: 'Basic - up to 5', price: '$20', per: '$4.00' },
             { plan: 'Plus - up to 10', price: '$40', per: '$4.00' },
-            { plan: 'Premium - 11+', price: '$40+', per: '$2.00*' },
+            { plan: 'Premium - 11+', price: '$40+', per: '$4.00*' },
           ].map((row, i) => (
             <View key={i} style={[styles.row, i % 2 === 0 && styles.rowAlt]}>
               <Text style={[styles.cell, styles.planCol]}>{row.plan}</Text>
@@ -37,7 +37,7 @@ export default function PricingPage() {
             </View>
           ))}
           <View style={[styles.row, styles.rowAlt]}>
-            <Text style={[styles.cell, { flex: 7 }]}>*Premium: $40 base (11-15 people) + $2 per person over 15</Text>
+            <Text style={[styles.cell, { flex: 7 }]}>*Premium: $40 base + $4 per person over 10</Text>
           </View>
           <View style={styles.row}>
             <Text style={[styles.cell, { flex: 7 }]}>Pro: for professionals.  email support@obitnote.com</Text>

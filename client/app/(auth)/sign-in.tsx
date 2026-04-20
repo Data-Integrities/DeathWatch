@@ -231,7 +231,7 @@ export default function SignInScreen() {
               {[
                 { plan: 'Basic - up to 5', price: '$20', per: '$4.00' },
                 { plan: 'Plus - up to 10', price: '$40', per: '$4.00' },
-                { plan: 'Premium - 11+', price: '$40+', per: '$2.00*' },
+                { plan: 'Premium - 11+', price: '$40+', per: '$4.00*' },
               ].map((row, i) => (
                 <View key={i} style={[styles.pricingRow, i % 2 === 0 && styles.pricingRowAlt]}>
                   <Text style={[styles.pricingCell, styles.pricingPlanCol]}>{row.plan}</Text>
@@ -240,7 +240,7 @@ export default function SignInScreen() {
                 </View>
               ))}
               <View style={[styles.pricingRow, styles.pricingRowAlt]}>
-                <Text style={[styles.pricingCell, { flex: 7 }]}>*Premium: $40 base (11-15 people) + $2 per person over 15</Text>
+                <Text style={[styles.pricingCell, { flex: 7 }]}>*Premium: $40 base + $4 per person over 10</Text>
               </View>
               <View style={styles.pricingRow}>
                 <Text style={[styles.pricingCell, { flex: 7 }]}>Pro: for professionals.  email support@obitnote.com</Text>
