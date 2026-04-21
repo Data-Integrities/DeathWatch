@@ -69,7 +69,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Count active searches (not confirmed — confirmed searches don't count against the limit)
     const { rows: countRows } = await pool.query(
-      'SELECT COUNT(*)::int AS cnt FROM user_query WHERE user_id = $1 AND confirmed = false',
+      'SELECT COUNT(*)::int AS cnt FROM user_query WHERE login_id = $1 AND confirmed = false',
       [req.userId!]
     );
     const activeCount = countRows[0].cnt;
