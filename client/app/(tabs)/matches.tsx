@@ -75,7 +75,8 @@ export default function HomeScreen() {
   const [detailSearchId, setDetailSearchId] = useState<string | null>(null);
   const [editSearchId, setEditSearchId] = useState<string | null>(null);
   const [trialVisible, setTrialVisible] = useState(false);
-  const showPaymentRequired = (user?.uncommittedCount ?? 0) > 0;
+  const [paymentDismissed, setPaymentDismissed] = useState(false);
+  const showPaymentRequired = !paymentDismissed && (user?.uncommittedCount ?? 0) > 0;
 
   const loadData = useCallback(async () => {
     try {
@@ -278,6 +279,7 @@ export default function HomeScreen() {
         costPerPerson={4}
         onComplete={handlePaymentComplete}
         onRemove={handleRemoveUncommitted}
+        onDismiss={() => setPaymentDismissed(true)}
       />
 
       {/* About modal */}

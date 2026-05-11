@@ -5,6 +5,7 @@ const { exclusionStore } = require('../data/ExclusionStore');
 const { batchStore } = require('../db/BatchStore');
 const config = require('../config');
 const { logger } = require('../utils/logger');
+const { reportFatalError } = require('../utils/fatalError');
 
 const app = express();
 app.use(express.json());
@@ -12,6 +13,7 @@ app.use(express.json());
 // Error handler middleware
 const errorHandler = (err, req, res, next) => {
   logger.error('API Error:', err);
+  reportFatalError('search', null, `Search engine unhandled error: ${err.message}`);
   res.status(500).json({ error: err.message });
 };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Modal, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import { Button } from './Button';
 import { ConfirmDialog } from './ConfirmDialog';
 import { LoadingOverlay } from './LoadingOverlay';
@@ -17,6 +18,7 @@ interface PaymentRequiredModalProps {
   costPerPerson: number;
   onComplete: () => void;
   onRemove: (id: string) => void;
+  onDismiss?: () => void;
 }
 
 export function PaymentRequiredModal({
@@ -25,6 +27,7 @@ export function PaymentRequiredModal({
   costPerPerson,
   onComplete,
   onRemove,
+  onDismiss,
 }: PaymentRequiredModalProps) {
   const [showPeople, setShowPeople] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UncommittedPerson | null>(null);
@@ -59,6 +62,11 @@ export function PaymentRequiredModal({
       <Modal visible transparent animationType="fade">
         <View style={styles.overlay}>
           <View style={styles.dialog}>
+            {onDismiss && (
+              <Pressable onPress={onDismiss} style={styles.closeButton} accessibilityLabel="Close">
+                <FontAwesome name="times" size={18} color="#444444" />
+              </Pressable>
+            )}
             <Text style={styles.title}>New People Added</Text>
             <ScrollView style={styles.peopleList}>
               {people.map(p => (
@@ -91,7 +99,12 @@ export function PaymentRequiredModal({
     <Modal visible transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.dialog}>
-          <Text style={styles.title}>Payment Required</Text>
+            {onDismiss && (
+              <Pressable onPress={onDismiss} style={styles.closeButton} accessibilityLabel="Close">
+                <FontAwesome name="times" size={18} color="#444444" />
+              </Pressable>
+            )}
+            <Text style={styles.title}>Payment Required</Text>
 
           <View style={styles.grid}>
             <View style={styles.row}>
@@ -116,7 +129,7 @@ export function PaymentRequiredModal({
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Button title="Done" onPress={handleDone} />
+          <Button title="Pay Now" onPress={handleDone} />
         </View>
       </View>
 
@@ -139,6 +152,16 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     maxWidth: 360,
     width: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   title: {
     fontSize: fontSize.lg,

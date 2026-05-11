@@ -10,6 +10,7 @@ const { extractNameFromTitle, extractNameFromSnippet, extractNameFromUrl, isVali
 const { stateCodeToName } = require('../../normalize/location');
 const config = require('../../config');
 const { logger } = require('../../utils/logger');
+const { reportFatalError } = require('../../utils/fatalError');
 
 // Lazy load to avoid circular dependency
 let searchMetrics = null;
@@ -53,6 +54,7 @@ class SerperProvider {
       });
 
       if (!response.ok) {
+        reportFatalError('serper', String(response.status), `Serper API error: ${response.status} ${response.statusText}`);
         throw new Error(`Serper API error: ${response.status}`);
       }
 

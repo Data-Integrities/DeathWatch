@@ -290,7 +290,7 @@ export async function changeEmail(userId: string, newEmail: string, currentPassw
   sendVerificationEmail(newEmail, rows[0].first_name, token).catch(err => console.error('[Auth] Verification email failed:', err));
 }
 
-const ALLOWED_PREFERENCES = ['skip_matches_info_card', 'sms_opt_in'] as const;
+const ALLOWED_PREFERENCES = ['skip_matches_info_card', 'sms_opt_in', 'pro_grid'] as const;
 
 export async function updatePreference(userId: string, key: string, value: boolean) {
   if (!ALLOWED_PREFERENCES.includes(key as any)) {

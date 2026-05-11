@@ -1,10 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Platform, Modal, useWindowDimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { ConfirmDialog } from './ConfirmDialog';
 import { colors, spacing, borderRadius } from '../theme';
 const CONTAINER_PADDING = spacing.md * 2;
 import type { SearchQuery } from '../types';
+
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const id = 'google-sans-flex';
+  if (!document.getElementById(id)) {
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400..700&display=swap';
+    document.head.appendChild(link);
+  }
+}
 
 interface ProGridProps {
   searches: SearchQuery[];
@@ -20,6 +31,10 @@ const gridFont = Platform.OS === 'web'
   ? { fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }
   : {};
 
+const dataFont = Platform.OS === 'web'
+  ? { fontFamily: "'Google Sans Flex', sans-serif", fontWeight: '500' as any }
+  : {};
+
 export const COL_WIDTHS = {
   first: 100,
   last: 100,
@@ -30,7 +45,7 @@ export const COL_WIDTHS = {
   city: 100,
   state: 50,
   keywords: 100,
-  status: 75,
+  status: 80,
   matches: 55,
   actions: 87,
 };
@@ -120,7 +135,6 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
 
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [expandedCell, setExpandedCell] = useState<{ row: string; col: string; text: string } | null>(null);
   const [proInfoVisible, setProInfoVisible] = useState(false);
 
   const handleSort = (key: SortKey) => {
@@ -150,13 +164,9 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
   const dataCell = (text: string | null, width: number, rowId: string, colKey: string, align: 'left' | 'center' = 'center') => {
     const val = text || '';
     return (
-      <Pressable
-        key={colKey}
-        onPress={val.length > 0 ? () => setExpandedCell({ row: rowId, col: colKey, text: val }) : undefined}
-        style={{ width }}
-      >
+      <View key={colKey} style={{ width }}>
         <Text style={[styles.cell, { textAlign: align }]} numberOfLines={1}>{val || '--'}</Text>
-      </Pressable>
+      </View>
     );
   };
 
@@ -238,16 +248,6 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
         })}
       </View>
 
-      {expandedCell && (
-        <Modal visible transparent animationType="fade" onRequestClose={() => setExpandedCell(null)}>
-          <Pressable style={styles.expandOverlay} onPress={() => setExpandedCell(null)}>
-            <View style={styles.expandBox}>
-              <Text style={styles.expandText}>{expandedCell.text}</Text>
-            </View>
-          </Pressable>
-        </Modal>
-      )}
-
       <ConfirmDialog
         visible={proInfoVisible}
         title="Pro Account Info"
@@ -262,9 +262,9 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
 }
 
 function getStatusStyle(s: SearchQuery): object {
-  if (s.confirmed) return { color: colors.success, fontWeight: '700' as const };
-  if (s.matchCntTotal > 0) return { color: '#444444', fontWeight: '700' as const };
-  return { fontWeight: '700' as const };
+  if (s.confirmed) return { color: colors.success };
+  if (s.matchCntTotal > 0) return { color: '#444444' };
+  return {};
 }
 
 const styles = StyleSheet.create({
@@ -375,11 +375,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cell: {
-    fontSize: 12,
-    color: colors.textPrimary,
+    fontSize: 14,
+    color: '#333333',
     paddingHorizontal: 4,
     textAlign: 'center',
-    ...gridFont,
+    ...dataFont,
   },
   actionsCell: {
     flexDirection: 'row',
@@ -393,23 +393,5 @@ const styles = StyleSheet.create({
     minHeight: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  expandOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  expandBox: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.sm,
-    padding: spacing.md,
-    maxWidth: 320,
-    minWidth: 200,
-  },
-  expandText: {
-    fontSize: 14,
-    color: colors.textPrimary,
-    ...gridFont,
   },
 });

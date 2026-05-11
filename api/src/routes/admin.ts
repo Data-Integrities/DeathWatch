@@ -396,8 +396,8 @@ router.post('/import', async (req: Request, res: Response) => {
 
       const id = uuidv4();
       await pool.query(
-        `INSERT INTO user_query (id, login_id, name_first, name_last, name_middle, name_maiden, name_nickname, age_apx, city, state, key_words, disabled, import_batch_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12)`,
+        `INSERT INTO user_query (id, login_id, name_first, name_last, name_middle, name_maiden, name_nickname, age_apx, city, state, key_words, disabled, import_batch_id, committed_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12, NOW())`,
         [id, userId, row.nameFirst, row.nameLast, row.nameMiddle, row.nameMaiden, row.nameNickname, row.ageApx, row.city, row.state, row.keyWords, batchId]
       );
       existingSet.add(key);
