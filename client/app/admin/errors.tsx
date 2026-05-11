@@ -138,6 +138,9 @@ export default function ErrorsScreen() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      localStorage.setItem('obitnote_error_last_check', new Date().toISOString());
+    }
     fetchErrors(defaults.start, defaults.end).finally(() => setLoading(false));
   }, []);
 

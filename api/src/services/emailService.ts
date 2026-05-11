@@ -68,8 +68,11 @@ async function sendEmail(to: string, subject: string, html: string) {
       html,
     });
     console.log(`[Email] Sent to ${to}: "${subject}"`);
-  } catch (err) {
+  } catch (err: any) {
     console.error(`[Email] Failed to send to ${to}:`, err);
+    import('./fatalErrorService')
+      .then(m => m.reportFatalError('email', null, `Email delivery failed to ${to}: ${err.message}`))
+      .catch(() => {});
   }
 }
 

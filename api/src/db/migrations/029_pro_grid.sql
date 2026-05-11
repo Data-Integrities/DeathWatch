@@ -1,0 +1,1 @@
+ALTER TABLE dw_user ADD COLUMN pro_grid BOOLEAN NOT NULL DEFAULT false;

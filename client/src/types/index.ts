@@ -29,6 +29,9 @@ export interface UserProfile {
   planLimit: number | null;
   phoneNumber: string | null;
   smsOptIn: boolean;
+  uncommittedCount: number;
+  uncommittedPeople: { id: string; name: string }[];
+  proGrid: boolean;
 }
 
 export interface RegisterRequest {

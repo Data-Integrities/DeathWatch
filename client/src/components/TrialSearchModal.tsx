@@ -340,15 +340,15 @@ export function TrialSearchModal({ visible, onClose }: Props) {
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <TextField label="First Name" labelWidth={90} value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" autoFocus />
-            <TextField label="Last Name" labelWidth={90} value={nameLast} onChangeText={setNameLast} autoCapitalize="words" />
-            <TextField label="Maiden" labelWidth={90} value={nameMaiden} onChangeText={setNameMaiden} autoCapitalize="words" placeholder="If applicable" />
-            <TextField label="Nickname" labelWidth={90} value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" placeholder="Optional" />
-            <TextField label="Middle" labelWidth={90} value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" placeholder="Optional" />
-            <TextField label="Approx Age" labelWidth={90} value={ageApx} onChangeText={v => setAgeApx(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" placeholder="Best guess of age today" />
-            <TextField label="City" labelWidth={90} value={city} onChangeText={setCity} autoCapitalize="words" placeholder="Best guess or nearest larger city" />
+            <TextField label="First Name" labelWidth={90} value={nameFirst} onChangeText={setNameFirst} autoCapitalize="words" autoComplete="off" autoFocus />
+            <TextField label="Last Name" labelWidth={90} value={nameLast} onChangeText={setNameLast} autoCapitalize="words" autoComplete="off" />
+            <TextField label="Maiden" labelWidth={90} value={nameMaiden} onChangeText={setNameMaiden} autoCapitalize="words" autoComplete="off" placeholder="If applicable" />
+            <TextField label="Nickname" labelWidth={90} value={nameNickname} onChangeText={setNameNickname} autoCapitalize="words" autoComplete="off" placeholder="Optional" />
+            <TextField label="Middle Name" labelWidth={90} value={nameMiddle} onChangeText={setNameMiddle} autoCapitalize="words" autoComplete="off" placeholder="Optional" />
+            <TextField label="Approx Age" labelWidth={90} value={ageApx} onChangeText={v => setAgeApx(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" autoComplete="off" placeholder="Best guess of age today" />
+            <TextField label="Current City" labelWidth={90} value={city} onChangeText={setCity} autoCapitalize="words" autoComplete="off" placeholder="Best guess or nearest larger city" />
             <StatePicker value={state} onChange={setState} city={city} onCityChange={setCity} labelWidth={90} openOnFocus />
-            <TextField label="Keywords" labelWidth={90} value={keyWords} onChangeText={setKeyWords} placeholder="Optional (e.g. Air Force, teacher, etc.)" />
+            <TextField label="Keywords" labelWidth={90} value={keyWords} onChangeText={setKeyWords} autoComplete="off" placeholder="Optional (e.g. Air Force, teacher, etc.)" />
 
             <View style={styles.buttons}>
               <Button

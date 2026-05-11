@@ -11,15 +11,13 @@ import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-const PLANS = [
-  { code: 'PLAN_5', label: 'Basic - up to 5', price: '$20', per: '$4.00', priceId: 'pri_01kppcr7dpr63g3j9y1wf9hd29' },
-  { code: 'PLAN_10', label: 'Plus - up to 10', price: '$40', per: '$4.00', priceId: 'pri_01kppcrkwcpz1rz7m1hsht15wt' },
-  { code: 'PLAN_PREMIUM', label: 'Premium - 11+', price: '$40+', per: '$4.00*', priceId: 'pri_01kppcs2qh0hhpkqtm3yj47kkf' },
-];
+const BASIC_PRICE_ID = 'pri_01kppcr7dpr63g3j9y1wf9hd29';
+const PLUS_PRICE_ID = 'pri_01kps36xd3r6dbmwcwrk9z16sk';
 
 export default function SubscribePage() {
   const { user, refreshUser } = useAuth();
   const [searchInfoVisible, setSearchInfoVisible] = useState(false);
+  const [proInfoVisible, setProInfoVisible] = useState(false);
   const [activating, setActivating] = useState(false);
   const [activationFailed, setActivationFailed] = useState(false);
   const [helpVisible, setHelpVisible] = useState(false);
@@ -112,30 +110,37 @@ export default function SubscribePage() {
         <Text style={styles.subtitle}>Monitor people you care about.</Text>
 
         <View style={styles.table}>
-          <View style={styles.headerRow}>
-            <Text style={[styles.headerCell, styles.planCol]}>Plan</Text>
-            <Text style={[styles.headerCell, styles.priceCol]}>Per Year</Text>
-            <Text style={[styles.headerCell, styles.perCol]}>Per Person</Text>
-            <Text style={[styles.headerCell, styles.selectCol]}></Text>
-          </View>
           <Text style={styles.billedNote}>All plans billed yearly (cancel anytime)</Text>
-          {PLANS.map((row, i) => (
-            <View key={row.code} style={[styles.row, i % 2 === 0 && styles.rowAlt]}>
-              <Text style={[styles.cell, styles.planCol]}>{row.label}</Text>
-              <Text style={[styles.cell, styles.priceCol, styles.priceText]}>{row.price}</Text>
-              <Text style={[styles.cell, styles.perCol]}>{row.per}</Text>
-              <View style={styles.selectCol}>
-                <Pressable onPress={() => openCheckout(row.priceId)} style={styles.selectButton}>
-                  <Text style={styles.selectButtonText}>Select</Text>
-                </Pressable>
-              </View>
+
+          <View style={[styles.planSection, styles.rowAlt]}>
+            <View style={styles.planHeader}>
+              <Text style={[styles.cell, styles.planName]}>Basic</Text>
+              <Text style={[styles.cell, styles.planPrice]}>$20/year</Text>
+              <Pressable onPress={() => openCheckout(BASIC_PRICE_ID)} style={styles.selectButton}>
+                <Text style={styles.selectButtonText}>Select</Text>
+              </Pressable>
             </View>
-          ))}
-          <View style={[styles.row, styles.rowAlt]}>
-            <Text style={[styles.cell, styles.planCol, { flex: 7.5 }]}>*Premium: $40 base + $4 per person over 10</Text>
+            <Text style={styles.planDesc}>Monitor up to 5 people.</Text>
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.cell, styles.planCol, { flex: 7.5 }]}>Pro: for professionals.  email support@obitnote.com</Text>
+
+          <View style={styles.planSection}>
+            <View style={styles.planHeader}>
+              <Text style={[styles.cell, styles.planName]}>Plus</Text>
+              <Text style={[styles.cell, styles.planPrice]}>$20/year base, plus $4/year for each person beyond 5</Text>
+              <Pressable onPress={() => openCheckout(PLUS_PRICE_ID)} style={styles.selectButton}>
+                <Text style={styles.selectButtonText}>Select</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.planDesc}>Example: 15 people = $20 + (10 {'\u00d7'} $4) = $60/year.</Text>
+          </View>
+
+          <View style={[styles.planSection, styles.rowAlt]}>
+            <View style={styles.planHeader}>
+              <Text style={[styles.cell, styles.planName]}>Pro</Text>
+              <Text style={[styles.cell, styles.planPrice]}>for organizations with high-volume or special-needs requirements</Text>
+            </View>
+            <Text style={styles.planDesc}>Intended for professional and commercial use (clergy, legal, real estate, corporate, and similar).  Pro customers use Plus pricing for their watch list, and can optionally add:</Text>
+            <Pressable onPress={() => setProInfoVisible(true)} style={styles.proInfoLinkWrap}><Text style={styles.proMoreInfo}>More Pro info</Text></Pressable>
           </View>
         </View>
 
@@ -169,6 +174,36 @@ export default function SubscribePage() {
         cancelLabel=""
         onConfirm={() => setSearchInfoVisible(false)}
         onCancel={() => setSearchInfoVisible(false)}
+      />
+
+      <ConfirmDialog
+        visible={proInfoVisible}
+        title={<Text style={{ color: colors.brand }}>Pro service</Text>}
+        body={
+          <View>
+            <Text style={styles.proBody}>
+              <Text style={styles.planName}>Pro</Text> is for organizations with high-volume or special-needs requirements.  Intended for professional and commercial use (clergy, legal, real estate, corporate, and similar).
+            </Text>
+            <Text style={styles.proBody}>Pro customers use Plus pricing for their watch list, and can optionally add:</Text>
+            <View style={styles.proBullet}>
+              <Text style={styles.proBulletDot}>{'\u2022'}</Text>
+              <Text style={styles.proBody}><Text style={styles.proBulletLabel}>Editing grid</Text> — an editable grid view of all people searched, for easy management of large lists.  $150/year.</Text>
+            </View>
+            <View style={styles.proBullet}>
+              <Text style={styles.proBulletDot}>{'\u2022'}</Text>
+              <Text style={styles.proBody}><Text style={styles.proBulletLabel}>Staff-assisted import</Text> — <Text style={styles.brandInline}>ObitNote</Text> staff import your Excel, CSV, or JSON list of people to monitor.  $150 per import.</Text>
+            </View>
+            <View style={styles.proBullet}>
+              <Text style={styles.proBulletDot}>{'\u2022'}</Text>
+              <Text style={styles.proBody}><Text style={styles.proBulletLabel}>Custom solutions</Text> — custom integrations, report formats, or features scoped specifically for your Pro account.  Available on request; scoped and priced per engagement.</Text>
+            </View>
+            <Text style={[styles.proBody, { marginTop: 12 }]}>For more info, email support@obitnote.com</Text>
+          </View>
+        }
+        confirmLabel="OK"
+        cancelLabel=""
+        onConfirm={() => setProInfoVisible(false)}
+        onCancel={() => setProInfoVisible(false)}
       />
 
       <HelpModal
@@ -254,28 +289,68 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F5FC',
   },
   cell: {
-    fontSize: fontSize.base,
+    fontSize: 16,
     fontWeight: '700',
     color: '#555555',
   },
-  planCol: {
-    flex: 3,
+  planSection: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
-  priceCol: {
-    flex: 2,
-    textAlign: 'center',
+  planHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    flexWrap: 'wrap' as const,
+    gap: 8,
+    marginBottom: 4,
   },
-  priceText: {
-    fontWeight: '700',
+  planName: {
     color: colors.brand,
+    fontWeight: '700',
   },
-  perCol: {
-    flex: 2,
-    textAlign: 'right',
+  planPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#444444',
+    flex: 1,
   },
-  selectCol: {
-    flex: 1.5,
-    alignItems: 'flex-end' as const,
+  planDesc: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#444444',
+    lineHeight: 20,
+  },
+  proInfoLinkWrap: {
+    marginTop: 4,
+  },
+  proMoreInfo: {
+    fontWeight: '700',
+    color: colors.green,
+    fontSize: 14,
+    lineHeight: 20,
+    textDecorationLine: 'underline' as const,
+  },
+  proBody: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    lineHeight: 24,
+    flex: 1,
+    marginBottom: 8,
+  },
+  proBullet: {
+    flexDirection: 'row' as const,
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  proBulletDot: {
+    fontSize: fontSize.base,
+    color: '#444444',
+    marginRight: 8,
+    lineHeight: 24,
+  },
+  proBulletLabel: {
+    fontWeight: '700',
+    color: '#444444',
   },
   selectButton: {
     backgroundColor: colors.green,
@@ -287,13 +362,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  contactCol: {
-    flex: 5.5,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#555555',
-    textAlign: 'center',
   },
   billedNote: {
     fontSize: 12,

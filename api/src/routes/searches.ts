@@ -6,12 +6,9 @@ import { logActivity, buildFingerprint } from '../services/activityService';
 import { sendMatchNotification } from '../services/emailService';
 import { sendMatchSms } from '../services/smsService';
 import { pool } from '../db/pool';
+import { commitBilling } from '../services/paddleService';
 
-const PLAN_LIMITS: Record<string, { limit: number; grace: number }> = {
-  PLAN_5:      { limit: 5,  grace: 6 },
-  PLAN_10:     { limit: 10, grace: 11 },
-  PLAN_PREMIUM: { limit: 9999, grace: 9999 },
-};
+const BASIC_LIMIT = 5;
 
 const router = Router();
 router.use(authMiddleware);
@@ -52,9 +49,8 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    // Subscription + plan limit gate
     const { rows: userRows } = await pool.query(
-      'SELECT subscription_active, plan_code, tier_custom_cap, using_grace_slot FROM dw_user WHERE login_id = $1',
+      'SELECT subscription_active, plan_code, tier_custom_cap FROM dw_user WHERE login_id = $1',
       [req.userId!]
     );
     if (userRows.length === 0) {
@@ -67,41 +63,25 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // Count active searches (not confirmed — confirmed searches don't count against the limit)
     const { rows: countRows } = await pool.query(
-      'SELECT COUNT(*)::int AS cnt FROM user_query WHERE login_id = $1 AND confirmed = false',
+      'SELECT COUNT(*)::int AS cnt FROM user_query WHERE login_id = $1 AND disabled = false AND confirmed = false',
       [req.userId!]
     );
     const activeCount = countRows[0].cnt;
-
-    const planCode = userRow.plan_code;
-    const plan = planCode ? PLAN_LIMITS[planCode] : null;
-    const planLimit = plan ? plan.limit : (userRow.tier_custom_cap || 0);
-    const graceLimit = plan ? plan.grace : (userRow.tier_custom_cap ? userRow.tier_custom_cap + 1 : 0);
-
-    if (activeCount >= graceLimit) {
-      res.status(403).json({
-        error: 'You\'ve reached your plan limit.  Please upgrade to monitor more people.',
-        code: 'PLAN_LIMIT_REACHED',
-        activeCount,
-        planLimit,
-      });
-      return;
-    }
-
-    // Set grace slot flag if at the plan limit
-    if (activeCount >= planLimit && !userRow.using_grace_slot) {
-      await pool.query(
-        'UPDATE dw_user SET using_grace_slot = true, updated_at = NOW() WHERE login_id = $1',
-        [req.userId!]
-      );
-    }
 
     const data = searchCreateSchema.parse(req.body);
     const result = await searchService.createSearch(req.userId!, data);
     logActivity(req.userId!, 'New Search', buildFingerprint(data));
 
-    // Send immediate notifications if matches found
+    // Searches 1-5 are committed immediately; 6+ are uncommitted (pending billing)
+    const isCommitted = activeCount < BASIC_LIMIT;
+    if (isCommitted) {
+      await pool.query(
+        'UPDATE user_query SET committed_at = NOW() WHERE id = $1',
+        [result.search.id]
+      );
+    }
+
     if (result.results && result.results.length > 0) {
       const { rows: uRows } = await pool.query(
         'SELECT email, phone_number, sms_opt_in FROM dw_user WHERE login_id = $1',
@@ -115,14 +95,35 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    const usingGraceSlot = activeCount >= planLimit;
-    res.status(201).json({ ...result, usingGraceSlot, activeCount: activeCount + 1, planLimit });
+    const newActiveCount = activeCount + 1;
+    const { rows: uncommittedRows } = await pool.query(
+      'SELECT COUNT(*)::int AS cnt FROM user_query WHERE login_id = $1 AND disabled = false AND confirmed = false AND committed_at IS NULL',
+      [req.userId!]
+    );
+    const uncommittedCount = uncommittedRows[0].cnt;
+
+    res.status(201).json({
+      ...result,
+      activeCount: newActiveCount,
+      uncommittedCount,
+      billingRequired: uncommittedCount > 0,
+    });
   } catch (err: any) {
     if (err.name === 'ZodError') {
       res.status(400).json({ error: err.errors[0].message });
       return;
     }
     res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post('/commit', async (req: Request, res: Response) => {
+  try {
+    await commitBilling(req.userId!);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('[Search] Commit billing failed:', err.message);
+    res.status(err.status || 500).json({ error: 'We couldn\'t process your payment right now.  Your people are still being monitored.  Please try again later.' });
   }
 });
 
@@ -149,6 +150,10 @@ router.patch('/:id', async (req: Request, res: Response) => {
 router.post('/:id/confirm', async (req: Request, res: Response) => {
   try {
     const search = await searchService.confirmSearch(req.userId!, req.params.id);
+    await pool.query(
+      'UPDATE user_query SET committed_at = COALESCE(committed_at, NOW()) WHERE id = $1',
+      [req.params.id]
+    );
     res.json({ search });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });

@@ -50,6 +50,8 @@ export function SettingsModal({ visible, onClose }: Props) {
   const [resendMessage, setResendMessage] = useState('');
   const [toast, setToast] = useState('');
   const [unrepliedCount, setUnrepliedCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
+  const [fatalCount, setFatalCount] = useState(0);
   const [legalType, setLegalType] = useState<'terms' | 'privacy' | null>(null);
 
   // Sync fields when user data changes or modal opens
@@ -74,6 +76,12 @@ export function SettingsModal({ visible, onClose }: Props) {
     if (visible && user?.isAdmin) {
       api.get<{ count: number }>('/api/admin/messages/unreplied-count')
         .then(res => setUnrepliedCount(res.count))
+        .catch(() => {});
+      api.get<{ count: number }>('/api/admin/errors/count')
+        .then(res => setErrorCount(res.count))
+        .catch(() => {});
+      api.get<{ count: number }>('/api/admin/fatal-errors/count')
+        .then(res => setFatalCount(res.count))
         .catch(() => {});
     }
   }, [visible, user?.isAdmin]);
@@ -224,6 +232,30 @@ export function SettingsModal({ visible, onClose }: Props) {
                     <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
                   </View>
                 </Pressable>
+                <View style={styles.adminDivider} />
+                <Pressable onPress={() => { onClose(); router.push('/admin/errors'); }} style={styles.adminRow}>
+                  <Text style={styles.adminRowText}>Error Log</Text>
+                  <View style={styles.adminRowRight}>
+                    {errorCount > 0 && (
+                      <Text style={styles.errorBadge}>{errorCount} today</Text>
+                    )}
+                    <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+                  </View>
+                </Pressable>
+                <View style={styles.adminDivider} />
+                <Pressable onPress={() => { onClose(); router.push('/admin/oncall'); }} style={styles.adminRow}>
+                  <Text style={styles.adminRowText}>Support Chief</Text>
+                  <View style={styles.adminRowRight}>
+                    {fatalCount > 0 && (
+                      <Text style={styles.errorBadge}>{fatalCount} today</Text>
+                    )}
+                    <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+                  </View>
+                </Pressable>
+                <Pressable onPress={() => { onClose(); router.push('/admin/import'); }} style={styles.adminRow}>
+                  <Text style={styles.adminRowText}>Data Import</Text>
+                  <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+                </Pressable>
               </Card>
             )}
 
@@ -266,6 +298,21 @@ export function SettingsModal({ visible, onClose }: Props) {
                   variant="primary"
                   style={styles.saveButton}
                 />
+              )}
+
+              {user?.planCode === 'PLAN_CUSTOM' && (
+                <View style={styles.proGridRow}>
+                  <Checkbox
+                    checked={user.proGrid}
+                    onToggle={async (val) => {
+                      try {
+                        await api.patch('/api/auth/preferences', { proGrid: val });
+                        await refreshUser();
+                      } catch {}
+                    }}
+                    label="Pro Grid"
+                  />
+                </View>
               )}
             </Card>
 
@@ -452,6 +499,9 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: spacing.md,
   },
+  proGridRow: {
+    marginTop: spacing.md,
+  },
   error: {
     fontSize: fontSize.sm,
     color: colors.error,
@@ -480,6 +530,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.warning,
+  },
+  errorBadge: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.error,
   },
   adminRowArrow: {
     fontSize: fontSize.lg,

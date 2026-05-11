@@ -6,13 +6,13 @@ import { api } from '../../src/services/api/client';
 import { AppHeader } from '../../src/components/AppHeader';
 import { Button } from '../../src/components/Button';
 import { useAuth } from '../../src/context/AuthContext';
+import { Checkbox } from '../../src/components/Checkbox';
 import { colors, spacing, shadows, borderRadius } from '../../src/theme';
 
 const TIER_OPTIONS = [
   { code: null, label: 'None' },
   { code: 'PLAN_5', label: 'Basic (5)' },
-  { code: 'PLAN_10', label: 'Plus (10)' },
-  { code: 'PLAN_PREMIUM', label: 'Premium (11+)' },
+  { code: 'PLAN_10', label: 'Plus (6+)' },
   { code: 'PLAN_CUSTOM', label: 'Custom' },
 ] as const;
 
@@ -54,6 +54,7 @@ interface UserRow {
   planStartDate: string | null;
   planRenewalDate: string | null;
   tierCustomCap: number | null;
+  proGrid: boolean;
 }
 
 type SortKey = 'name' | 'location' | 'email' | 'admin' | 'createdAt' | 'tier' | 'lastSi' | 'tr' | 'si' | 'se' | 'ma' | 'sd' | 'rp' | 'wp' | 'sedit';
@@ -272,6 +273,19 @@ export default function UsersScreen() {
     setTierConfirming(false);
   };
 
+  const handleProGridToggle = async (value: boolean) => {
+    if (!detailUser) return;
+    try {
+      await api.patch(`/api/admin/users/${detailUser.id}/subscription`, { proGrid: value });
+      await fetchUsers();
+      const res = await api.get<{ users: UserRow[] }>('/api/admin/users');
+      const updated = res.users.find(u => u.id === detailUser.id);
+      if (updated) setDetailUser(updated);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update Pro Grid');
+    }
+  };
+
   const handleResetTrials = async () => {
     if (!detailUser) return;
     setResettingTrials(true);
@@ -452,6 +466,7 @@ export default function UsersScreen() {
         <Modal visible transparent animationType="fade" onRequestClose={() => setDetailUser(null)}>
           <Pressable style={styles.overlay} onPress={() => setDetailUser(null)}>
             <Pressable style={styles.detailDialog} onPress={(e) => e.stopPropagation()}>
+              <ScrollView showsVerticalScrollIndicator>
               <Text style={styles.detailTitle}>
                 {detailUser.firstName} {detailUser.lastName}
               </Text>
@@ -486,8 +501,7 @@ export default function UsersScreen() {
                     >
                       <option value="">None</option>
                       <option value="PLAN_5">Basic ($20/yr)</option>
-                      <option value="PLAN_10">Plus ($40/yr)</option>
-                      <option value="PLAN_PREMIUM">Premium ($40+/yr)</option>
+                      <option value="PLAN_10">Plus ($20+/yr)</option>
                       <option value="PLAN_CUSTOM">Custom</option>
                     </select>
                   ) : (
@@ -540,6 +554,14 @@ export default function UsersScreen() {
                   </View>
                 </View>
               ) : null}
+              {detailUser.planCode === 'PLAN_CUSTOM' ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Pro Grid</Text>
+                  <View style={{ flex: 1 }}>
+                    <Checkbox checked={detailUser.proGrid} onToggle={handleProGridToggle} label="" />
+                  </View>
+                </View>
+              ) : null}
               {infoRow('Plan Start', detailUser.planStartDate || '--')}
               {infoRow('Plan Renewal', detailUser.planRenewalDate || '--')}
               <View style={styles.infoRow}>
@@ -566,6 +588,7 @@ export default function UsersScreen() {
               <View style={styles.detailClose}>
                 <Button title="Close" variant="secondary" onPress={() => setDetailUser(null)} style={styles.backButton} />
               </View>
+              </ScrollView>
             </Pressable>
           </Pressable>
         </Modal>

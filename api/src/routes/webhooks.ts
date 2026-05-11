@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { pool } from '../db/pool';
+import { reportFatalError } from '../services/fatalErrorService';
 
 const router = Router();
 
@@ -43,6 +44,7 @@ router.post('/paddle', async (req: Request, res: Response) => {
 
   if (PADDLE_WEBHOOK_SECRET && !verifyPaddleSignature(rawBody, signature)) {
     console.error('[Webhook] Invalid signature');
+    reportFatalError('paddle', '401', 'Paddle webhook signature verification failed').catch(() => {});
     res.status(401).json({ error: 'Invalid signature' });
     return;
   }
@@ -125,27 +127,22 @@ router.post('/paddle', async (req: Request, res: Response) => {
     res.json({ received: true });
   } catch (err: any) {
     console.error('[Webhook] Processing error:', err.message);
+    reportFatalError('paddle', '500', `Paddle webhook processing failed: ${err.message}`).catch(() => {});
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
 
 // Map Paddle price IDs to plan tier codes
-function mapPriceToTier(priceId: string | undefined): string | null {
-  const map: Record<string, string> = {
-    'pri_01kppcr7dpr63g3j9y1wf9hd29': 'PLAN_5',
-    'pri_01kppcrkwcpz1rz7m1hsht15wt': 'PLAN_10',
-    'pri_01kppcs2qh0hhpkqtm3yj47kkf': 'PLAN_PREMIUM',
-  };
-  return priceId ? (map[priceId] || null) : null;
-}
-
 function mapItemsToPlan(items: any[]): string | null {
   if (!items || items.length === 0) return null;
   const priceIds = items.map((i: any) => i.price?.id);
-  if (priceIds.includes('pri_01kppcs2qh0hhpkqtm3yj47kkf')) return 'PLAN_PREMIUM';
-  if (priceIds.includes('pri_01kppcrkwcpz1rz7m1hsht15wt')) return 'PLAN_10';
+  if (priceIds.includes('pri_01kps36xd3r6dbmwcwrk9z16sk')) return 'PLAN_10';
+  if (priceIds.includes('pri_01kppf909cxfhkha763dakw7vh')) return 'PLAN_10';
   if (priceIds.includes('pri_01kppcr7dpr63g3j9y1wf9hd29')) return 'PLAN_5';
-  return mapPriceToTier(priceIds[0]);
+  // Legacy price IDs (archived plans)
+  if (priceIds.includes('pri_01kppcrkwcpz1rz7m1hsht15wt')) return 'PLAN_10';
+  if (priceIds.includes('pri_01kppcs2qh0hhpkqtm3yj47kkf')) return 'PLAN_10';
+  return null;
 }
 
 export default router;

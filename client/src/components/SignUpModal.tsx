@@ -204,14 +204,14 @@ export function SignUpModal({ visible, onClose }: Props) {
                 )}
 
                 <TextField
-                  label={`Mobile ${dialCode}`}
+                  label="Mobile"
                   labelWidth={90}
                   value={phoneNumber}
                   onChangeText={(v) => setPhoneNumber(v.replace(/[^0-9+\-() ]/g, ''))}
                   keyboardType="phone-pad"
                   autoComplete="tel"
                   textContentType="telephoneNumber"
-                  placeholder="Optional"
+                  placeholder="Required to receive text notifications"
                 />
                 <Text style={styles.phoneHint}>Include country code for non-US numbers (e.g. +44)</Text>
 

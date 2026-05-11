@@ -15,8 +15,7 @@ import { BUILD_VERSION } from '../../src/version';
 
 const PLAN_LABELS: Record<string, string> = {
   PLAN_5: 'Basic - up to 5 people ($20/yr)',
-  PLAN_10: 'Plus - up to 10 people ($40/yr)',
-  PLAN_PREMIUM: 'Premium - 11+ people ($40+/yr)',
+  PLAN_10: 'Plus ($20/yr base + $4/person beyond 5)',
   PLAN_CUSTOM: 'Custom',
 };
 
@@ -56,6 +55,7 @@ export default function SettingsScreen() {
   const [toast, setToast] = useState('');
   const [unrepliedCount, setUnrepliedCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
+  const [fatalCount, setFatalCount] = useState(0);
 
   // Sync fields when user data changes
   useEffect(() => {
@@ -71,6 +71,9 @@ export default function SettingsScreen() {
         .catch(() => {});
       api.get<{ count: number }>('/api/admin/errors/count')
         .then(res => setErrorCount(res.count))
+        .catch(() => {});
+      api.get<{ count: number }>('/api/admin/fatal-errors/count')
+        .then(res => setFatalCount(res.count))
         .catch(() => {});
     }
   }, [user?.isAdmin]);
@@ -223,6 +226,16 @@ export default function SettingsScreen() {
               <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
             </View>
           </Pressable>
+          <View style={styles.adminDivider} />
+          <Pressable onPress={() => router.push('/admin/oncall')} style={styles.adminRow}>
+            <Text style={styles.adminRowText}>Support Chief</Text>
+            <View style={styles.adminRowRight}>
+              {fatalCount > 0 && (
+                <Text style={styles.errorBadge}>{fatalCount} today</Text>
+              )}
+              <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+            </View>
+          </Pressable>
         </Card>
       )}
 
@@ -365,7 +378,7 @@ export default function SettingsScreen() {
               ))}
               {selectedPlan && (
                 <Text style={styles.changePlanNote}>
-                  {['PLAN_5', 'PLAN_10', 'PLAN_PREMIUM'].indexOf(selectedPlan) > ['PLAN_5', 'PLAN_10', 'PLAN_PREMIUM'].indexOf(user?.planCode || '')
+                  {['PLAN_5', 'PLAN_10'].indexOf(selectedPlan) > ['PLAN_5', 'PLAN_10'].indexOf(user?.planCode || '')
                     ? 'Upgrade takes effect immediately.  You\'ll be charged the prorated difference.'
                     : 'Downgrade takes effect at your next renewal date.'}
                 </Text>

@@ -33,7 +33,7 @@ export function TermsContent() {
   return (
     <>
       <Text style={styles.title}>Terms of Service</Text>
-      <Text style={styles.updated}>Last updated: March 18, 2026</Text>
+      <Text style={styles.updated}>Last updated: April 23, 2026</Text>
 
       <Text style={styles.body}>
         These Terms of Service ("Terms") govern your use of ObitNote, operated by UltraSafe Data, LLC, a Florida limited liability company ("we", "us", "our").  By creating an account or using ObitNote, you agree to these Terms.
@@ -74,37 +74,47 @@ export function TermsContent() {
         <Text style={styles.bold}>Refunds:</Text>  We want you to be happy with ObitNote.  If you are not satisfied, contact us at support@obitnote.com within 30 days of your payment for a full refund.  Refunds requested after 30 days will be prorated for the unused portion of your subscription.
       </Text>
 
-      <Text style={styles.heading}>7. Acceptable Use</Text>
+      <Text style={styles.heading}>7. Text Message (SMS) Notifications</Text>
+      <Text style={styles.body}>
+        If you provide a phone number in your account settings, you may receive text message notifications when obituaries are found.  Text messaging is entirely optional.{'\n\n'}
+        <Text style={styles.bold}>Opt Out:</Text>  You may opt out of text message notifications at any time by removing your phone number from your account settings or by replying STOP to any message.  Opting out of text messages does not affect your email notifications or your subscription.{'\n\n'}
+        <Text style={styles.bold}>Message Frequency:</Text>  Message frequency varies based on search results.  You will receive no more than one text message per search result found.{'\n\n'}
+        <Text style={styles.bold}>Rates:</Text>  Standard message and data rates from your wireless carrier may apply.  We do not charge for text messages beyond your subscription fee.{'\n\n'}
+        <Text style={styles.bold}>Carriers:</Text>  Text messages are delivered by our SMS provider, Sinch.  Delivery is subject to your carrier's coverage and policies.  We are not responsible for messages that are delayed, blocked, or undelivered by your carrier.{'\n\n'}
+        <Text style={styles.bold}>Privacy:</Text>  We will not sell, rent, or trade your mobile phone number to third parties for marketing, advertising, or any other purpose.  Your phone number is used solely to deliver ObitNote notifications.
+      </Text>
+
+      <Text style={styles.heading}>8. Acceptable Use</Text>
       <Text style={styles.body}>
         You may not use ObitNote for any unlawful purpose.  You may not use automated tools, bots, or scripts to access ObitNote.  You may not attempt to interfere with the service or access other users' accounts.  We reserve the right to suspend or terminate accounts that violate these terms.
       </Text>
 
-      <Text style={styles.heading}>8. Intellectual Property</Text>
+      <Text style={styles.heading}>9. Intellectual Property</Text>
       <Text style={styles.body}>
         ObitNote and its content, features, and design are owned by UltraSafe Data, LLC.  You may not copy, modify, or distribute any part of the service without our written permission.
       </Text>
 
-      <Text style={styles.heading}>9. Limitation of Liability</Text>
+      <Text style={styles.heading}>10. Limitation of Liability</Text>
       <Text style={styles.body}>
         To the fullest extent permitted by law, UltraSafe Data, LLC is not liable for any indirect, incidental, special, or consequential damages arising from your use of ObitNote.  Our total liability for any claim related to the service is limited to the amount you paid us in the 12 months before the claim.{'\n\n'}We are not liable for missed obituaries, delayed or undelivered notifications, or any decisions you make based on information provided by the service.
       </Text>
 
-      <Text style={styles.heading}>10. Termination</Text>
+      <Text style={styles.heading}>11. Termination</Text>
       <Text style={styles.body}>
         You may close your account at any time by contacting us.  We may suspend or terminate your account if you violate these Terms.  Upon termination, your data will be deleted in accordance with our Privacy Policy.
       </Text>
 
-      <Text style={styles.heading}>11. Changes to These Terms</Text>
+      <Text style={styles.heading}>12. Changes to These Terms</Text>
       <Text style={styles.body}>
         We may update these Terms from time to time.  If we make significant changes, we will notify you by email or through the app.  Your continued use of ObitNote after changes take effect means you accept the updated Terms.
       </Text>
 
-      <Text style={styles.heading}>12. Governing Law</Text>
+      <Text style={styles.heading}>13. Governing Law</Text>
       <Text style={styles.body}>
         These Terms are governed by the laws of the State of Florida, United States, without regard to conflict of law principles.  Any legal action related to these Terms must be brought in the courts located in the State of Florida.
       </Text>
 
-      <Text style={styles.heading}>13. Contact</Text>
+      <Text style={styles.heading}>14. Contact</Text>
       <Text style={styles.body}>
         If you have questions about these Terms, contact us at support@obitnote.com.
       </Text>
@@ -120,7 +130,7 @@ export function PrivacyContent() {
   return (
     <>
       <Text style={styles.title}>Privacy Policy</Text>
-      <Text style={styles.updated}>Last updated: March 18, 2026</Text>
+      <Text style={styles.updated}>Last updated: April 23, 2026</Text>
 
       <Text style={styles.body}>
         This Privacy Policy describes how UltraSafe Data, LLC, a Florida limited liability company ("we", "us", "our"), collects, uses, and protects your information when you use ObitNote.
@@ -151,20 +161,25 @@ export function PrivacyContent() {
         <Text style={styles.bold}>Paddle.com</Text> — processes payments and handles billing.  Paddle receives your email address and payment details when you subscribe.{'\n\n'}
         <Text style={styles.bold}>Sinch</Text> — delivers text message notifications.  Sinch receives your phone number when you opt in to SMS notifications.{'\n\n'}
         <Text style={styles.bold}>Zoho Mail</Text> — delivers email notifications and verification emails.  Zoho processes your email address.{'\n\n'}
-        We do not sell, rent, or trade your personal information to anyone.  We do not share your information with advertisers.
+        We do not sell, rent, or trade your personal information — including your mobile phone number — to third parties for marketing, advertising, or any other purpose.  We do not share your information with advertisers.
       </Text>
 
-      <Text style={styles.heading}>4. Data Retention</Text>
+      <Text style={styles.heading}>4. Text Message (SMS) Privacy</Text>
+      <Text style={styles.body}>
+        If you provide your mobile phone number, it is used solely to deliver ObitNote service notifications.  We will not sell, rent, share, or trade your mobile phone number to third parties for marketing, advertising, or any other purpose.{'\n\n'}You may opt out of text message notifications at any time by removing your phone number from your account settings or by replying STOP to any message.  Opting out does not affect your email notifications or your subscription.{'\n\n'}Your phone number is shared only with our SMS delivery provider, Sinch, for the sole purpose of delivering your notifications.  Sinch is contractually prohibited from using your phone number for any other purpose.
+      </Text>
+
+      <Text style={styles.heading}>5. Data Retention</Text>
       <Text style={styles.body}>
         We retain your account information and search data for as long as your account is active.  If you close your account, we will delete your personal data within 30 days.  We may retain anonymized, non-personal data for analytical purposes.
       </Text>
 
-      <Text style={styles.heading}>5. Data Security</Text>
+      <Text style={styles.heading}>6. Data Security</Text>
       <Text style={styles.body}>
         We take reasonable measures to protect your information, including encrypted connections (HTTPS), hashed passwords, and restricted database access.  However, no method of transmission or storage is 100% secure, and we cannot guarantee absolute security.
       </Text>
 
-      <Text style={styles.heading}>6. Your Rights</Text>
+      <Text style={styles.heading}>7. Your Rights</Text>
       <Text style={styles.body}>
         You may:{'\n\n'}
         {'\u2022'}  Access your personal information through your account settings{'\n'}
@@ -174,27 +189,27 @@ export function PrivacyContent() {
         If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA), including the right to know what personal information we collect and the right to request its deletion.  Contact us to exercise these rights.
       </Text>
 
-      <Text style={styles.heading}>7. Cookies and Local Storage</Text>
+      <Text style={styles.heading}>8. Cookies and Local Storage</Text>
       <Text style={styles.body}>
         ObitNote uses local storage in your browser to keep you signed in and to remember your preferences (such as your email address if you choose "Remember Me").  We do not use third-party tracking cookies or advertising cookies.
       </Text>
 
-      <Text style={styles.heading}>8. Children's Privacy</Text>
+      <Text style={styles.heading}>9. Children's Privacy</Text>
       <Text style={styles.body}>
         ObitNote is not intended for anyone under the age of 18.  We do not knowingly collect information from children.  If we learn that we have collected information from someone under 18, we will delete it promptly.
       </Text>
 
-      <Text style={styles.heading}>9. International Users</Text>
+      <Text style={styles.heading}>10. International Users</Text>
       <Text style={styles.body}>
         ObitNote is operated from the United States.  If you use the service from outside the US, your information will be transferred to and processed in the United States.  By using ObitNote, you consent to this transfer.
       </Text>
 
-      <Text style={styles.heading}>10. Changes to This Policy</Text>
+      <Text style={styles.heading}>11. Changes to This Policy</Text>
       <Text style={styles.body}>
         We may update this Privacy Policy from time to time.  If we make significant changes, we will notify you by email or through the app.  The "Last updated" date at the top of this page indicates when it was last revised.
       </Text>
 
-      <Text style={styles.heading}>11. Contact</Text>
+      <Text style={styles.heading}>12. Contact</Text>
       <Text style={styles.body}>
         If you have questions about this Privacy Policy or your personal data, contact us at support@obitnote.com.
       </Text>

@@ -17,6 +17,7 @@ import { purgeOldRejectedResults } from './services/matchService';
 import { sendMatchNotification, sendMonthlySummary } from './services/emailService';
 import { sendMatchSms } from './services/smsService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
+import { reportFatalError } from './services/fatalErrorService';
 
 // Validate required env vars in production
 if (process.env.NODE_ENV === 'production') {
@@ -239,6 +240,23 @@ function formatDate(d: string): string {
   } catch { return d; }
 }
 
+// Internal: fatal error reporting (search engine, cron jobs, etc.)
+app.post('/api/internal/fatal-error', (req, res) => {
+  const ip = req.ip || '';
+  if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) {
+    res.status(403).json({ error: 'Internal only' });
+    return;
+  }
+  const { source, errorCode, message } = req.body;
+  if (!source || !message) {
+    res.status(400).json({ error: 'source and message are required' });
+    return;
+  }
+  reportFatalError(source, errorCode || null, message)
+    .then(result => res.json(result))
+    .catch(err => res.status(500).json({ error: err.message }));
+});
+
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -247,6 +265,7 @@ app.get('/api/health', (_req, res) => {
 // Error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err);
+  reportFatalError('api', null, `Unhandled Express error: ${err.message || String(err)}`).catch(() => {});
   res.status(500).json({ error: 'Internal server error' });
 });
 
@@ -273,8 +292,9 @@ cron.schedule('0 16 * * *', async () => {
       }
     }
     console.log(`[Cron] Sent notifications to ${users.length} users`);
-  } catch (err) {
+  } catch (err: any) {
     console.error('[Cron] Batch failed:', err);
+    reportFatalError('batch', null, err.message || String(err)).catch(() => {});
   }
 });
 
@@ -291,8 +311,9 @@ cron.schedule('0 14 1 * *', async () => {
       });
     }
     console.log(`[Cron] Monthly summary sent to ${users.length} subscribers`);
-  } catch (err) {
+  } catch (err: any) {
     console.error('[Cron] Monthly summary failed:', err);
+    reportFatalError('email', null, `Monthly summary failed: ${err.message || String(err)}`).catch(() => {});
   }
 });
 

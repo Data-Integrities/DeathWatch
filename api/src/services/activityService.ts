@@ -81,6 +81,7 @@ export interface UserSummaryRow {
   planStartDate: string | null;
   planRenewalDate: string | null;
   tierCustomCap: number | null;
+  proGrid: boolean;
 }
 
 /**
@@ -90,7 +91,7 @@ export async function getUsersSummary(): Promise<UserSummaryRow[]> {
   const { rows } = await pool.query(
     `SELECT u.login_id, u.first_name, u.last_name, u.email, u.is_admin, u.created_at,
        u.subscription_active, u.plan_code, u.email_verified, u.phone_number, u.sms_opt_in,
-       u.trial_searches_used, u.plan_start_date, u.plan_renewal_date, u.tier_custom_cap,
+       u.trial_searches_used, u.plan_start_date, u.plan_renewal_date, u.tier_custom_cap, u.pro_grid,
        (SELECT CONCAT_WS(', ', NULLIF(lh.geo_city, ''), NULLIF(lh.geo_region, ''))
         FROM login_history lh WHERE lh.login_id = u.login_id ORDER BY lh.login_at ASC LIMIT 1) AS signup_location,
        (SELECT MAX(lh.login_at) FROM login_history lh WHERE lh.login_id = u.login_id) AS last_sign_in,
@@ -130,6 +131,7 @@ export async function getUsersSummary(): Promise<UserSummaryRow[]> {
     planStartDate: row.plan_start_date ? (row.plan_start_date.toISOString?.().slice(0, 10) ?? row.plan_start_date) : null,
     planRenewalDate: row.plan_renewal_date ? (row.plan_renewal_date.toISOString?.().slice(0, 10) ?? row.plan_renewal_date) : null,
     tierCustomCap: row.tier_custom_cap != null ? Number(row.tier_custom_cap) : null,
+    proGrid: row.pro_grid || false,
   }));
 }
 

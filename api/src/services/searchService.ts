@@ -386,7 +386,7 @@ export async function rejectAllResults(userId: string, searchId: string): Promis
 export async function deleteSearch(userId: string, searchId: string) {
   await getSearch(userId, searchId); // verify ownership
   await pool.query(
-    'UPDATE user_query SET disabled = true, updated_at = NOW() WHERE id = $1 AND login_id = $2',
+    'UPDATE user_query SET disabled = true, confirmed = false, updated_at = NOW() WHERE id = $1 AND login_id = $2',
     [searchId, userId]
   );
 }

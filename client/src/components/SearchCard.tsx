@@ -21,20 +21,65 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
   const hasMatchBadge = !search.confirmed && search.matchCntTotal > 0;
 
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Search for ${displayName}`}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.pressed,
-      ]}
-    >
+    <View style={styles.cardWrapper}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Search for ${displayName}`}
+        style={({ pressed }) => [
+          styles.card,
+          pressed && styles.pressed,
+        ]}
+      >
+        <View style={(onEdit || onDelete) ? styles.contentWithIcons : undefined}>
+          <View style={styles.nameRow}>
+            {search.confirmed ? (
+              <FontAwesome name="check" size={14} color={colors.green} />
+            ) : (
+              <FontAwesome name="search" size={14} color="#444444" />
+            )}
+            <Text style={styles.name}>{displayName}</Text>
+          </View>
+
+          <View style={styles.details}>
+            {search.nameNickname && (
+              <Text style={styles.detail}>Nickname: {search.nameNickname}</Text>
+            )}
+            {search.ageApx && (
+              <Text style={styles.detail}>Age around {search.ageApx}</Text>
+            )}
+            {location && (
+              <Text style={styles.detail}>{location}</Text>
+            )}
+          </View>
+
+          {!hasMatchBadge && (
+            search.confirmed ? (
+              <View style={styles.confirmedBadge}>
+                <Text style={styles.confirmedText}>You marked this as Right Person  <Text style={styles.confirmedStopped}>Daily searches stopped.</Text></Text>
+              </View>
+            ) : (
+              <Text style={styles.matchSearching}>No obituaries found.  Performing daily searches.</Text>
+            )
+          )}
+        </View>
+
+        {hasMatchBadge && (
+          <View style={styles.matchBadgeHighlight}>
+            {search.matchCntNew > 0 ? (
+              <Text style={styles.matchBadgeHighlightText}>Possible match found</Text>
+            ) : (
+              <Text style={styles.matchBadgeHighlightText}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text></Text>
+            )}
+          </View>
+        )}
+      </Pressable>
+
       {(onEdit || onDelete) && (
         <View style={styles.icons}>
           {onEdit && (
             <Pressable
-              onPress={(e) => { e.stopPropagation(); onEdit(); }}
+              onPress={onEdit}
               accessibilityRole="button"
               accessibilityLabel={`Edit ${displayName}`}
               style={[styles.iconButton, styles.editButton]}
@@ -44,7 +89,7 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
           )}
           {onDelete && (
             <Pressable
-              onPress={(e) => { e.stopPropagation(); onDelete(); }}
+              onPress={onDelete}
               accessibilityRole="button"
               accessibilityLabel={`Delete ${displayName}`}
               style={styles.iconButton}
@@ -54,60 +99,20 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
           )}
         </View>
       )}
-
-      <View style={(onEdit || onDelete) ? styles.contentWithIcons : undefined}>
-        <View style={styles.nameRow}>
-          {search.confirmed ? (
-            <FontAwesome name="check" size={14} color={colors.green} />
-          ) : (
-            <FontAwesome name="search" size={14} color="#444444" />
-          )}
-          <Text style={styles.name}>{displayName}</Text>
-        </View>
-
-        <View style={styles.details}>
-          {search.nameNickname && (
-            <Text style={styles.detail}>Nickname: {search.nameNickname}</Text>
-          )}
-          {search.ageApx && (
-            <Text style={styles.detail}>Age around {search.ageApx}</Text>
-          )}
-          {location && (
-            <Text style={styles.detail}>{location}</Text>
-          )}
-        </View>
-
-        {!hasMatchBadge && (
-          search.confirmed ? (
-            <View style={styles.confirmedBadge}>
-              <Text style={styles.confirmedText}>You marked this as Right Person  <Text style={styles.confirmedStopped}>Daily searches stopped.</Text></Text>
-            </View>
-          ) : (
-            <Text style={styles.matchSearching}>No obituaries found.  Performing daily searches.</Text>
-          )
-        )}
-      </View>
-
-      {hasMatchBadge && (
-        <View style={styles.matchBadgeHighlight}>
-          {search.matchCntNew > 0 ? (
-            <Text style={styles.matchBadgeHighlightText}>Possible match found</Text>
-          ) : (
-            <Text style={styles.matchBadgeHighlightText}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text></Text>
-          )}
-        </View>
-      )}
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  cardWrapper: {
+    position: 'relative',
+    marginBottom: spacing.sm,
+  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md - 4,
-    marginBottom: spacing.sm,
     ...shadows.card,
   },
   pressed: {

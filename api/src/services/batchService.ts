@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../db/pool';
+import { reportFatalError } from './fatalErrorService';
 
 const SEARCH_ENGINE_URL = process.env.SEARCH_ENGINE_URL || 'http://localhost:3000';
 
@@ -104,8 +105,9 @@ export async function runBatch() {
 
       totalNewResults += newCount;
       console.log(`  [${i + 1}/${queries.length}] ${label}: ${results.length} results, ${newCount} new`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(`  [${i + 1}/${queries.length}] ${label}: ERROR -`, err);
+      reportFatalError('batch', null, `Batch search failed for ${label}: ${err.message}`).catch(() => {});
     }
   }
 
@@ -127,7 +129,7 @@ export async function getUsersWithNewResults(): Promise<NotifyUser[]> {
   const { rows } = await pool.query(
     `SELECT DISTINCT du.email, du.phone_number, du.sms_opt_in
      FROM dw_user du
-     JOIN user_query uq ON uq.login_id = du.id AND uq.disabled = false
+     JOIN user_query uq ON uq.login_id = du.login_id AND uq.disabled = false
      JOIN user_result ur ON ur.user_query_id = uq.id
        AND ur.is_read = false
        AND ur.status = 'pending'
@@ -168,18 +170,18 @@ export async function getMonthlySummaryUsers(): Promise<MonthlySummaryUser[]> {
        COUNT(DISTINCT uq.id) AS active_searches,
        (SELECT COUNT(*) FROM user_result ur
         JOIN user_query uq2 ON ur.user_query_id = uq2.id
-        WHERE uq2.login_id = du.id
+        WHERE uq2.login_id = du.login_id
           AND ur.source_type = 'batch'
           AND ur.created_at >= $1
           AND ur.created_at < $2
        ) AS matches_found
      FROM dw_user du
-     JOIN user_query uq ON uq.login_id = du.id
+     JOIN user_query uq ON uq.login_id = du.login_id
        AND uq.disabled = false
        AND uq.confirmed = false
      WHERE du.subscription_active = true
        AND du.email IS NOT NULL
-     GROUP BY du.id, du.email, du.first_name`,
+     GROUP BY du.login_id, du.email, du.first_name`,
     [monthStart.toISOString(), monthEnd.toISOString()]
   );
 

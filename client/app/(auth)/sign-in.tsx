@@ -90,7 +90,7 @@ export default function SignInScreen() {
             <Text style={styles.brandText}>ObitNote</Text> is an <Text style={styles.boldText}>obituary monitor and alert service</Text>.
           </Text>
           <Text style={styles.introText}>
-            Add people's names and <Text style={styles.brandText}>ObitNote</Text> will <Text style={styles.boldText}>send you a text and email</Text> when an obituary for any of them is published.  <Pressable onPress={() => setSearchInfoVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>Daily obituary searches</Text></Pressable>.
+            Add people's names and <Text style={styles.brandText}>ObitNote</Text> will <Text style={styles.boldText}>send you a text and email</Text> when an obituary for any of them is published.  <Pressable onPress={() => setSearchInfoVisible(true)} style={styles.tryFreeLinkWrap}><Text style={styles.tryFreeLink}>See daily obituary searches</Text></Pressable>.
           </Text>
           <Text style={styles.introText}>
             <Text style={styles.brandText}>ObitNote</Text> is <Text style={styles.boldText}>not for finding old obituaries</Text>.  For older obituaries, you can use Google.
@@ -204,7 +204,7 @@ export default function SignInScreen() {
       <ConfirmDialog
         visible={searchInfoVisible}
         title="Daily obituary searches"
-        body={"ObitNote searches online newspapers and memorial websites for obituaries every day in the US, Canada, the UK, Australia, and New Zealand using the names, locations, ages, and keywords you provide.  When one of your people is found, we'll let you know right away by text and email."}
+        body={<Text style={styles.introText}><Text style={styles.brandText}>ObitNote</Text> searches online newspapers and memorial websites for obituaries every day in the US, Canada, the UK, Australia, and New Zealand using the names, locations, ages, and keywords you provide.  When one of your people is found, we'll let you know right away by text and email.</Text>}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setSearchInfoVisible(false)}
@@ -222,28 +222,21 @@ export default function SignInScreen() {
             <Text style={styles.pricingSubtitle}>Monitor people you care about.</Text>
 
             <View style={styles.pricingTable}>
-              <View style={styles.pricingHeaderRow}>
-                <Text style={[styles.pricingHeaderCell, styles.pricingPlanCol]}>Plan</Text>
-                <Text style={[styles.pricingHeaderCell, styles.pricingPriceCol]}>Per Year</Text>
-                <Text style={[styles.pricingHeaderCell, styles.pricingPerCol]}>Per Person</Text>
-              </View>
               <Text style={styles.pricingBilledNote}>All plans billed yearly (cancel anytime)</Text>
-              {[
-                { plan: 'Basic - up to 5', price: '$20', per: '$4.00' },
-                { plan: 'Plus - up to 10', price: '$40', per: '$4.00' },
-                { plan: 'Premium - 11+', price: '$40+', per: '$4.00*' },
-              ].map((row, i) => (
-                <View key={i} style={[styles.pricingRow, i % 2 === 0 && styles.pricingRowAlt]}>
-                  <Text style={[styles.pricingCell, styles.pricingPlanCol]}>{row.plan}</Text>
-                  <Text style={[styles.pricingCell, styles.pricingPriceCol, styles.pricingPriceText]}>{row.price}</Text>
-                  <Text style={[styles.pricingCell, styles.pricingPerCol]}>{row.per}</Text>
-                </View>
-              ))}
-              <View style={[styles.pricingRow, styles.pricingRowAlt]}>
-                <Text style={[styles.pricingCell, { flex: 7 }]}>*Premium: $40 base + $4 per person over 10</Text>
+
+              <View style={[styles.pricingSection, styles.pricingRowAlt]}>
+                <Text style={styles.pricingCell}><Text style={styles.pricingPlanName}>Basic</Text> — $20/year</Text>
+                <Text style={styles.pricingPlanDesc}>Monitor up to 5 people.</Text>
               </View>
-              <View style={styles.pricingRow}>
-                <Text style={[styles.pricingCell, { flex: 7 }]}>Pro: for professionals.  email support@obitnote.com</Text>
+
+              <View style={styles.pricingSection}>
+                <Text style={styles.pricingCell}><Text style={styles.pricingPlanName}>Plus</Text> — $20/year base, plus $4/year for each person beyond 5</Text>
+                <Text style={styles.pricingPlanDesc}>Example: 15 people = $20 + (10 {'\u00d7'} $4) = $60/year.</Text>
+              </View>
+
+              <View style={[styles.pricingSection, styles.pricingRowAlt]}>
+                <Text style={styles.pricingCell}><Text style={styles.pricingPlanName}>Pro</Text> — for organizations with high-volume or special-needs requirements</Text>
+                <Text style={styles.pricingPlanDesc}>Professional and commercial use.  Plus pricing + optional add-ons.</Text>
               </View>
             </View>
 
@@ -428,19 +421,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: spacing.md,
   },
-  pricingHeaderRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.brand,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  pricingHeaderCell: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  pricingRow: {
-    flexDirection: 'row',
+  pricingSection: {
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
@@ -448,31 +429,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F5FC',
   },
   pricingCell: {
-    fontSize: fontSize.base,
+    fontSize: 16,
     fontWeight: '700',
     color: '#555555',
   },
-  pricingPlanCol: {
-    flex: 3,
-  },
-  pricingPriceCol: {
-    flex: 2,
-    textAlign: 'center',
-  },
-  pricingPriceText: {
-    fontWeight: '700',
+  pricingPlanName: {
     color: colors.brand,
-  },
-  pricingPerCol: {
-    flex: 2,
-    textAlign: 'right',
-  },
-  pricingContactCol: {
-    flex: 4,
-    fontSize: 14,
     fontWeight: '700',
-    color: '#555555',
-    textAlign: 'center',
+  },
+  pricingPlanDesc: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#444444',
+    lineHeight: 20,
+    marginTop: 4,
   },
   pricingBilledNote: {
     fontSize: 12,

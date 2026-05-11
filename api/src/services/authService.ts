@@ -16,7 +16,7 @@ function makeToken(userId: string): string {
 }
 
 const PLAN_LIMITS: Record<string, number> = {
-  PLAN_5: 5, PLAN_10: 10, PLAN_PREMIUM: 9999,
+  PLAN_5: 5, PLAN_10: 9999,
 };
 
 function getPlanLimit(planCode: string | null, tierCustomCap: number | null): number | null {
@@ -24,7 +24,26 @@ function getPlanLimit(planCode: string | null, tierCustomCap: number | null): nu
   return PLAN_LIMITS[planCode] ?? tierCustomCap ?? null;
 }
 
-function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserProfile {
+async function getUncommittedPeople(userId: string): Promise<{ id: string; name: string }[]> {
+  const { rows } = await pool.query(
+    `SELECT id, name_first, name_last, name_nickname, name_maiden
+     FROM user_query
+     WHERE login_id = $1 AND disabled = false AND confirmed = false AND committed_at IS NULL
+     ORDER BY created_at`,
+    [userId]
+  );
+  return rows.map((r: any) => ({
+    id: r.id,
+    name: [r.name_first || r.name_nickname, r.name_last || r.name_maiden].filter(Boolean).join(' '),
+  }));
+}
+
+function rowToUser(
+  row: any,
+  unreadReplies = 0,
+  ticketIds: string[] = [],
+  uncommitted: { id: string; name: string }[] = [],
+): UserProfile {
   return {
     id: row.login_id,
     email: row.email,
@@ -45,6 +64,9 @@ function rowToUser(row: any, unreadReplies = 0, ticketIds: string[] = []): UserP
     planLimit: getPlanLimit(row.plan_code, row.tier_custom_cap),
     phoneNumber: row.phone_number || null,
     smsOptIn: row.sms_opt_in !== false,
+    uncommittedCount: uncommitted.length,
+    uncommittedPeople: uncommitted,
+    proGrid: row.pro_grid || false,
   };
 }
 
@@ -62,11 +84,12 @@ export async function impersonate(targetUserId: string) {
   if (rows.length === 0) {
     throw Object.assign(new Error('User not found'), { status: 404 });
   }
-  const [unreadReplies, unreadTickets] = await Promise.all([
+  const [unreadReplies, unreadTickets, uncommitted] = await Promise.all([
     getUnreadReplyCount(targetUserId),
     getUnreadTicketIds(targetUserId),
+    getUncommittedPeople(targetUserId),
   ]);
-  const user = rowToUser(rows[0], unreadReplies, unreadTickets);
+  const user = rowToUser(rows[0], unreadReplies, unreadTickets, uncommitted);
   const token = makeToken(user.id);
   return { token, user };
 }
@@ -114,11 +137,12 @@ export async function login(email: string, password: string, clientIp?: string) 
     throw Object.assign(new Error('Invalid email or password'), { status: 401 });
   }
 
-  const [unreadReplies, unreadTickets] = await Promise.all([
+  const [unreadReplies, unreadTickets, uncommitted] = await Promise.all([
     getUnreadReplyCount(row.login_id),
     getUnreadTicketIds(row.login_id),
+    getUncommittedPeople(row.login_id),
   ]);
-  const user = rowToUser(row, unreadReplies, unreadTickets);
+  const user = rowToUser(row, unreadReplies, unreadTickets, uncommitted);
   const token = makeToken(user.id);
 
   // Record login history with geo data (non-blocking)
@@ -144,11 +168,12 @@ export async function getMe(userId: string) {
   if (rows.length === 0) {
     throw Object.assign(new Error('User not found'), { status: 404 });
   }
-  const [unreadReplies, unreadTickets] = await Promise.all([
+  const [unreadReplies, unreadTickets, uncommitted] = await Promise.all([
     getUnreadReplyCount(userId),
     getUnreadTicketIds(userId),
+    getUncommittedPeople(userId),
   ]);
-  return rowToUser(rows[0], unreadReplies, unreadTickets);
+  return rowToUser(rows[0], unreadReplies, unreadTickets, uncommitted);
 }
 
 export async function forgotPassword(email: string) {

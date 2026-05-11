@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, FlatList, Text, StyleSheet, RefreshControl, Pressable, Modal, useWindowDimensions } from 'react-native';
+import { View, FlatList, ScrollView, Text, StyleSheet, RefreshControl, Pressable, Modal, Platform, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
@@ -10,6 +10,8 @@ import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { SearchDetailModal } from '../../src/components/SearchDetailModal';
 import { EditSearchModal } from '../../src/components/EditSearchModal';
 import { TrialSearchModal } from '../../src/components/TrialSearchModal';
+import { PaymentRequiredModal } from '../../src/components/PaymentRequiredModal';
+import { ProGrid, getProGridWidth } from '../../src/components/ProGrid';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import type { SearchQuery } from '../../src/types';
 
@@ -73,6 +75,7 @@ export default function HomeScreen() {
   const [detailSearchId, setDetailSearchId] = useState<string | null>(null);
   const [editSearchId, setEditSearchId] = useState<string | null>(null);
   const [trialVisible, setTrialVisible] = useState(false);
+  const showPaymentRequired = (user?.uncommittedCount ?? 0) > 0;
 
   const loadData = useCallback(async () => {
     try {
@@ -97,6 +100,21 @@ export default function HomeScreen() {
     loadData();
   }, [loadData]);
 
+  const handleRemoveUncommitted = useCallback(async (id: string) => {
+    try {
+      await api.delete(`/api/searches/${id}`);
+      await refreshUser();
+      loadData();
+    } catch (err) {
+      console.error('Failed to remove search:', err);
+    }
+  }, [refreshUser, loadData]);
+
+  const handlePaymentComplete = useCallback(() => {
+    refreshUser();
+    loadData();
+  }, [refreshUser, loadData]);
+
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
@@ -116,77 +134,106 @@ export default function HomeScreen() {
   const hasSearches = searches.length > 0;
   const countries = getCountryList(user?.email);
 
-  const renderHeader = () => (
-    <View>
-      {/* Action buttons — trial/subscription-aware */}
-      <View style={styles.topButtons}>
-        {user?.subscriptionActive ? (
-          <Button
-            title="New Search"
-            onPress={() => router.push('/search/new')}
-          />
-        ) : (user?.trialSearchesUsed ?? 0) < (user?.trialSearchesMax ?? 3) ? (
-          <>
+  const renderHeader = () => {
+    const headerContent = (
+      <>
+        {/* Action buttons — trial/subscription-aware */}
+        <View style={styles.topButtons}>
+          {user?.subscriptionActive ? (
             <Button
-              title="Try for Free"
-              onPress={() => setTrialVisible(true)}
-              style={{ flex: 1 }}
+              title="New Search"
+              onPress={() => router.push('/search/new')}
             />
+          ) : (user?.trialSearchesUsed ?? 0) < (user?.trialSearchesMax ?? 3) ? (
+            <>
+              <Button
+                title="Try for Free"
+                onPress={() => setTrialVisible(true)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Subscribe to ObitNote obituary monitoring"
+                variant="secondary"
+                onPress={() => router.push('/subscribe' as any)}
+                style={{ flex: 1 }}
+                textStyle={{ ...subscribeTextStyle, textAlign: 'center' }}
+              />
+            </>
+          ) : (
             <Button
               title="Subscribe to ObitNote obituary monitoring"
-              variant="secondary"
               onPress={() => router.push('/subscribe' as any)}
-              style={{ flex: 1 }}
               textStyle={{ ...subscribeTextStyle, textAlign: 'center' }}
             />
-          </>
-        ) : (
-          <Button
-            title="Subscribe to ObitNote obituary monitoring"
-            onPress={() => router.push('/subscribe' as any)}
-            textStyle={{ ...subscribeTextStyle, textAlign: 'center' }}
-          />
+          )}
+        </View>
+
+        <Pressable onPress={() => setAboutVisible(true)} style={styles.aboutLinkWrap}>
+          <Text style={styles.aboutLink}>About ObitNote</Text>
+        </Pressable>
+
+        {/* Section title */}
+        {hasSearches && (
+          <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; })()}{user?.planLimit != null ? `  (${user.planLimit - searches.filter(s => !s.confirmed).length} available)` : ''}{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
         )}
-      </View>
 
-      <Pressable onPress={() => setAboutVisible(true)} style={styles.aboutLinkWrap}>
-        <Text style={styles.aboutLink}>About ObitNote</Text>
-      </Pressable>
+      </>
+    );
 
-      {/* Section title */}
-      {hasSearches && (
-        <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; })()}{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
-      )}
-    </View>
-  );
+    if (user?.proGrid) {
+      return <View style={[styles.proHeaderWrap, { width: getProGridWidth(width - spacing.md * 2) }]}>{headerContent}</View>;
+    }
+    return <View>{headerContent}</View>;
+  };
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={searches}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green} />
-        }
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={
-          !loading ? (
-            <Text style={styles.noSearchesText}>No people being monitored yet.</Text>
-          ) : null
-        }
-        renderItem={({ item }) => {
-          const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
-          return (
-            <SearchCard
-              search={item}
-              onPress={() => setDetailSearchId(item.id)}
-              onEdit={!item.confirmed ? () => setEditSearchId(item.id) : undefined}
-              onDelete={() => setDeleteTarget({ id: item.id, name: displayName })}
+      {user?.proGrid ? (
+        <ScrollView
+          contentContainerStyle={styles.proGridContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green} />
+          }
+        >
+          {renderHeader()}
+          {searches.length > 0 ? (
+            <ProGrid
+              searches={searches}
+              onPress={(id) => setDetailSearchId(id)}
+              onEdit={(id) => setEditSearchId(id)}
+              onDelete={(id, name) => setDeleteTarget({ id, name })}
             />
-          );
-        }}
-      />
+          ) : !loading ? (
+            <Text style={styles.noSearchesText}>No people being monitored yet.</Text>
+          ) : null}
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={searches}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green} />
+          }
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={
+            !loading ? (
+              <Text style={styles.noSearchesText}>No people being monitored yet.</Text>
+            ) : null
+          }
+          renderItem={({ item }) => {
+            const displayName = [item.nameFirst, item.nameLast].filter(Boolean).join(' ');
+            return (
+              <SearchCard
+                search={item}
+                onPress={() => setDetailSearchId(item.id)}
+                onEdit={!item.confirmed ? () => setEditSearchId(item.id) : undefined}
+                onDelete={() => setDeleteTarget({ id: item.id, name: displayName })}
+              />
+            );
+          }}
+        />
+      )}
 
       <ConfirmDialog
         visible={!!deleteTarget}
@@ -225,6 +272,14 @@ export default function HomeScreen() {
         onClose={() => { setTrialVisible(false); loadData(); refreshUser(); }}
       />
 
+      <PaymentRequiredModal
+        visible={showPaymentRequired}
+        people={user?.uncommittedPeople ?? []}
+        costPerPerson={4}
+        onComplete={handlePaymentComplete}
+        onRemove={handleRemoveUncommitted}
+      />
+
       {/* About modal */}
       <Modal visible={aboutVisible} transparent animationType="fade" onRequestClose={() => setAboutVisible(false)}>
         <View style={styles.aboutOverlay}>
@@ -260,6 +315,10 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
+  proGridContent: {
+    padding: spacing.md,
+    paddingTop: spacing.lg,
+  },
   boldText: {
     fontWeight: '700',
   },
@@ -293,6 +352,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: '700',
     color: '#444444',
+  },
+  proHeaderWrap: {
+    alignSelf: 'center',
+    alignItems: 'flex-start',
   },
   noSearchesText: {
     fontSize: fontSize.base,

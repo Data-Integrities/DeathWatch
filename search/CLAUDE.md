@@ -318,6 +318,19 @@ node src/db/import-legacy.js
 - `user_query` - User-managed search queries
 - `user_result` - Results from user queries
 - `name_first_variant` - First name nickname/variant mappings (2,691 entries)
+- `support_staff` - On-call support roster (name, phone, is_on_call)
+- `fatal_error` - Fatal error log (source, error_code, message, staff_id, sms_sent, rate_limited)
+
+## Fatal Error Reporting
+
+The search engine reports fatal errors to the API server via `POST /api/internal/fatal-error` (localhost-only).  The API's `fatalErrorService` logs the error and sends an SMS to the Support Chief on Call, rate-limited to 3 SMS per 3 minutes.
+
+**Integration points in the search engine:**
+- `src/providers/serper/SerperProvider.js` — Serper API non-2xx responses
+- `src/db/pool.js` — PostgreSQL pool errors
+- `src/api/server.js` — Unhandled Express errors
+
+**Utility:** `src/utils/fatalError.js` — `reportFatalError(source, errorCode, message)` POSTs to the API.
 
 ## Dependencies
 - express - HTTP server

@@ -36,6 +36,11 @@ export async function sendSms(to: string, body: string) {
     console.log(`[SMS] Sent to ${normalized} | Batch ID: ${response.id} | Type: ${response.type}`);
   } catch (err: any) {
     console.error(`[SMS] Failed to send to ${normalized} | Code: ${err.code} | Status: ${err.status} | Message: ${err.message}`);
+    if (!body.startsWith('ObitNote FATAL ERROR:')) {
+      import('./fatalErrorService')
+        .then(m => m.reportFatalError('sms', err.status?.toString() || null, `SMS delivery failed to ${normalized}: ${err.message}`))
+        .catch(() => {});
+    }
   }
 }
 

@@ -1,43 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { pool } from '../db/pool';
+import { paddleApi } from '../services/paddleService';
 
 const router = Router();
 router.use(authMiddleware);
 
-const PADDLE_API_KEY = process.env.PADDLE_API_KEY || '';
-const PADDLE_API_URL = PADDLE_API_KEY.startsWith('pdl_sdbx_')
-  ? 'https://sandbox-api.paddle.com'
-  : 'https://api.paddle.com';
-
 const PLAN_PRICE_IDS: Record<string, string> = {
-  PLAN_5:      'pri_01kppcr7dpr63g3j9y1wf9hd29',
-  PLAN_10:     'pri_01kppcrkwcpz1rz7m1hsht15wt',
-  PLAN_PREMIUM: 'pri_01kppcs2qh0hhpkqtm3yj47kkf',
+  PLAN_5:  'pri_01kppcr7dpr63g3j9y1wf9hd29',
+  PLAN_10: 'pri_01kps36xd3r6dbmwcwrk9z16sk',
 };
 
-const PREMIUM_PER_PERSON_PRICE_ID = 'pri_01kppf909cxfhkha763dakw7vh';
-
-const PLAN_ORDER = ['PLAN_5', 'PLAN_10', 'PLAN_PREMIUM'];
-
-async function paddleApi(method: string, path: string, body?: any) {
-  const res = await fetch(`${PADDLE_API_URL}${path}`, {
-    method,
-    headers: {
-      'Authorization': `Bearer ${PADDLE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const json: any = await res.json();
-  if (!res.ok) {
-    const msg = json?.error?.detail || json?.error?.type || 'Paddle API error';
-    const err: any = new Error(msg);
-    err.status = res.status;
-    throw err;
-  }
-  return json;
-}
+const PLAN_ORDER = ['PLAN_5', 'PLAN_10'];
 
 // Cancel subscription
 router.post('/cancel', async (req: Request, res: Response) => {
@@ -60,6 +34,12 @@ router.post('/cancel', async (req: Request, res: Response) => {
       `UPDATE dw_user
        SET subscription_active = false, plan_renewal_date = NULL, updated_at = NOW()
        WHERE login_id = $1`,
+      [req.userId!]
+    );
+
+    // Remove uncommitted searches — user hasn't paid for them
+    await pool.query(
+      `DELETE FROM user_query WHERE login_id = $1 AND committed_at IS NULL`,
       [req.userId!]
     );
 

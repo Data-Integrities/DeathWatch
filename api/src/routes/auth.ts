@@ -139,6 +139,7 @@ router.patch('/preferences', authMiddleware, async (req: Request, res: Response)
       phoneNumber: z.string().nullable().optional(),
       firstName: z.string().min(1).optional(),
       lastName: z.string().min(1).optional(),
+      proGrid: z.boolean().optional(),
     }).parse(req.body);
 
     if (data.skipMatchesInfoCard !== undefined) {
@@ -153,6 +154,12 @@ router.patch('/preferences', authMiddleware, async (req: Request, res: Response)
         return;
       }
       await authService.updatePhone(req.userId!, data.phoneNumber);
+    }
+    if (data.proGrid !== undefined) {
+      const { rows } = await pool.query('SELECT plan_code FROM dw_user WHERE login_id = $1', [req.userId!]);
+      if (rows.length > 0 && rows[0].plan_code === 'PLAN_CUSTOM') {
+        await authService.updatePreference(req.userId!, 'pro_grid', data.proGrid);
+      }
     }
     if (data.firstName !== undefined || data.lastName !== undefined) {
       // Need both names — fetch current if one is missing

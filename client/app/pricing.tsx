@@ -8,6 +8,7 @@ import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 
 export default function PricingPage() {
   const [searchInfoVisible, setSearchInfoVisible] = useState(false);
+  const [proInfoVisible, setProInfoVisible] = useState(false);
   return (
     <View style={styles.container}>
       <View style={styles.card}>
@@ -19,28 +20,22 @@ export default function PricingPage() {
         <Text style={styles.subtitle}>Monitor people you care about.</Text>
 
         <View style={styles.table}>
-          <View style={styles.headerRow}>
-            <Text style={[styles.headerCell, styles.planCol]}>Plan</Text>
-            <Text style={[styles.headerCell, styles.priceCol]}>Per Year</Text>
-            <Text style={[styles.headerCell, styles.perCol]}>Per Person</Text>
-          </View>
           <Text style={styles.billedNote}>All plans billed yearly (cancel anytime)</Text>
-          {[
-            { plan: 'Basic - up to 5', price: '$20', per: '$4.00' },
-            { plan: 'Plus - up to 10', price: '$40', per: '$4.00' },
-            { plan: 'Premium - 11+', price: '$40+', per: '$4.00*' },
-          ].map((row, i) => (
-            <View key={i} style={[styles.row, i % 2 === 0 && styles.rowAlt]}>
-              <Text style={[styles.cell, styles.planCol]}>{row.plan}</Text>
-              <Text style={[styles.cell, styles.priceCol, styles.priceText]}>{row.price}</Text>
-              <Text style={[styles.cell, styles.perCol]}>{row.per}</Text>
-            </View>
-          ))}
-          <View style={[styles.row, styles.rowAlt]}>
-            <Text style={[styles.cell, { flex: 7 }]}>*Premium: $40 base + $4 per person over 10</Text>
+
+          <View style={[styles.planSection, styles.rowAlt]}>
+            <Text style={styles.cell}><Text style={styles.planName}>Basic</Text> — $20/year</Text>
+            <Text style={styles.planDesc}>Monitor up to 5 people.</Text>
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.cell, { flex: 7 }]}>Pro: for professionals.  email support@obitnote.com</Text>
+
+          <View style={styles.planSection}>
+            <Text style={styles.cell}><Text style={styles.planName}>Plus</Text> — $20/year base, plus $4/year for each person beyond 5</Text>
+            <Text style={styles.planDesc}>Example: 15 people = $20 + (10 {'\u00d7'} $4) = $60/year.</Text>
+          </View>
+
+          <View style={[styles.planSection, styles.rowAlt]}>
+            <Text style={styles.cell}><Text style={styles.planName}>Pro</Text> — for organizations with high-volume or special-needs requirements</Text>
+            <Text style={styles.planDesc}>Intended for professional and commercial use (clergy, legal, real estate, corporate, and similar).  Pro customers use Plus pricing for their watch list, and can optionally add editing grid ($150/year), staff-assisted import ($150 per import), or custom solutions.</Text>
+            <Pressable onPress={() => setProInfoVisible(true)} style={styles.proInfoLinkWrap}><Text style={styles.proInfoLink}>Pro info</Text></Pressable>
           </View>
         </View>
 
@@ -66,6 +61,16 @@ export default function PricingPage() {
         cancelLabel=""
         onConfirm={() => setSearchInfoVisible(false)}
         onCancel={() => setSearchInfoVisible(false)}
+      />
+
+      <ConfirmDialog
+        visible={proInfoVisible}
+        title="Pro Account Info"
+        body={<Text style={styles.proInfoBody}>Pro accounts are a professional option in <Text style={styles.brandInline}>ObitNote</Text> that offers a full-screen editable grid for thousands of rows, text file data import handled by <Text style={styles.brandInline}>ObitNote</Text> staff, and phone call support.  For more help, send a message through the Help (?) icon at the top of this page.</Text>}
+        confirmLabel="OK"
+        cancelLabel=""
+        onConfirm={() => setProInfoVisible(false)}
+        onCancel={() => setProInfoVisible(false)}
       />
 
       <Text style={styles.footer}>
@@ -124,19 +129,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: spacing.md,
   },
-  headerRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.brand,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  headerCell: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  row: {
-    flexDirection: 'row',
+  planSection: {
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
@@ -144,31 +137,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F5FC',
   },
   cell: {
-    fontSize: fontSize.base,
+    fontSize: 16,
     fontWeight: '700',
     color: '#555555',
   },
-  planCol: {
-    flex: 3,
-  },
-  priceCol: {
-    flex: 2,
-    textAlign: 'center',
-  },
-  priceText: {
-    fontWeight: '700',
+  planName: {
     color: colors.brand,
-  },
-  perCol: {
-    flex: 2,
-    textAlign: 'right',
-  },
-  contactCol: {
-    flex: 4,
-    fontSize: 14,
     fontWeight: '700',
-    color: '#555555',
-    textAlign: 'center',
+  },
+  planDesc: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#444444',
+    lineHeight: 20,
+    marginTop: 4,
   },
   billedNote: {
     fontSize: 12,
@@ -202,6 +184,20 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     lineHeight: 26,
     textDecorationLine: 'underline' as const,
+  },
+  proInfoLinkWrap: {
+    marginTop: 6,
+  },
+  proInfoLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.green,
+    textDecorationLine: 'underline',
+  },
+  proInfoBody: {
+    fontSize: 15,
+    color: '#444444',
+    lineHeight: 22,
   },
   backButton: {
     marginTop: spacing.sm,

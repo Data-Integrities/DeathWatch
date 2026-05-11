@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
@@ -9,6 +9,7 @@ import { TextField } from '../../src/components/TextField';
 import { Button } from '../../src/components/Button';
 import { StatePicker } from '../../src/components/StatePicker';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
+import { BillingTallyModal } from '../../src/components/BillingTallyModal';
 import { colors, fontSize, spacing } from '../../src/theme';
 import type { SearchQueryCreate, SearchQuery, MatchResult } from '../../src/types';
 
@@ -32,6 +33,10 @@ export default function NewSearchScreen() {
   const [keyWords, setKeyWords] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tallyVisible, setTallyVisible] = useState(false);
+  const [uncommittedCount, setUncommittedCount] = useState(0);
+  const isFirstBeyondFive = useRef(true);
+  const [committing, setCommitting] = useState(false);
 
   const handleCreate = async () => {
     setError('');
@@ -63,19 +68,45 @@ export default function NewSearchScreen() {
         keyWords: keyWords.trim() || null,
       };
 
-      const res = await api.post<{ search: SearchQuery; results: MatchResult[] }>('/api/searches', body);
-      const resultCount = res.results.length;
+      const res = await api.post<{ search: SearchQuery; results: MatchResult[]; uncommittedCount: number; billingRequired: boolean }>('/api/searches', body);
 
-      // Navigate to the matches for this search
-      if (resultCount > 0) {
-        router.replace(`/matches/${res.search.id}`);
+      if (res.billingRequired) {
+        setUncommittedCount(res.uncommittedCount);
+        setTallyVisible(true);
+        // Reset form for potential next add
+        setNameFirst(''); setNameLast(''); setNameNickname(''); setNameMiddle('');
+        setNameMaiden(''); setAgeApx(''); setCity(''); setState(null); setKeyWords('');
       } else {
-        router.replace('/matches');
+        const resultCount = res.results.length;
+        if (resultCount > 0) {
+          router.replace(`/matches/${res.search.id}`);
+        } else {
+          router.replace('/matches');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create search.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddAnother = () => {
+    setTallyVisible(false);
+    isFirstBeyondFive.current = false;
+  };
+
+  const handleDone = async () => {
+    setCommitting(true);
+    try {
+      await api.post('/api/searches/commit', {});
+      setTallyVisible(false);
+      router.replace('/matches');
+    } catch (err: any) {
+      setError(err.message || 'Payment failed.  Your people are still being monitored.  Please try again.');
+      setTallyVisible(false);
+    } finally {
+      setCommitting(false);
     }
   };
 
@@ -95,6 +126,7 @@ export default function NewSearchScreen() {
         value={nameFirst}
         onChangeText={setNameFirst}
         autoCapitalize="words"
+        autoComplete="off"
         autoFocus
       />
 
@@ -104,6 +136,7 @@ export default function NewSearchScreen() {
         value={nameLast}
         onChangeText={setNameLast}
         autoCapitalize="words"
+        autoComplete="off"
       />
 
       <TextField
@@ -112,6 +145,7 @@ export default function NewSearchScreen() {
         value={nameMaiden}
         onChangeText={setNameMaiden}
         autoCapitalize="words"
+        autoComplete="off"
         placeholder="If applicable"
       />
 
@@ -121,15 +155,17 @@ export default function NewSearchScreen() {
         value={nameNickname}
         onChangeText={setNameNickname}
         autoCapitalize="words"
+        autoComplete="off"
         placeholder="Optional"
       />
 
       <TextField
-        label="Middle"
+        label="Middle Name"
         labelWidth={90}
         value={nameMiddle}
         onChangeText={setNameMiddle}
         autoCapitalize="words"
+        autoComplete="off"
         placeholder="Optional"
       />
 
@@ -139,15 +175,17 @@ export default function NewSearchScreen() {
         value={ageApx}
         onChangeText={v => setAgeApx(v.replace(/[^0-9]/g, ''))}
         keyboardType="numeric"
+        autoComplete="off"
         placeholder="Best guess of age today"
       />
 
       <TextField
-        label="City"
+        label="Current City"
         labelWidth={90}
         value={city}
         onChangeText={setCity}
         autoCapitalize="words"
+        autoComplete="off"
         placeholder="Best guess or nearest larger city"
       />
 
@@ -165,6 +203,7 @@ export default function NewSearchScreen() {
         labelWidth={90}
         value={keyWords}
         onChangeText={setKeyWords}
+        autoComplete="off"
         placeholder="Optional (e.g. Air Force, teacher, etc.)"
       />
 
@@ -183,6 +222,17 @@ export default function NewSearchScreen() {
         />
       </View>
     </ScreenContainer>
+
+    <BillingTallyModal
+      visible={tallyVisible}
+      uncommittedCount={uncommittedCount}
+      costPerPerson={4}
+      isFirstTime={isFirstBeyondFive.current}
+      onAddAnother={handleAddAnother}
+      onDone={handleDone}
+    />
+
+    <LoadingOverlay visible={committing} message="Processing payment..." />
     </View>
   );
 }

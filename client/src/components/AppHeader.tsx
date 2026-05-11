@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api/client';
 import { colors, fontSize, spacing, shadows } from '../theme';
 
 const MAIN_WIDTH = 600;
@@ -16,6 +17,27 @@ interface AppHeaderProps {
 export function AppHeader({ minimal, onHelp, onSettings }: AppHeaderProps = {}) {
   const { user, impersonating, stopImpersonating } = useAuth();
   const hasUnread = (user?.unreadReplyCount ?? 0) > 0;
+  const [hasNewError, setHasNewError] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (user?.isAdmin) {
+      api.get<{ count: number; latest: string | null }>('/api/admin/errors/count')
+        .then(res => {
+          if (res.count === 0 || !res.latest) {
+            setHasNewError(false);
+            return;
+          }
+          const lastCheck = Platform.OS === 'web' ? localStorage.getItem('obitnote_error_last_check') : null;
+          if (!lastCheck) {
+            setHasNewError(true);
+            return;
+          }
+          setHasNewError(new Date(res.latest) > new Date(lastCheck));
+        })
+        .catch(() => {});
+    }
+  }, [user?.isAdmin, pathname]);
 
   const handleStopImpersonating = () => {
     stopImpersonating();
@@ -37,6 +59,11 @@ export function AppHeader({ minimal, onHelp, onSettings }: AppHeaderProps = {}) 
           </Pressable>
           {!minimal ? (
             <View style={styles.navRow}>
+              {user?.isAdmin && hasNewError && (
+                <Pressable onPress={() => router.push('/admin/errors' as any)} style={styles.errorFlag}>
+                  <Text style={styles.errorFlagText}>New Error</Text>
+                </Pressable>
+              )}
               <Pressable onPress={onHelp || (() => router.replace('/help' as any))} accessibilityRole="button" accessibilityLabel="Help" style={styles.navItem}>
                 <View>
                   <FontAwesome name="question-circle" size={20} color={colors.white} />
@@ -131,6 +158,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
     borderWidth: 1.5,
     borderColor: colors.brand,
+  },
+  errorFlag: {
+    backgroundColor: colors.error,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+  },
+  errorFlagText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
   },
   impersonationBar: {
     backgroundColor: '#FFD600',

@@ -48,8 +48,7 @@ interface UserRow {
 const TIER_OPTIONS = [
   { code: null, label: 'None' },
   { code: 'PLAN_5', label: 'Basic (5)' },
-  { code: 'PLAN_10', label: 'Plus (10)' },
-  { code: 'PLAN_PREMIUM', label: 'Premium (11+)' },
+  { code: 'PLAN_10', label: 'Plus (6+)' },
   { code: 'PLAN_CUSTOM', label: 'Custom' },
 ] as const;
 
@@ -418,8 +417,7 @@ export default function ActivityScreen() {
                     >
                       <option value="">None</option>
                       <option value="PLAN_5">Basic ($20/yr)</option>
-                      <option value="PLAN_10">Plus ($40/yr)</option>
-                      <option value="PLAN_PREMIUM">Premium ($40+/yr)</option>
+                      <option value="PLAN_10">Plus ($20+/yr)</option>
                       <option value="PLAN_CUSTOM">Custom</option>
                     </select>
                   ) : (

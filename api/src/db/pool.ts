@@ -10,6 +10,9 @@ const pool = new Pool({
 
 pool.on('error', (err) => {
   console.error('Unexpected PostgreSQL pool error:', err);
+  import('../services/fatalErrorService')
+    .then(m => m.reportFatalError('database', null, `PostgreSQL pool error: ${err.message}`))
+    .catch(() => {});
 });
 
 export { pool };
