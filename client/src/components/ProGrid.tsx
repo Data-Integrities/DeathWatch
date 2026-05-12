@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Platform, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Platform, Modal, useWindowDimensions, TextInput } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { ConfirmDialog } from './ConfirmDialog';
 import { colors, spacing, borderRadius } from '../theme';
@@ -22,6 +22,9 @@ interface ProGridProps {
   onPress: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string, name: string) => void;
+  onNewSearch?: () => void;
+  onAbout?: () => void;
+  searchCountText?: string;
 }
 
 type SortKey = 'first' | 'last' | 'maiden' | 'nickname' | 'middle' | 'age' | 'city' | 'state' | 'keywords' | 'status' | 'matches';
@@ -129,13 +132,14 @@ function computeWidths(viewportWidth: number, padding = 0) {
   return widths;
 }
 
-export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
+export function ProGrid({ searches, onPress, onEdit, onDelete, onNewSearch, onAbout, searchCountText }: ProGridProps) {
   const { width: viewportWidth } = useWindowDimensions();
   const colWidths = computeWidths(viewportWidth, CONTAINER_PADDING);
 
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [proInfoVisible, setProInfoVisible] = useState(false);
+  const [filterText, setFilterText] = useState('');
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -152,6 +156,14 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
   };
 
   const sorted = sortKey ? sortSearches(searches, sortKey, sortDir) : defaultSort(searches);
+
+  const filtered = filterText.trim()
+    ? sorted.filter(s => {
+        const q = filterText.toLowerCase();
+        return [s.nameFirst, s.nameLast, s.nameMaiden, s.nameNickname, s.nameMiddle, s.city, s.state, s.keyWords]
+          .some(f => f && f.toLowerCase().includes(q));
+      })
+    : sorted;
 
   const arrow = (key: SortKey) => sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
@@ -170,31 +182,65 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
     );
   };
 
+  const stickyHeader: any = Platform.OS === 'web'
+    ? { position: 'sticky', top: 0, zIndex: 10 }
+    : {};
+
   return (
     <View style={styles.container}>
-      <View style={styles.gridTitleRow}>
-        <Text style={styles.gridTitle}>Pro Data Grid</Text>
-        <Pressable onPress={() => setProInfoVisible(true)} style={{ alignSelf: 'flex-end', paddingBottom: 4 }}>
-          <Text style={styles.proInfoLink}>Pro info</Text>
-        </Pressable>
-        <View style={{ flex: 1 }} />
-        <View style={styles.legendItem}>
-          <View style={[styles.legendSwatch, { backgroundColor: '#FFFACD' }]} />
-          <Text style={styles.legendTextWhite}>Obituary found</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendSwatch, { backgroundColor: colors.successLight }]} />
-          <Text style={styles.legendTextWhite}>Right Person confirmed</Text>
-        </View>
-      </View>
-      {sortKey && (
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8, paddingHorizontal: 4 }}>
-          <Pressable onPress={handleResetSort} style={styles.resetBtn}>
-            <Text style={styles.resetText}>Default sort</Text>
+      <View style={stickyHeader}>
+        <View style={styles.gridTitleRow}>
+          <Text style={styles.gridTitle}>Pro Data Grid</Text>
+          {onNewSearch && (
+            <View style={styles.titleBarBtnWrap} pointerEvents="box-none">
+              <Pressable onPress={onNewSearch} style={styles.titleBarBtn}>
+                <Text style={styles.titleBarBtnText}>New Search</Text>
+              </Pressable>
+              <View style={styles.searchBox}>
+                <FontAwesome name="search" size={13} color={colors.green} style={{ marginRight: 6 }} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={filterText}
+                  onChangeText={setFilterText}
+                  placeholder="Search in grid..."
+                  placeholderTextColor="#999999"
+                />
+                {filterText.length > 0 && (
+                  <Pressable onPress={() => setFilterText('')} style={{ padding: 2 }}>
+                    <FontAwesome name="times-circle" size={14} color="#999999" />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+          )}
+          {onAbout && (
+            <Pressable onPress={onAbout}>
+              <Text style={styles.titleBarLink}>About ObitNote</Text>
+            </Pressable>
+          )}
+          {searchCountText ? (
+            <Text style={styles.titleBarCount}>{searchCountText}</Text>
+          ) : null}
+          <View style={{ flex: 1 }} />
+          <Pressable onPress={() => setProInfoVisible(true)}>
+            <Text style={styles.proInfoLink}>Pro info</Text>
           </Pressable>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSwatch, { backgroundColor: '#FFFACD' }]} />
+            <Text style={styles.legendTextWhite}>Obituary found</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSwatch, { backgroundColor: colors.successLight }]} />
+            <Text style={styles.legendTextWhite}>Right Person confirmed</Text>
+          </View>
         </View>
-      )}
-      <View style={{ overflow: 'hidden' }}>
+        {sortKey && (
+          <View style={styles.sortResetRow}>
+            <Pressable onPress={handleResetSort} style={styles.resetBtn}>
+              <Text style={styles.resetText}>Default sort</Text>
+            </Pressable>
+          </View>
+        )}
         <View style={styles.headerRow}>
           {headerCell('First', 'first', colWidths.first, 'left')}
           {headerCell('Last', 'last', colWidths.last, 'left')}
@@ -211,8 +257,9 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
             <Text style={styles.headerText}> </Text>
           </View>
         </View>
+      </View>
 
-        {sorted.map((s, i) => {
+      {filtered.map((s, i) => {
           const displayName = [s.nameFirst, s.nameLast].filter(Boolean).join(' ');
           return (
             <Pressable key={s.id} onPress={() => onPress(s.id)} style={[styles.dataRow, getRowBg(s, i)]}>
@@ -246,12 +293,11 @@ export function ProGrid({ searches, onPress, onEdit, onDelete }: ProGridProps) {
             </Pressable>
           );
         })}
-      </View>
 
       <ConfirmDialog
         visible={proInfoVisible}
         title="Pro Account Info"
-        body={<Text style={styles.proInfoBody}>Pro accounts are a professional option in <Text style={styles.brandText}>ObitNote</Text> that offers a full-screen editable grid for thousands of rows, text file data import handled by <Text style={styles.brandText}>ObitNote</Text> staff, and phone call support.  For more help, send a message through the Help (?) icon at the top of this page.</Text>}
+        body={<Text style={styles.proInfoBody}>A Pro account is a professional option in <Text style={styles.brandText}>ObitNote</Text> that offers a full-screen editable grid for thousands of rows, text file data import handled by <Text style={styles.brandText}>ObitNote</Text> staff, and phone call support.  For more help, send a message through the Help (?) icon at the top of this page.</Text>}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setProInfoVisible(false)}
@@ -293,6 +339,54 @@ const styles = StyleSheet.create({
     color: colors.white,
     textDecorationLine: 'underline',
   },
+  titleBarBtnWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  titleBarBtn: {
+    backgroundColor: colors.white,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    width: 180,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#333333',
+    paddingVertical: 0,
+    outlineStyle: 'none',
+  } as any,
+  titleBarBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.green,
+  },
+  titleBarLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.white,
+    textDecorationLine: 'underline',
+  },
+  titleBarCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.white,
+    marginTop: 11,
+  },
   proInfoBody: {
     fontSize: 15,
     color: '#444444',
@@ -301,6 +395,13 @@ const styles = StyleSheet.create({
   brandText: {
     fontWeight: '700',
     color: colors.brand,
+  },
+  sortResetRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    backgroundColor: '#f5f0fa',
   },
   resetBtn: {
     paddingHorizontal: 8,

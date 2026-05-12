@@ -310,7 +310,7 @@ export function SettingsModal({ visible, onClose }: Props) {
                         await refreshUser();
                       } catch {}
                     }}
-                    label="Pro Grid"
+                    label="Pro Data Grid"
                   />
                 </View>
               )}

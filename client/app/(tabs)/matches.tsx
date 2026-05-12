@@ -12,6 +12,7 @@ import { EditSearchModal } from '../../src/components/EditSearchModal';
 import { TrialSearchModal } from '../../src/components/TrialSearchModal';
 import { PaymentRequiredModal } from '../../src/components/PaymentRequiredModal';
 import { ProGrid, getProGridWidth } from '../../src/components/ProGrid';
+import { Checkbox } from '../../src/components/Checkbox';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
 import type { SearchQuery } from '../../src/types';
 
@@ -135,10 +136,29 @@ export default function HomeScreen() {
   const hasSearches = searches.length > 0;
   const countries = getCountryList(user?.email);
 
+  const modeToggle = user?.planCode === 'PLAN_CUSTOM' ? (
+    <View style={styles.modeToggleRow}>
+      <Checkbox
+        checked={false}
+        onToggle={async () => {
+          try {
+            await api.patch('/api/auth/preferences', { proGrid: !user.proGrid });
+            await refreshUser();
+          } catch {}
+        }}
+        label={user.proGrid ? 'Go mobile mode' : 'Go desktop mode'}
+        color={colors.green}
+      />
+    </View>
+  ) : null;
+
   const renderHeader = () => {
-    const headerContent = (
-      <>
-        {/* Action buttons — trial/subscription-aware */}
+    if (user?.proGrid) {
+      return null;
+    }
+
+    return (
+      <View>
         <View style={styles.topButtons}>
           {user?.subscriptionActive ? (
             <Button
@@ -173,18 +193,12 @@ export default function HomeScreen() {
           <Text style={styles.aboutLink}>About ObitNote</Text>
         </Pressable>
 
-        {/* Section title */}
         {hasSearches && (
           <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; })()}{user?.planLimit != null ? `  (${user.planLimit - searches.filter(s => !s.confirmed).length} available)` : ''}{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
         )}
-
-      </>
+        {modeToggle}
+      </View>
     );
-
-    if (user?.proGrid) {
-      return <View style={[styles.proHeaderWrap, { width: getProGridWidth(width - spacing.md * 2) }]}>{headerContent}</View>;
-    }
-    return <View>{headerContent}</View>;
   };
 
   return (
@@ -197,12 +211,16 @@ export default function HomeScreen() {
           }
         >
           {renderHeader()}
+          {modeToggle}
           {searches.length > 0 ? (
             <ProGrid
               searches={searches}
               onPress={(id) => setDetailSearchId(id)}
               onEdit={(id) => setEditSearchId(id)}
               onDelete={(id, name) => setDeleteTarget({ id, name })}
+              onNewSearch={() => router.push('/search/new')}
+              onAbout={undefined}
+              searchCountText={hasSearches ? (() => { const cnt = searches.filter(s => !s.confirmed).length; const t = cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; return t + (user?.planLimit != null ? `  (${user.planLimit - cnt} available)` : ''); })() : undefined}
             />
           ) : !loading ? (
             <Text style={styles.noSearchesText}>No people being monitored yet.</Text>
@@ -354,6 +372,9 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: '700',
     color: '#444444',
+  },
+  modeToggleRow: {
+    marginBottom: spacing.sm,
   },
   proHeaderWrap: {
     alignSelf: 'center',

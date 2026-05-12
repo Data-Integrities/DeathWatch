@@ -7,9 +7,12 @@ interface CheckboxProps {
   checked: boolean;
   onToggle: (value: boolean) => void;
   label: string;
+  color?: string;
 }
 
-export function Checkbox({ checked, onToggle, label }: CheckboxProps) {
+export function Checkbox({ checked, onToggle, label, color }: CheckboxProps) {
+  const iconColor = color || (checked ? colors.green : '#444444');
+  const labelColor = color || '#444444';
   return (
     <Pressable
       onPress={() => onToggle(!checked)}
@@ -21,10 +24,10 @@ export function Checkbox({ checked, onToggle, label }: CheckboxProps) {
       <FontAwesome
         name={checked ? 'check-square' : 'square-o'}
         size={20}
-        color={checked ? colors.green : '#444444'}
+        color={iconColor}
         style={styles.icon}
       />
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
     </Pressable>
   );
 }
