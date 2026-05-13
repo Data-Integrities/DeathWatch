@@ -1,0 +1,151 @@
+ObitNOTE Retail Pricing Plan Version: Retail Price Table 1 Purpose:
+Establish a simple, scalable pricing structure for individual retail
+customers monitoring obituary publications for people they care about.
+
+  ----------------------
+  1. PRICING STRUCTURE
+  ----------------------
+
+Retail pricing is based on the number of people monitored. Plans are
+billed annually.
+
+Plan People Monitored Annual Price Cost per Person Tier 1 Up to 10
+people $20 $2.00 Tier 2 Up to 25 people $39 $1.56 Tier 3 Up to 50 people
+$69 $1.38 Tier 4 Up to 100 people $119 $1.19
+
+Prices decrease per person as the monitoring list grows, encouraging
+upgrades while maintaining strong margins.
+
+  -----------------------------------
+  2. EXPECTED CUSTOMER DISTRIBUTION
+  -----------------------------------
+
+Initial modeling assumes the following approximate distribution of
+retail users:
+
+Plan Estimated % of Customers 10 people ~55% 25 people ~30% 50 people
+~10% 100 people ~5%
+
+  -----------------------------
+  3. DERIVED ECONOMIC METRICS
+  -----------------------------
+
+Based on the expected distribution:
+
+Average revenue per customer (ARPU): ~$35.55/year Average people
+monitored per customer: ~23 Average revenue per monitored person:
+~$1.55/year
+
+These figures provide the baseline for evaluating:
+
+-   Marketing acquisition cost (CAC)
+-   Search infrastructure costs
+-   Email notification costs
+-   Support costs
+
+  ----------------------
+  4. GRACE SLOT POLICY
+  ----------------------
+
+To reduce user friction and improve fairness, each plan includes one
+temporary grace slot.
+
+Plan Normal Limit Grace Limit 10 people 10 11 25 people 25 26 50 people
+50 51 100 people 100 101
+
+Behavior:
+
+If a user attempts to add one additional person beyond their limit: -
+The system allows the addition. - The user is notified that they are
+using a grace slot. - The user is prompted to upgrade.
+
+If the user attempts to add another person beyond the grace slot, they
+must upgrade before continuing.
+
+  ---------------------------------
+  5. UPGRADE AND DOWNGRADE POLICY
+  ---------------------------------
+
+Upgrades: Upgrades take effect immediately and are prorated for the
+remaining time in the current subscription period.
+
+Example: Customer upgrades from: 10-person plan ($20/year) to 25-person
+plan ($39/year)
+
+If six months remain:
+
+Difference per year = $19 Prorated charge = $19 × (6/12) = $9.50
+
+The renewal date remains unchanged.
+
+Downgrades: Downgrades take effect at the next renewal date. No partial
+refunds are issued during the active subscription period.
+
+  -----------------------
+  6. PRICING PHILOSOPHY
+  -----------------------
+
+The ObitNOTE retail pricing model follows several guiding principles:
+
+Simplicity: Customers understand pricing immediately without complicated
+per-search fees.
+
+Low barrier to entry: The $20 entry plan makes it easy for new customers
+to try the service.
+
+Natural expansion: Users often remember additional people later, leading
+to organic upgrades.
+
+Fairness: The grace slot prevents users from feeling blocked by strict
+limits.
+
+Alignment with use case: Retail users typically monitor: - former
+classmates - old friends - former coworkers - neighbors - teachers -
+coaches - distant relatives
+
+Typical lists naturally grow to 15–25 people, making the pricing tiers
+appropriate for real-world usage.
+
+  -----------------------------
+  7. CUSTOMER-FACING LANGUAGE
+  -----------------------------
+
+For retail customers, pricing should refer to people, not names.
+
+Example:
+
+Monitor up to Price 10 people $20/year 25 people $39/year 50 people
+$69/year 100 people $119/year
+
+Using “people” reflects the user’s intent and keeps the service
+respectful and intuitive.
+
+  -------------------------------
+  8. FUTURE PRICING EXPERIMENTS
+  -------------------------------
+
+Retail Price Table 1 represents the initial pricing model.
+
+Future market testing may create additional pricing structures such
+as: - Retail Price Table 2 - Retail Price Table 3
+
+Testing may vary by: - geographic market - promotional pricing -
+marketing channel
+
+Each experiment will be evaluated using: - conversion rate - ARPU -
+upgrade distribution - retention rate - customer acquisition cost (CAC)
+
+  ------------
+  9. SUMMARY
+  ------------
+
+Retail Price Table 1 provides:
+
+-   clear and simple pricing
+-   strong upgrade incentives
+-   fair user experience through grace slots
+-   healthy projected ARPU
+-   scalability as the customer base grows
+
+This pricing model is designed to support early adoption while
+maintaining strong unit economics for long-term growth.

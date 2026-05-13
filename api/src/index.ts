@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
 import authRoutes from './routes/auth';
 import searchRoutes from './routes/searches';
@@ -18,6 +20,7 @@ import { sendMatchNotification, sendMonthlySummary } from './services/emailServi
 import { sendMatchSms } from './services/smsService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 import { reportFatalError } from './services/fatalErrorService';
+import { pool } from './db/pool';
 
 // Validate required env vars in production
 if (process.env.NODE_ENV === 'production') {
@@ -45,7 +48,32 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.set('trust proxy', 1);
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many accounts created.  Please try again later.' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts.  Please try again later.' },
+});
+
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests.  Please slow down.' },
+});
 
 // Webhook route needs raw body for signature verification — register before express.json()
 app.use('/api/webhooks', express.json({
@@ -55,8 +83,9 @@ app.use('/api/webhooks', express.json({
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/searches', searchRoutes);
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/searches', searchLimiter, searchRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
@@ -255,6 +284,14 @@ app.post('/api/internal/fatal-error', (req, res) => {
   reportFatalError(source, errorCode || null, message)
     .then(result => res.json(result))
     .catch(err => res.status(500).json({ error: err.message }));
+});
+
+// Log obitnotes.com redirect and send to obitnote.com
+app.get('/api/internal/redirect-log', (req, res) => {
+  const ip = (req.headers['x-forwarded-for'] as string || req.ip || '').split(',')[0].trim();
+  pool.query('INSERT INTO redirect_log (ip_address) VALUES ($1)', [ip]).catch(() => {});
+  const path = (req.query.path as string) || '/';
+  res.redirect(301, `https://obitnote.com${path}`);
 });
 
 // Health check

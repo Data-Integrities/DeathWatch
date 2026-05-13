@@ -1,0 +1,197 @@
+ObitNOTE Retail Pricing Plan Version: Retail Price Table 1
+Implementation Specification for Application Backend (Claude Code)
+
+Purpose This document defines the exact rules the ObitNOTE application
+must enforce for retail subscription plans. It is intended for
+implementation in the application backend and billing integration layer.
+
+This specification covers: - Plan definitions - People limits - Grace
+slot behavior - Upgrade logic - Downgrade logic - Billing interaction
+with Paddle - Data model expectations
+
+  ---------------------
+  1. PLAN DEFINITIONS
+  ---------------------
+
+Plans are based on the number of people monitored.
+
+Plan Code People Limit Grace Limit Annual Price PLAN_10 10 11 $20
+PLAN_25 25 26 $39 PLAN_50 50 51 $69 PLAN_100 100 101 $119
+
+Definitions:
+
+people_limit = maximum number of people normally allowed grace_limit =
+maximum number including grace slot price = annual subscription price
+
+The grace slot allows exactly one extra monitored person beyond the
+official plan limit.
+
+  ----------------------------
+  2. BILLING SYSTEM (PADDLE)
+  ----------------------------
+
+Paddle is used for:
+
+-   payment processing
+-   subscription billing
+-   tax handling
+-   proration calculation
+-   invoices and receipts
+
+Paddle manages billing state.
+
+The ObitNOTE backend manages: - plan limits - grace slot logic - upgrade
+triggers - feature access
+
+Example Paddle plan mapping:
+
+PLAN_10 -> paddle_plan_id_A PLAN_25 -> paddle_plan_id_B PLAN_50 ->
+paddle_plan_id_C PLAN_100 -> paddle_plan_id_D
+
+The backend must maintain a mapping table between Paddle plan IDs and
+internal plan codes.
+
+  ---------------------
+  3. ADD PERSON LOGIC
+  ---------------------
+
+When a user attempts to add a person:
+
+current_count = number of people currently monitored plan_limit =
+official plan limit grace_limit = plan_limit + 1
+
+Decision rules:
+
+IF current_count < plan_limit allow addition ENDIF
+
+IF current_count == plan_limit allow addition mark account as
+“using_grace_slot = true” show upgrade notification ENDIF
+
+IF current_count >= grace_limit block addition show upgrade dialog ENDIF
+
+  -----------------
+  4. UPGRADE FLOW
+  -----------------
+
+Upgrade is triggered when the user exceeds the grace limit or
+voluntarily upgrades.
+
+Steps:
+
+1.  User selects upgrade plan
+2.  Backend calls Paddle API to update subscription
+3.  Paddle calculates prorated charge
+4.  Paddle processes payment
+5.  Paddle sends webhook (subscription.updated)
+6.  Backend updates user plan record
+7.  Backend recalculates new people_limit
+
+Example upgrade:
+
+PLAN_10 -> PLAN_25
+
+price_difference = 39 - 20 = $19/year
+
+prorated_charge = price_difference * (remaining_days / 365)
+
+The renewal date remains unchanged.
+
+  -------------------
+  5. DOWNGRADE FLOW
+  -------------------
+
+Downgrades do NOT apply immediately.
+
+Steps:
+
+1.  User requests downgrade
+2.  Backend sends request to Paddle with: apply_at_next_billing_cycle =
+    true
+3.  User remains on current plan until renewal date
+4.  At renewal Paddle switches to new plan
+5.  Backend updates people_limit
+
+  --------------------------------
+  6. DATA MODEL (MINIMUM FIELDS)
+  --------------------------------
+
+User Table
+
+user_id email plan_code paddle_subscription_id plan_start_date
+plan_renewal_date using_grace_slot (boolean)
+
+People Table
+
+person_id user_id first_name middle_name last_name nickname age_apx city
+state created_at
+
+Derived value:
+
+people_count = COUNT(person WHERE user_id)
+
+  ---------------------------
+  7. PLAN LIMIT ENFORCEMENT
+  ---------------------------
+
+Before inserting a new person record:
+
+people_count = current number of monitored people
+
+plan_limit = plan.people_limit grace_limit = plan.grace_limit
+
+IF people_count >= grace_limit return error: “Upgrade required” ELSE
+allow insertion ENDIF
+
+  ----------------
+  8. UI MESSAGES
+  ----------------
+
+Grace slot message:
+
+“You have added one extra person beyond your plan. Upgrade to monitor
+more people.”
+
+Upgrade prompt:
+
+“Upgrade to monitor up to 25 people.”
+
+Blocked addition message:
+
+“Your plan limit has been reached. Please upgrade to continue adding
+people.”
+
+  ----------------------
+  9. CUSTOMER LANGUAGE
+  ----------------------
+
+All user-facing language should refer to:
+
+“people”
+
+NOT
+
+“names”
+
+Example:
+
+Correct: “Monitor up to 25 people”
+
+Avoid: “Monitor 25 names”
+
+  --------------------------
+  10. FUTURE EXTENSIBILITY
+  --------------------------
+
+This design supports future additions:
+
+-   promotional plans
+-   market-based pricing experiments
+-   grandfathered pricing
+-   free trial tiers
+-   commercial plans (ObitNOTE Pro)
+
+Plan limits should always be enforced by the backend rather than Paddle.
+
+  ----------------------
+  END OF SPECIFICATION
+  ----------------------

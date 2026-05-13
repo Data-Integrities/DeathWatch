@@ -199,7 +199,7 @@ export function SearchDetailModal({ visible, searchId, onClose, onEdit }: Props)
                   <View style={styles.confirmedBanner}>
                     <FontAwesome name="check-circle" size={20} color={colors.success} style={{ marginRight: 8 }} />
                     <Text style={styles.confirmedBannerText}>
-                      You marked this as Right Person.  Daily searches have stopped.
+                      You marked this as Right Person.  Daily searches have stopped.  You won't be charged for this person going forward.
                     </Text>
                   </View>
                   <Pressable
@@ -285,7 +285,7 @@ export function SearchDetailModal({ visible, searchId, onClose, onEdit }: Props)
       <ConfirmDialog
         visible={rightPersonConfirm}
         title="Confirm: Right Person"
-        body={`Confirm this is the right person?  Searching for ${displayName || 'this person'} will stop.`}
+        body={`Confirm this is the right person?  Searching for ${displayName || 'this person'} will stop.  You won't be charged for this person going forward.`}
         confirmLabel="Yes, This Is Them"
         confirmVariant="primary"
         onConfirm={handleRightPerson}

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "DeathWatch Obituary Search Engine",
   "main": "src/index.js",
+  "engines": { "node": ">=20.0.0" },
   "scripts": {
     "start": "node src/api/server.js",
     "cli": "node src/cli/search.js",

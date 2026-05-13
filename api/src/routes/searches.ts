@@ -50,7 +50,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { rows: userRows } = await pool.query(
-      'SELECT subscription_active, plan_code, tier_custom_cap FROM dw_user WHERE login_id = $1',
+      'SELECT subscription_active, plan_code, tier_custom_cap, email_verified FROM dw_user WHERE login_id = $1',
       [req.userId!]
     );
     if (userRows.length === 0) {
@@ -60,6 +60,10 @@ router.post('/', async (req: Request, res: Response) => {
     const userRow = userRows[0];
     if (!userRow.subscription_active) {
       res.status(403).json({ error: 'Subscription required to create monitored searches.' });
+      return;
+    }
+    if (!userRow.email_verified) {
+      res.status(403).json({ error: 'Please verify your email address before creating searches.' });
       return;
     }
 

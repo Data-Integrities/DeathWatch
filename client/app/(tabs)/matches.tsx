@@ -194,7 +194,7 @@ export default function HomeScreen() {
         </Pressable>
 
         {hasSearches && (
-          <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; })()}{user?.planLimit != null ? `  (${user.planLimit - searches.filter(s => !s.confirmed).length} available)` : ''}{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
+          <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; const avail = user?.planCode === 'PLAN_5' ? Math.max(0, (user.planLimit ?? 5) - cnt) : user?.planCode === 'PLAN_10' ? searches.filter(s => s.confirmed).length : null; return (cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`) + (avail != null ? `  (${avail} available)` : ''); })()}{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
         )}
         {modeToggle}
       </View>
@@ -220,7 +220,7 @@ export default function HomeScreen() {
               onDelete={(id, name) => setDeleteTarget({ id, name })}
               onNewSearch={() => router.push('/search/new')}
               onAbout={undefined}
-              searchCountText={hasSearches ? (() => { const cnt = searches.filter(s => !s.confirmed).length; const t = cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; return t + (user?.planLimit != null ? `  (${user.planLimit - cnt} available)` : ''); })() : undefined}
+              searchCountText={hasSearches ? (() => { const cnt = searches.filter(s => !s.confirmed).length; const avail = user?.planCode === 'PLAN_5' ? Math.max(0, (user.planLimit ?? 5) - cnt) : user?.planCode === 'PLAN_10' ? searches.filter(s => s.confirmed).length : null; return (cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`) + (avail != null ? `  (${avail} available)` : ''); })() : undefined}
             />
           ) : !loading ? (
             <Text style={styles.noSearchesText}>No people being monitored yet.</Text>

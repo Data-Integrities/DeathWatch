@@ -8,6 +8,7 @@ import { Button } from './Button';
 import { TextField } from './TextField';
 import { Card } from './Card';
 import { Checkbox } from './Checkbox';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Toast } from './Toast';
 import { LegalModal } from './LegalModal';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../theme';
@@ -53,6 +54,10 @@ export function SettingsModal({ visible, onClose }: Props) {
   const [errorCount, setErrorCount] = useState(0);
   const [fatalCount, setFatalCount] = useState(0);
   const [legalType, setLegalType] = useState<'terms' | 'privacy' | null>(null);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Sync fields when user data changes or modal opens
   useEffect(() => {
@@ -179,6 +184,22 @@ export function SettingsModal({ visible, onClose }: Props) {
       setResendMessage(err.message || 'Failed to resend.');
     } finally {
       setResendLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) { setDeleteError('Password is required.'); return; }
+    setDeleteError('');
+    setDeleteLoading(true);
+    try {
+      await api.delete('/api/auth/account', { password: deletePassword });
+      setDeleteVisible(false);
+      onClose();
+      signOut();
+    } catch (err: any) {
+      setDeleteError(err.message || 'Failed to delete account.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -376,6 +397,19 @@ export function SettingsModal({ visible, onClose }: Props) {
               </Pressable>
             </Card>
 
+            {/* Delete Account */}
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>Delete Account</Text>
+              <Text style={styles.deleteHint}>
+                Permanently delete your account and all associated data.  This can't be undone.
+              </Text>
+              <Button
+                title="Delete My Account"
+                variant="danger"
+                onPress={() => { setDeletePassword(''); setDeleteError(''); setDeleteVisible(true); }}
+              />
+            </Card>
+
             {/* Version */}
             <Text style={styles.versionText}>{BUILD_VERSION}</Text>
 
@@ -396,6 +430,30 @@ export function SettingsModal({ visible, onClose }: Props) {
         </View>
       </View>
       <LegalModal visible={!!legalType} type={legalType || 'terms'} onClose={() => setLegalType(null)} />
+      <ConfirmDialog
+        visible={deleteVisible}
+        title="Delete Account"
+        body={
+          <View>
+            <Text style={styles.deleteConfirmText}>
+              This will permanently delete your account, all searches, results, and messages.  If you have an active subscription, it will be cancelled.
+            </Text>
+            <Text style={styles.deleteConfirmText}>Enter your password to confirm:</Text>
+            {deleteError ? <Text style={styles.error}>{deleteError}</Text> : null}
+            <TextField
+              label="Password"
+              labelWidth={90}
+              value={deletePassword}
+              onChangeText={setDeletePassword}
+              secureTextEntry
+            />
+          </View>
+        }
+        confirmLabel={deleteLoading ? 'Deleting...' : 'Delete Forever'}
+        confirmVariant="danger"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setDeleteVisible(false)}
+      />
     </Modal>
   );
 }
@@ -578,6 +636,18 @@ const styles = StyleSheet.create({
   },
   signOut: {
     marginBottom: spacing.md,
+  },
+  deleteHint: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    marginBottom: spacing.md,
+    lineHeight: 20,
+  },
+  deleteConfirmText: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    marginBottom: spacing.sm,
+    lineHeight: 20,
   },
   footer: {
     marginTop: spacing.lg,

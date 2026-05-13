@@ -211,6 +211,20 @@ router.get('/verify-email', async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/account', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { password } = z.object({ password: z.string().min(1) }).parse(req.body);
+    await authService.deleteAccount(req.userId!, password);
+    res.json({ message: 'Account deleted.' });
+  } catch (err: any) {
+    if (err.name === 'ZodError') {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 router.post('/resend-verification', authMiddleware, async (req: Request, res: Response) => {
   try {
     await authService.resendVerification(req.userId!);

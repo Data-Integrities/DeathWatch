@@ -337,3 +337,47 @@ export async function changePassword(userId: string, currentPassword: string, ne
     [passwordHash, userId]
   );
 }
+
+export async function deleteAccount(userId: string, password: string) {
+  const { rows } = await pool.query(
+    'SELECT password_hash, paddle_subscription_id FROM dw_user WHERE login_id = $1',
+    [userId]
+  );
+  if (rows.length === 0) {
+    throw Object.assign(new Error('User not found'), { status: 404 });
+  }
+  const valid = await bcrypt.compare(password, rows[0].password_hash);
+  if (!valid) {
+    throw Object.assign(new Error('Incorrect password.'), { status: 401 });
+  }
+
+  const subscriptionId = rows[0].paddle_subscription_id;
+  if (subscriptionId) {
+    try {
+      const { paddleApi } = await import('./paddleService');
+      await paddleApi('POST', `/subscriptions/${subscriptionId}/cancel`, {
+        effective_from: 'immediately',
+      });
+    } catch (err: any) {
+      console.error('[Account Delete] Failed to cancel Paddle subscription:', err.message);
+    }
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM trial_search WHERE login_id = $1', [userId]);
+    await client.query('DELETE FROM activity_log WHERE login_id = $1', [userId]);
+    await client.query('DELETE FROM login_history WHERE login_id = $1', [userId]);
+    await client.query('DELETE FROM support_message WHERE login_id = $1', [userId]);
+    await client.query('DELETE FROM error_log WHERE login_id = $1', [userId]);
+    await client.query('DELETE FROM user_query WHERE login_id = $1', [userId]);
+    await client.query('DELETE FROM dw_user WHERE login_id = $1', [userId]);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}

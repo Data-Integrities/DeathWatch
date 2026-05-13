@@ -66,7 +66,7 @@ export default function PricingPage() {
       <ConfirmDialog
         visible={proInfoVisible}
         title="Pro Account Info"
-        body={<Text style={styles.proInfoBody}>Pro accounts are a professional option in <Text style={styles.brandInline}>ObitNote</Text> that offers a full-screen editable grid for thousands of rows, text file data import handled by <Text style={styles.brandInline}>ObitNote</Text> staff, and phone call support.  For more help, send a message through the Help (?) icon at the top of this page.</Text>}
+        body={<Text style={styles.proInfoBody}>A Pro account is a professional option in <Text style={styles.brandInline}>ObitNote</Text> offering a full-screen editable grid for thousands of rows, text file data import handled by <Text style={styles.brandInline}>ObitNote</Text> staff, and phone call support.  For more help, send a message through the Help (?) icon at the top of this page.</Text>}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setProInfoVisible(false)}

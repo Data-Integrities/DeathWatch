@@ -297,7 +297,7 @@ export function ProGrid({ searches, onPress, onEdit, onDelete, onNewSearch, onAb
       <ConfirmDialog
         visible={proInfoVisible}
         title="Pro Account Info"
-        body={<Text style={styles.proInfoBody}>A Pro account is a professional option in <Text style={styles.brandText}>ObitNote</Text> that offers a full-screen editable grid for thousands of rows, text file data import handled by <Text style={styles.brandText}>ObitNote</Text> staff, and phone call support.  For more help, send a message through the Help (?) icon at the top of this page.</Text>}
+        body={<Text style={styles.proInfoBody}>A Pro account is a professional option in <Text style={styles.brandText}>ObitNote</Text> offering a full-screen editable grid for thousands of rows, text file data import handled by <Text style={styles.brandText}>ObitNote</Text> staff, and phone call support.  For more help, send a message through the Help (?) icon at the top of this page.</Text>}
         confirmLabel="OK"
         cancelLabel=""
         onConfirm={() => setProInfoVisible(false)}

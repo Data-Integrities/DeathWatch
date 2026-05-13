@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="500" viewBox="0 0 1600 500" role="img" aria-label="ObitNOTE trademark logo">
+  <title>ObitNOTE logo</title>
+  <desc>ObitNOTE wordmark with enlarged trademark symbol on transparent background.</desc>
+  <style>
+    .wordmark {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 180px;
+      font-weight: 800;
+      letter-spacing: -7px;
+      fill: #663399;
+    }
+    .tm {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      fill: #663399;
+    }
+  </style>
+  <rect width="100%" height="100%" fill="none"/>
+  <text class="wordmark" x="80" y="305" xml:space="preserve">ObitNOTE</text>
+  <text class="tm" x="1168" y="238">TM</text>
+</svg>

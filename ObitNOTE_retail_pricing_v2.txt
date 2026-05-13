@@ -1,0 +1,158 @@
+ObitNOTE Retail Pricing Plan Version: Retail Price Table 1 (v2 Internal
+Specification)
+
+Purpose Establish a clear, fair, and scalable retail pricing structure
+for ObitNOTE customers who wish to monitor obituary publications for
+people they care about.
+
+This document defines the pricing tiers, upgrade rules, grace-slot
+behavior, and billing logic required for implementation.
+
+  ----------------------
+  1. PRICING STRUCTURE
+  ----------------------
+
+Retail pricing is based on the number of people monitored. All plans are
+billed annually.
+
+Tier People Monitored Annual Price Cost per Person Tier 1 Up to 10
+people $20 $2.00 Tier 2 Up to 25 people $39 $1.56 Tier 3 Up to 50 people
+$69 $1.38 Tier 4 Up to 100 people $119 $1.19
+
+Prices decrease per person as the list size increases, encouraging
+natural upgrades while maintaining healthy margins.
+
+  -----------------------------------
+  2. EXPECTED CUSTOMER DISTRIBUTION
+  -----------------------------------
+
+Initial projections assume the following distribution of customers:
+
+Plan Size Estimated % of Customers 10 people ~55% 25 people ~30% 50
+people ~10% 100 people ~5%
+
+  -----------------------------
+  3. DERIVED ECONOMIC METRICS
+  -----------------------------
+
+Based on the projected distribution:
+
+Average revenue per customer (ARPU): ~$35.55/year Average people
+monitored per customer: ~23 Average revenue per monitored person:
+~$1.55/year
+
+These metrics are used when evaluating:
+
+• Customer acquisition cost (CAC) • Search infrastructure cost (Serper)
+• Email notification cost • Customer support staffing
+
+  ----------------------
+  4. GRACE SLOT POLICY
+  ----------------------
+
+Each plan includes one temporary grace slot beyond the official limit.
+
+Plan Size Normal Limit Grace Limit 10 people 10 11 25 people 25 26 50
+people 50 51 100 people 100 101
+
+Behavior Rules
+
+1.  The system allows the first person added beyond the limit.
+2.  The user is notified they are using a grace slot.
+3.  The user is encouraged to upgrade their plan.
+
+Example message:
+
+“You have added one extra person beyond your plan. Upgrade to monitor
+more people.”
+
+If the user attempts to add another person beyond the grace slot, an
+upgrade is required before continuing.
+
+  -------------------
+  5. UPGRADE POLICY
+  -------------------
+
+Upgrades take effect immediately.
+
+Charges are prorated based on the remaining time in the subscription
+period.
+
+Example:
+
+Current Plan: 10 people ($20/year) Upgrade Plan: 25 people ($39/year)
+
+Price difference: $19/year
+
+If 6 months remain:
+
+Prorated charge = $19 × (6 / 12) = $9.50
+
+The original renewal date does not change.
+
+  ---------------------
+  6. DOWNGRADE POLICY
+  ---------------------
+
+Downgrades take effect at the next renewal date.
+
+No partial refunds are issued during the active subscription term.
+
+This simplifies billing and prevents refund abuse.
+
+  --------------------------------
+  7. PRODUCT LANGUAGE GUIDELINES
+  --------------------------------
+
+Customer-facing language should refer to “people”, not “names”.
+
+Correct: “Monitor up to 25 people”
+
+Avoid: “Monitor 25 names”
+
+This wording better reflects the user’s mental model and maintains a
+respectful tone.
+
+  --------------------
+  8. TARGET USE CASE
+  --------------------
+
+Typical ObitNOTE customers monitor individuals who were once part of
+their lives but are no longer in their daily information network.
+
+Examples include:
+
+• Former classmates • Old friends • Former coworkers • Neighbors •
+Teachers • Coaches • Mentors • Distant relatives
+
+Typical monitored lists grow naturally to 15–25 people over time.
+
+  -------------------------------
+  9. FUTURE PRICING EXPERIMENTS
+  -------------------------------
+
+This document defines Retail Price Table 1.
+
+Future testing may introduce:
+
+Retail Price Table 2 Retail Price Table 3
+
+Pricing experiments may vary by:
+
+• Geographic market • Promotional offers • Marketing channel
+
+Success will be measured using:
+
+• Conversion rate • ARPU • Upgrade rate • Retention rate • CAC
+
+  -------------
+  10. SUMMARY
+  -------------
+
+Retail Price Table 1 provides:
+
+• Simple pricing • Clear upgrade path • Fair grace-slot behavior •
+Strong projected ARPU • Scalable long-term economics
+
+This structure balances affordability for customers with sustainable
+operating margins for ObitNOTE.

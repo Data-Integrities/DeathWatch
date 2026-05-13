@@ -1,0 +1,230 @@
+ObitNote Architecture Answers for Platform Evaluation
+=====================================================
+Generated: 2026-04-21
+Source: Direct codebase inspection (not guesses)
+
+
+ABOUT THE SEARCH SERVICE
+=========================
+
+Q: What does the search service actually do?
+
+A: It's a Node/Express HTTP server (port 3000) that orchestrates obituary searches
+against external search APIs.  It does NOT hold its own index.  The flow is:
+
+  1. Receives a search query via HTTP (firstName, lastName, age, city, state, keywords)
+  2. Calls an external search provider (Serper.dev by default; SerpAPI and Google CSE
+     also supported as pluggable alternatives)
+  3. Parses and deduplicates the returned results in memory
+  4. Scores/ranks candidates in memory using 6 criteria (name similarity via
+     Levenshtein, age proximity, location match, keywords)
+  5. Filters out previously rejected results using exclusions stored in PostgreSQL
+  6. Returns the ranked results via HTTP response
+
+So the answer is closest to (c): it's neither a search index server nor a thin client
+to Elasticsearch -- it's an orchestrator that calls external search APIs and does
+scoring/ranking in memory.
+
+
+Q: If it holds its own index, where does the index data live?
+
+A: It does NOT hold a search index.  All persistent data (exclusions, batch history,
+nickname mappings) lives in PostgreSQL (database: dw, same instance as the API).
+The search/data/ directory (~1.3MB) contains test fixtures and legacy data files,
+not a runtime index.
+
+
+Q: What library or approach does it use?
+
+A: No search library (no MiniSearch, FlexSearch, Lunr, etc.).  Custom scoring logic
+in search/src/scoring/criteriaScore.js uses Levenshtein distance for name matching
+and simple numeric/string comparisons for age, location, and keywords.  Results are
+scored 0-600 and sorted in memory.
+
+
+Q: How does the search service get the data it indexes?
+
+A: It doesn't index anything.  For each query it makes a live HTTP call to Serper.dev
+(or configured provider).  Nickname/variant lookups come from a PostgreSQL table
+(name_first_variant, ~2,691 rows) loaded at query time.  Exclusions are also read
+from PostgreSQL per query.
+
+
+Q: Stateful or stateless?
+
+A: Functionally stateless for search queries -- all state is in PostgreSQL.  No
+in-memory caches, no on-disk indexes, no sticky sessions needed.  Multiple instances
+could run behind a load balancer as long as they share the same PostgreSQL database.
+The only local file dependency is test/legacy data in search/data/ which is not used
+at runtime in production.
+
+
+ABOUT THE WEB API
+=================
+
+Q: What framework?
+
+A: Express 4.18.2, written in TypeScript.  Runs on port 3001.
+
+
+Q: How does the web API talk to the search service?
+
+A: HTTP fetch() over localhost.  URL configured via SEARCH_ENGINE_URL env var
+(default: http://localhost:3000).  No shared memory, no shared filesystem, no IPC.
+Pure HTTP REST calls.
+
+Call sites:
+  - searchService.ts: GET /search?params for immediate searches on create/edit
+  - searchService.ts: POST /exclude for exclusion tracking
+  - batchService.ts: GET /search?params for daily batch queries
+
+
+Q: Long-running requests, WebSockets, SSE, streaming?
+
+A: No.  Everything is short request/response (res.json() or res.send()).  The longest
+handler is a proxy endpoint that fetches external pages with a 5-second timeout
+(8-second fallback via headless Chrome).  No WebSocket, no SSE, no streaming, no
+socket.io.  Notifications go out via email (Nodemailer/Zoho SMTP) and SMS (Sinch),
+not real-time push.
+
+
+Q: Background jobs, cron tasks, worker processes?
+
+A: Two cron jobs run in-process via node-cron (no separate worker):
+
+  1. Daily batch (11:00 AM ET / 16:00 UTC):
+     - Purges dismissed results older than 7 days
+     - Runs search queries for all active user searches via the search service
+     - Inserts new results into PostgreSQL
+     - Sends email and SMS notifications for new matches
+
+  2. Monthly summary (1st of month, 9:00 AM ET / 14:00 UTC):
+     - Gathers per-subscriber statistics
+     - Sends monthly summary email
+
+Both run on the main API thread.  No job queue, no separate worker process.
+
+
+ABOUT DEPENDENCIES AND BUILD
+=============================
+
+Q: Node version?
+
+A: Not explicitly declared (no .nvmrc, no .node-version, no engines field).
+Inferred as Node 20.x from @types/node ^20.11.5 in api/package.json.
+Staging server runs Node 20 via PM2.
+
+
+Q: Native/binary dependencies?
+
+A: None that require compilation.  Specifically:
+  - bcryptjs (pure JS) -- NOT bcrypt (native)
+  - pg (pure JS PostgreSQL driver) -- NOT pg-native
+  - @maxmind/geoip2-node (pure JS MMDB reader)
+  - puppeteer (downloads prebuilt Chromium binary, no compilation)
+  - No better-sqlite3, sharp, node-gyp, or any C/C++ modules
+
+Puppeteer is the only dependency with a large binary artifact (Chromium download).
+
+
+Q: TypeScript build setup?
+
+A: API service (TypeScript):
+  - dev: tsx watch src/index.ts (runs TS directly, hot reload)
+  - build: tsc (compiles src/ to dist/, target ES2020, CommonJS)
+  - start: node dist/index.js (runs compiled JS)
+  - tsconfig: strict mode, source maps, outDir ./dist
+
+Search service (plain JavaScript):
+  - start: node src/api/server.js (no compilation step)
+  - No TypeScript, no build step
+
+Client (Expo/React Native Web):
+  - dev: npx expo start --web (Metro bundler)
+  - build: expo export --platform web --no-minify (static files)
+  - Production: static HTML/JS/CSS served by nginx (no Node runtime)
+
+
+Q: Local file I/O at runtime?
+
+A: One file read at runtime:
+  - GeoLite2-City.mmdb (~63.6 MB) -- MaxMind IP geolocation database
+  - Path from GEOLITE_DB_PATH env var
+  - Production default: /var/www/obitnote/data/GeoLite2-City.mmdb
+  - Read once at startup via fs.readFileSync
+
+Migration SQL files are read at startup (api/src/db/migrations/*.sql,
+search/src/db/migrations/*.sql) but only to check/apply schema updates.
+
+No temp files, no upload storage, no runtime log files written to disk.
+
+
+Q: Environment variables (names only)?
+
+A: API service (19 vars):
+  - ADMIN_PHONE
+  - API_URL
+  - APP_URL
+  - DATABASE_URL
+  - GEOLITE_DB_PATH
+  - JWT_SECRET
+  - NODE_ENV
+  - PADDLE_API_KEY
+  - PADDLE_WEBHOOK_SECRET
+  - PORT
+  - SEARCH_ENGINE_URL
+  - SINCH_FROM_NUMBER
+  - SINCH_KEY_ID
+  - SINCH_KEY_SECRET
+  - SINCH_PROJECT_ID
+  - ZOHO_SMTP_HOST
+  - ZOHO_SMTP_PASSWORD
+  - ZOHO_SMTP_PORT
+  - ZOHO_SMTP_USER
+
+Search service (11 vars):
+  - DATABASE_URL
+  - GOOGLE_CSE_API_KEY (unused unless provider=google)
+  - GOOGLE_CSE_ID (unused unless provider=google)
+  - PG_DATABASE
+  - PG_HOST
+  - PG_PASSWORD
+  - PG_PORT
+  - PG_USER
+  - SEARCH_PROVIDER
+  - SERPAPI_KEY (unused unless provider=serpapi)
+  - SERPER_API_KEY
+
+Client (2 vars, baked into static build):
+  - EXPO_PUBLIC_API_BASE_URL
+  - EXPO_PUBLIC_BUILD_VERSION
+
+
+Q: OS, filesystem, or hostname assumptions?
+
+A: No platform-specific code (no process.platform checks, no os.hostname(), no
+Windows/Linux conditionals).  Code is platform-agnostic.
+
+Hardcoded paths exist only as overridable defaults:
+  - /var/www/obitnote/data/GeoLite2-City.mmdb (GEOLITE_DB_PATH default)
+  - localhost references are all default fallbacks for env vars
+
+The API validates in production mode that APP_URL and API_URL don't contain
+"localhost" (exits with fatal error if they do).
+
+Puppeteer assumes a headless Chrome/Chromium binary is available.  On the current
+Ubuntu staging server this works out of the box.  On containerized platforms, a
+Chromium-compatible base image or buildpack would be needed.
+
+
+ADDITIONAL NOTES FOR PLATFORM EVALUATION
+=========================================
+
+- Both backend services share the same PostgreSQL database (dw on localhost:5432)
+- The search service is called only by the API service (never by clients directly)
+- nginx currently serves as reverse proxy: static client files + /api/* to port 3001
+- Puppeteer in the API service (proxy endpoint) is the heaviest runtime dependency
+  and highest attack surface -- it downloads and runs headless Chromium
+- The daily cron job runs inside the API process; if running multiple API instances,
+  cron would need to be limited to one instance (or extracted to a separate worker)
+- The GeoLite2 MMDB file (63.6 MB) needs to be available to the API at a known path
