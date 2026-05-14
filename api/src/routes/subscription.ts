@@ -7,8 +7,8 @@ const router = Router();
 router.use(authMiddleware);
 
 const PLAN_PRICE_IDS: Record<string, string> = {
-  PLAN_5:  'pri_01kppcr7dpr63g3j9y1wf9hd29',
-  PLAN_10: 'pri_01kps36xd3r6dbmwcwrk9z16sk',
+  PLAN_5:  'pri_01krhq4c78j0c0d0gvhasxp2p0',
+  PLAN_10: 'pri_01krhmxw12mseqdjbj7napcaya',
 };
 
 const PLAN_ORDER = ['PLAN_5', 'PLAN_10'];

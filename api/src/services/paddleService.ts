@@ -6,9 +6,8 @@ const PADDLE_API_URL = PADDLE_API_KEY.startsWith('pdl_sdbx_')
   ? 'https://sandbox-api.paddle.com'
   : 'https://api.paddle.com';
 
-const BASIC_PRICE_ID = 'pri_01kppcr7dpr63g3j9y1wf9hd29';
-const PLUS_BASE_PRICE_ID = 'pri_01kps36xd3r6dbmwcwrk9z16sk';
-const PLUS_PER_PERSON_PRICE_ID = 'pri_01kppf909cxfhkha763dakw7vh';
+const BASIC_PRICE_ID = 'pri_01krhq4c78j0c0d0gvhasxp2p0';
+const PLUS_PRICE_ID = 'pri_01krhmxw12mseqdjbj7napcaya';
 const BASIC_LIMIT = 5;
 
 export async function paddleApi(method: string, path: string, body?: any) {
@@ -33,7 +32,8 @@ export async function paddleApi(method: string, path: string, body?: any) {
 
 /**
  * Commit all uncommitted searches and update Paddle subscription.
- * Handles Basic→Plus swap and per-person quantity in a single API call.
+ * Basic = $20/yr flat (1-5 people), Plus = $4/yr per person (6+ people).
+ * Handles Basic→Plus auto-upgrade in a single Paddle API call.
  */
 export async function commitBilling(userId: string): Promise<void> {
   const { rows: userRows } = await pool.query(
@@ -50,66 +50,41 @@ export async function commitBilling(userId: string): Promise<void> {
     [userId]
   );
   const activeCount = countRows[0].cnt;
-  const extraPeople = Math.max(0, activeCount - BASIC_LIMIT);
 
   const sub = await paddleApi('GET', `/subscriptions/${paddle_subscription_id}`);
   const items = sub.data.items || [];
+  const currentItem = items[0];
+  if (!currentItem) throw Object.assign(new Error('No subscription items found'), { status: 500 });
 
-  const basicItem = items.find((i: any) => i.price?.id === BASIC_PRICE_ID);
-  const plusBaseItem = items.find((i: any) => i.price?.id === PLUS_BASE_PRICE_ID);
-  const perPersonItem = items.find((i: any) => i.price?.id === PLUS_PER_PERSON_PRICE_ID);
+  let needsUpdate = false;
+  let updatedItems: any[];
+  let newPlanCode: string;
 
-  const updatedItems: any[] = [];
-
-  if (extraPeople > 0) {
-    // Need Plus base + per-person
-    if (plusBaseItem) {
-      updatedItems.push({ id: plusBaseItem.id, price_id: PLUS_BASE_PRICE_ID, quantity: 1 });
-    } else if (basicItem) {
-      updatedItems.push({ id: basicItem.id, price_id: PLUS_BASE_PRICE_ID, quantity: 1 });
-    } else {
-      updatedItems.push({ price_id: PLUS_BASE_PRICE_ID, quantity: 1 });
-    }
-
-    if (perPersonItem) {
-      updatedItems.push({ id: perPersonItem.id, price_id: PLUS_PER_PERSON_PRICE_ID, quantity: extraPeople });
-    } else {
-      updatedItems.push({ price_id: PLUS_PER_PERSON_PRICE_ID, quantity: extraPeople });
-    }
+  if (activeCount > BASIC_LIMIT) {
+    // Plus: $4/person, quantity = total active people
+    newPlanCode = 'PLAN_10';
+    updatedItems = [{ id: currentItem.id, price_id: PLUS_PRICE_ID, quantity: activeCount }];
+    needsUpdate = currentItem.price?.id !== PLUS_PRICE_ID || currentItem.quantity !== activeCount;
   } else {
-    // 5 or fewer — need Basic only
-    if (basicItem) {
-      updatedItems.push({ id: basicItem.id, price_id: BASIC_PRICE_ID, quantity: 1 });
-    } else if (plusBaseItem) {
-      updatedItems.push({ id: plusBaseItem.id, price_id: BASIC_PRICE_ID, quantity: 1 });
-    } else {
-      updatedItems.push({ price_id: BASIC_PRICE_ID, quantity: 1 });
-    }
-    // Omit per-person item to remove it
+    // Basic: $20 flat
+    newPlanCode = 'PLAN_5';
+    updatedItems = [{ id: currentItem.id, price_id: BASIC_PRICE_ID, quantity: 1 }];
+    needsUpdate = currentItem.price?.id !== BASIC_PRICE_ID;
   }
-
-  // Check if anything actually changed
-  const currentBasePriceId = (basicItem || plusBaseItem)?.price?.id;
-  const targetBasePriceId = extraPeople > 0 ? PLUS_BASE_PRICE_ID : BASIC_PRICE_ID;
-  const currentPerPersonQty = perPersonItem?.quantity || 0;
-  const needsUpdate = currentBasePriceId !== targetBasePriceId || currentPerPersonQty !== extraPeople;
 
   if (needsUpdate) {
     await paddleApi('PATCH', `/subscriptions/${paddle_subscription_id}`, {
       items: updatedItems,
       proration_billing_mode: 'prorated_immediately',
     });
-    console.log(`[Paddle] Committed billing for user ${userId}: ${extraPeople} extra people`);
+    console.log(`[Paddle] Updated subscription for user ${userId}: ${activeCount} people, plan ${newPlanCode}`);
   }
 
-  // Update plan_code in DB
-  const newPlanCode = extraPeople > 0 ? 'PLAN_10' : 'PLAN_5';
   await pool.query(
     `UPDATE dw_user SET plan_code = $1, updated_at = NOW() WHERE login_id = $2`,
     [newPlanCode, userId]
   );
 
-  // Mark all uncommitted searches as committed
   await pool.query(
     `UPDATE user_query SET committed_at = NOW() WHERE login_id = $1 AND committed_at IS NULL`,
     [userId]

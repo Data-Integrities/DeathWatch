@@ -11,8 +11,8 @@ import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-const BASIC_PRICE_ID = 'pri_01kppcr7dpr63g3j9y1wf9hd29';
-const PLUS_PRICE_ID = 'pri_01kps36xd3r6dbmwcwrk9z16sk';
+const BASIC_PRICE_ID = 'pri_01krhq4c78j0c0d0gvhasxp2p0';
+const PLUS_PRICE_ID = 'pri_01krhmxw12mseqdjbj7napcaya';
 
 export default function SubscribePage() {
   const { user, refreshUser } = useAuth();
@@ -69,10 +69,10 @@ export default function SubscribePage() {
 
   const paddle = usePaddle(handleCheckoutComplete);
 
-  const openCheckout = (priceId: string) => {
+  const openCheckout = (priceId: string, quantity = 1) => {
     if (paddle) {
       const opts: any = {
-        items: [{ priceId, quantity: 1 }],
+        items: [{ priceId, quantity }],
       };
       if (user?.id) {
         opts.customData = { userId: String(user.id) };
@@ -126,12 +126,12 @@ export default function SubscribePage() {
           <View style={styles.planSection}>
             <View style={styles.planHeader}>
               <Text style={[styles.cell, styles.planName]}>Plus</Text>
-              <Text style={[styles.cell, styles.planPrice]}>$20/year base, plus $4/year for each person beyond 5</Text>
-              <Pressable onPress={() => openCheckout(PLUS_PRICE_ID)} style={styles.selectButton}>
+              <Text style={[styles.cell, styles.planPrice]}>$4/year per person, 6 person minimum</Text>
+              <Pressable onPress={() => openCheckout(PLUS_PRICE_ID, 6)} style={styles.selectButton}>
                 <Text style={styles.selectButtonText}>Select</Text>
               </Pressable>
             </View>
-            <Text style={styles.planDesc}>Example: 15 people = $20 + (10 {'\u00d7'} $4) = $60/year.</Text>
+            <Text style={styles.planDesc}>Example: 15 people = 15 {'\u00d7'} $4 = $60/year.</Text>
           </View>
 
           <View style={[styles.planSection, styles.rowAlt]}>

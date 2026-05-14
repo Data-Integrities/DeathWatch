@@ -136,10 +136,13 @@ router.post('/paddle', async (req: Request, res: Response) => {
 function mapItemsToPlan(items: any[]): string | null {
   if (!items || items.length === 0) return null;
   const priceIds = items.map((i: any) => i.price?.id);
+  // Production price IDs
+  if (priceIds.includes('pri_01krhmxw12mseqdjbj7napcaya')) return 'PLAN_10';
+  if (priceIds.includes('pri_01krhq4c78j0c0d0gvhasxp2p0')) return 'PLAN_5';
+  // Legacy sandbox price IDs
   if (priceIds.includes('pri_01kps36xd3r6dbmwcwrk9z16sk')) return 'PLAN_10';
   if (priceIds.includes('pri_01kppf909cxfhkha763dakw7vh')) return 'PLAN_10';
   if (priceIds.includes('pri_01kppcr7dpr63g3j9y1wf9hd29')) return 'PLAN_5';
-  // Legacy price IDs (archived plans)
   if (priceIds.includes('pri_01kppcrkwcpz1rz7m1hsht15wt')) return 'PLAN_10';
   if (priceIds.includes('pri_01kppcs2qh0hhpkqtm3yj47kkf')) return 'PLAN_10';
   return null;

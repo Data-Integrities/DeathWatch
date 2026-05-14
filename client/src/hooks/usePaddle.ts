@@ -39,9 +39,8 @@ export function usePaddle(onCheckoutComplete?: () => void) {
       .then(() => {
         const w = window as any;
         if (!initialized) {
-          w.Paddle.Environment.set('sandbox');
           w.Paddle.Initialize({
-            token: 'test_8c54275e876cf82ccac868c4111',
+            token: 'live_02f3d8e429900a20bc27d8a3b64',
             eventCallback: (event: any) => eventListener?.(event),
           });
           initialized = true;
