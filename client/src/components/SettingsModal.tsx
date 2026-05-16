@@ -8,6 +8,7 @@ import { Button } from './Button';
 import { TextField } from './TextField';
 import { Card } from './Card';
 import { Checkbox } from './Checkbox';
+import { CopyrightFooter } from './CopyrightFooter';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Toast } from './Toast';
 import { LegalModal } from './LegalModal';
@@ -423,9 +424,7 @@ export function SettingsModal({ visible, onClose }: Props) {
               </Pressable>
             </View>
 
-            <Text style={styles.footer}>
-              Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
-            </Text>
+            <CopyrightFooter style={styles.footer} />
           </ScrollView>
         </View>
       </View>

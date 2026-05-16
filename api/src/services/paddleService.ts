@@ -1,7 +1,7 @@
 import { pool } from '../db/pool';
 import { reportFatalError } from './fatalErrorService';
 
-const PADDLE_API_KEY = process.env.PADDLE_API_KEY || '';
+const PADDLE_API_KEY = (process.env.PADDLE_API_KEY || '').trim();
 const PADDLE_API_URL = PADDLE_API_KEY.startsWith('pdl_sdbx_')
   ? 'https://sandbox-api.paddle.com'
   : 'https://api.paddle.com';
@@ -91,4 +91,61 @@ export async function commitBilling(userId: string): Promise<void> {
   );
 
   console.log(`[Paddle] All searches committed for user ${userId}, plan ${newPlanCode}`);
+}
+
+/**
+ * Recount active searches and sync Paddle subscription quantity.
+ * Called after any operation that changes the active count: delete, confirm,
+ * unconfirm, admin import, admin batch delete.
+ * Skips silently if user has no Paddle subscription (e.g. admin-managed plans).
+ */
+export async function syncSubscriptionQuantity(userId: string): Promise<void> {
+  const { rows: userRows } = await pool.query(
+    'SELECT plan_code, paddle_subscription_id FROM dw_user WHERE login_id = $1',
+    [userId]
+  );
+  if (userRows.length === 0) return;
+
+  const { paddle_subscription_id } = userRows[0];
+  if (!paddle_subscription_id) return;
+
+  const { rows: countRows } = await pool.query(
+    `SELECT COUNT(*)::int AS cnt FROM user_query WHERE login_id = $1 AND disabled = false AND confirmed = false`,
+    [userId]
+  );
+  const activeCount = countRows[0].cnt;
+
+  if (activeCount === 0) return;
+
+  const sub = await paddleApi('GET', `/subscriptions/${paddle_subscription_id}`);
+  const items = sub.data.items || [];
+  const currentItem = items[0];
+  if (!currentItem) return;
+
+  let needsUpdate = false;
+  let updatedItems: any[];
+  let newPlanCode: string;
+
+  if (activeCount > BASIC_LIMIT) {
+    newPlanCode = 'PLAN_10';
+    updatedItems = [{ id: currentItem.id, price_id: PLUS_PRICE_ID, quantity: activeCount }];
+    needsUpdate = currentItem.price?.id !== PLUS_PRICE_ID || currentItem.quantity !== activeCount;
+  } else {
+    newPlanCode = 'PLAN_5';
+    updatedItems = [{ id: currentItem.id, price_id: BASIC_PRICE_ID, quantity: 1 }];
+    needsUpdate = currentItem.price?.id !== BASIC_PRICE_ID || currentItem.quantity !== 1;
+  }
+
+  if (needsUpdate) {
+    await paddleApi('PATCH', `/subscriptions/${paddle_subscription_id}`, {
+      items: updatedItems,
+      proration_billing_mode: 'prorated_immediately',
+    });
+    console.log(`[Paddle] Synced subscription for user ${userId}: ${activeCount} active, plan ${newPlanCode}`);
+  }
+
+  await pool.query(
+    `UPDATE dw_user SET plan_code = $1, updated_at = NOW() WHERE login_id = $2`,
+    [newPlanCode, userId]
+  );
 }

@@ -53,14 +53,14 @@ export function BillingTallyModal({
 
           <View style={styles.buttons}>
             <Button
-              title="Add Another"
+              title="Done"
               variant="secondary"
-              onPress={onAddAnother}
+              onPress={onDone}
               style={styles.button}
             />
             <Button
-              title="Done"
-              onPress={onDone}
+              title="Add Another"
+              onPress={onAddAnother}
               style={styles.button}
             />
           </View>

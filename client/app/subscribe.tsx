@@ -1,10 +1,12 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, Animated, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../src/context/AuthContext';
 import { Button } from '../src/components/Button';
-import { ConfirmDialog } from '../src/components/ConfirmDialog';
+import { CopyrightFooter } from '../src/components/CopyrightFooter';
+import { DailySearchesDialog } from '../src/components/DailySearchesDialog';
 import { HelpModal } from '../src/components/HelpModal';
+import { PricingTable } from '../src/components/PricingTable';
 import { usePaddle } from '../src/hooks/usePaddle';
 import { getAuthToken } from '../src/services/api/client';
 import { colors, fontSize, spacing, borderRadius } from '../src/theme';
@@ -17,11 +19,15 @@ const PLUS_PRICE_ID = 'pri_01krhmxw12mseqdjbj7napcaya';
 export default function SubscribePage() {
   const { user, refreshUser } = useAuth();
   const [searchInfoVisible, setSearchInfoVisible] = useState(false);
-  const [proInfoVisible, setProInfoVisible] = useState(false);
   const [activating, setActivating] = useState(false);
   const [activationFailed, setActivationFailed] = useState(false);
   const [helpVisible, setHelpVisible] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+  }, []);
 
   const pollForSubscription = useCallback(() => {
     const MAX_ATTEMPTS = 15;
@@ -100,51 +106,23 @@ export default function SubscribePage() {
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.fadeWrap, { opacity: fadeAnim }]}>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.container}>
       <View style={styles.card}>
+        <Pressable onPress={() => router.replace('/matches')} style={styles.closeButton}>
+          <Text style={styles.closeX}>{'✕'}</Text>
+        </Pressable>
         <View style={styles.titleRow}>
           <Text style={styles.brand}>ObitNote</Text>
-          <Text style={styles.tm}>{'\u2122'}</Text>
+          <Text style={styles.tm}>{'™'}</Text>
         </View>
         <Text style={styles.title}>Subscribe</Text>
         <Text style={styles.subtitle}>Monitor people you care about.</Text>
 
-        <View style={styles.table}>
-          <Text style={styles.billedNote}>All plans billed yearly (cancel anytime)</Text>
-
-          <View style={[styles.planSection, styles.rowAlt]}>
-            <View style={styles.planHeader}>
-              <Text style={[styles.cell, styles.planName]}>Basic</Text>
-              <Text style={[styles.cell, styles.planPrice]}>$20/year</Text>
-              <Pressable onPress={() => openCheckout(BASIC_PRICE_ID)} style={styles.selectButton}>
-                <Text style={styles.selectButtonText}>Select</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.planDesc}>Monitor up to 5 people.</Text>
-          </View>
-
-          <View style={styles.planSection}>
-            <View style={styles.planHeader}>
-              <Text style={[styles.cell, styles.planName]}>Plus</Text>
-              <Text style={[styles.cell, styles.planPrice]}>$4/year per person, 6 person minimum</Text>
-              <Pressable onPress={() => openCheckout(PLUS_PRICE_ID, 6)} style={styles.selectButton}>
-                <Text style={styles.selectButtonText}>Select</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.planDesc}>Example: 15 people = 15 {'\u00d7'} $4 = $60/year.</Text>
-          </View>
-
-          <View style={[styles.planSection, styles.rowAlt]}>
-            <View style={styles.planHeader}>
-              <Text style={[styles.cell, styles.planName]}>Pro</Text>
-              <Text style={[styles.cell, styles.planPrice]}>for organizations with high-volume or special-needs requirements</Text>
-            </View>
-            <Text style={styles.planDesc}>Intended for professional and commercial use (clergy, legal, real estate, corporate, and similar).  Pro customers use Plus pricing for their watch list, and can optionally add:</Text>
-            <Pressable onPress={() => setProInfoVisible(true)} style={styles.proInfoLinkWrap}><Text style={styles.proMoreInfo}>More Pro info</Text></Pressable>
-          </View>
-        </View>
-
-        <Text style={styles.note}>3 free trial searches before any payment is required.  Cancel, upgrade, or downgrade anytime.</Text>
+        <PricingTable
+          onSelectBasic={() => openCheckout(BASIC_PRICE_ID)}
+          onSelectPlus={() => openCheckout(PLUS_PRICE_ID, 6)}
+        />
 
         {activationFailed && (
           <View style={styles.failedCard}>
@@ -161,67 +139,34 @@ export default function SubscribePage() {
         <Button
           title="Go Back"
           variant="secondary"
-          onPress={() => router.back()}
+          onPress={() => router.replace('/matches')}
           style={styles.backButton}
         />
       </View>
 
-      <ConfirmDialog
-        visible={searchInfoVisible}
-        title="Daily obituary searches"
-        body={"ObitNote searches online newspapers and memorial websites for obituaries every day in the US, Canada, the UK, Australia, and New Zealand using the names, locations, ages, and keywords you provide.  When one of your people is found, we'll let you know right away by text and email."}
-        confirmLabel="OK"
-        cancelLabel=""
-        onConfirm={() => setSearchInfoVisible(false)}
-        onCancel={() => setSearchInfoVisible(false)}
-      />
-
-      <ConfirmDialog
-        visible={proInfoVisible}
-        title={<Text style={{ color: colors.brand }}>Pro service</Text>}
-        body={
-          <View>
-            <Text style={styles.proBody}>
-              <Text style={styles.planName}>Pro</Text> is for organizations with high-volume or special-needs requirements.  Intended for professional and commercial use (clergy, legal, real estate, corporate, and similar).
-            </Text>
-            <Text style={styles.proBody}>Pro customers use Plus pricing for their watch list, and can optionally add:</Text>
-            <View style={styles.proBullet}>
-              <Text style={styles.proBulletDot}>{'\u2022'}</Text>
-              <Text style={styles.proBody}><Text style={styles.proBulletLabel}>Editing grid</Text> — an editable grid view of all people searched, for easy management of large lists.  $150/year.</Text>
-            </View>
-            <View style={styles.proBullet}>
-              <Text style={styles.proBulletDot}>{'\u2022'}</Text>
-              <Text style={styles.proBody}><Text style={styles.proBulletLabel}>Staff-assisted import</Text> — <Text style={styles.brandInline}>ObitNote</Text> staff import your Excel, CSV, or JSON list of people to monitor.  $150 per import.</Text>
-            </View>
-            <View style={styles.proBullet}>
-              <Text style={styles.proBulletDot}>{'\u2022'}</Text>
-              <Text style={styles.proBody}><Text style={styles.proBulletLabel}>Custom solutions</Text> — custom integrations, report formats, or features scoped specifically for your Pro account.  Available on request; scoped and priced per engagement.</Text>
-            </View>
-            <Text style={[styles.proBody, { marginTop: 12 }]}>For more info, email support@obitnote.com</Text>
-          </View>
-        }
-        confirmLabel="OK"
-        cancelLabel=""
-        onConfirm={() => setProInfoVisible(false)}
-        onCancel={() => setProInfoVisible(false)}
-      />
+      <DailySearchesDialog visible={searchInfoVisible} onClose={() => setSearchInfoVisible(false)} />
 
       <HelpModal
         visible={helpVisible}
         onClose={() => setHelpVisible(false)}
       />
 
-      <Text style={styles.footer}>
-        Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
-      </Text>
-    </View>
+      <CopyrightFooter />
+    </ScrollView>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  fadeWrap: {
+    flex: 1,
+  },
+  scrollContainer: {
     flex: 1,
     backgroundColor: '#f5f0fa',
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
@@ -232,6 +177,22 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     maxWidth: 460,
     width: '100%',
+    position: 'relative' as const,
+  },
+  closeButton: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    zIndex: 1,
+    width: 32,
+    height: 32,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  closeX: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: colors.green,
   },
   titleRow: {
     flexDirection: 'row',
@@ -260,122 +221,6 @@ const styles = StyleSheet.create({
     color: colors.brand,
     marginBottom: spacing.md,
   },
-  table: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.brand,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-  },
-  headerCell: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  row: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-  },
-  rowAlt: {
-    backgroundColor: '#F8F5FC',
-  },
-  cell: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#555555',
-  },
-  planSection: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  planHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    flexWrap: 'wrap' as const,
-    gap: 8,
-    marginBottom: 4,
-  },
-  planName: {
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  planPrice: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#444444',
-    flex: 1,
-  },
-  planDesc: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#444444',
-    lineHeight: 20,
-  },
-  proInfoLinkWrap: {
-    marginTop: 4,
-  },
-  proMoreInfo: {
-    fontWeight: '700',
-    color: colors.green,
-    fontSize: 14,
-    lineHeight: 20,
-    textDecorationLine: 'underline' as const,
-  },
-  proBody: {
-    fontSize: fontSize.base,
-    color: '#444444',
-    lineHeight: 24,
-    flex: 1,
-    marginBottom: 8,
-  },
-  proBullet: {
-    flexDirection: 'row' as const,
-    marginBottom: 8,
-    paddingLeft: 4,
-  },
-  proBulletDot: {
-    fontSize: fontSize.base,
-    color: '#444444',
-    marginRight: 8,
-    lineHeight: 24,
-  },
-  proBulletLabel: {
-    fontWeight: '700',
-    color: '#444444',
-  },
-  selectButton: {
-    backgroundColor: colors.green,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-  },
-  selectButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  billedNote: {
-    fontSize: 12,
-    color: '#444444',
-    fontWeight: '700',
-    textAlign: 'center',
-    paddingVertical: 6,
-    backgroundColor: '#F8F5FC',
-  },
-  note: {
-    fontSize: fontSize.sm,
-    color: '#444444',
-    marginBottom: spacing.lg,
-  },
   description: {
     fontSize: fontSize.base,
     color: '#444444',
@@ -398,12 +243,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: spacing.sm,
-  },
-  footer: {
-    marginTop: spacing.lg,
-    textAlign: 'center',
-    fontSize: fontSize.sm,
-    color: '#444444',
   },
   activatingContent: {
     alignItems: 'center' as const,

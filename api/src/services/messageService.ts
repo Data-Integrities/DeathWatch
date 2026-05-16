@@ -1,5 +1,6 @@
 import { pool } from '../db/pool';
 import { logActivity } from './activityService';
+import { sendMessageReceivedEmail } from './emailService';
 
 const SAFE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
@@ -27,6 +28,16 @@ export async function createMessage(loginId: string, subject: string, body: stri
     [loginId, subject, body, ticketId]
   );
   logActivity(loginId, 'Message', subject || '(no subject)');
+
+  const { rows: userRows } = await pool.query(
+    `SELECT email, first_name FROM dw_user WHERE login_id = $1`,
+    [loginId]
+  );
+  if (userRows.length > 0) {
+    sendMessageReceivedEmail(userRows[0].email, userRows[0].first_name, ticketId)
+      .catch(err => console.error('[Message] Failed to send confirmation email:', err));
+  }
+
   return { id: rows[0].id, ticketId: rows[0].ticket_id, createdAt: rows[0].created_at };
 }
 

@@ -6,7 +6,7 @@ import { logActivity, buildFingerprint } from '../services/activityService';
 import { sendMatchNotification } from '../services/emailService';
 import { sendMatchSms } from '../services/smsService';
 import { pool } from '../db/pool';
-import { commitBilling } from '../services/paddleService';
+import { commitBilling, syncSubscriptionQuantity } from '../services/paddleService';
 
 const BASIC_LIMIT = 5;
 
@@ -158,6 +158,7 @@ router.post('/:id/confirm', async (req: Request, res: Response) => {
       'UPDATE user_query SET committed_at = COALESCE(committed_at, NOW()) WHERE id = $1',
       [req.params.id]
     );
+    syncSubscriptionQuantity(req.userId!).catch(err => console.error('[Search] Sync quantity after confirm failed:', err.message));
     res.json({ search });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
@@ -167,6 +168,7 @@ router.post('/:id/confirm', async (req: Request, res: Response) => {
 router.post('/:id/unconfirm', async (req: Request, res: Response) => {
   try {
     const search = await searchService.unconfirmSearch(req.userId!, req.params.id);
+    syncSubscriptionQuantity(req.userId!).catch(err => console.error('[Search] Sync quantity after unconfirm failed:', err.message));
     res.json({ search });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
@@ -187,6 +189,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     const search = await searchService.getSearch(req.userId!, req.params.id);
     await searchService.deleteSearch(req.userId!, req.params.id);
     logActivity(req.userId!, 'Search Delete', buildFingerprint(search));
+    syncSubscriptionQuantity(req.userId!).catch(err => console.error('[Search] Sync quantity after delete failed:', err.message));
     res.json({ success: true });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });

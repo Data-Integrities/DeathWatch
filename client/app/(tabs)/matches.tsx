@@ -93,8 +93,9 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      refreshUser().catch(() => {});
       loadData();
-    }, [loadData])
+    }, [refreshUser, loadData])
   );
 
   const onRefresh = useCallback(() => {

@@ -32,6 +32,7 @@ export interface UserProfile {
   uncommittedCount: number;
   uncommittedPeople: { id: string; name: string }[];
   proGrid: boolean;
+  updatedAt: string;
 }
 
 export interface RegisterRequest {

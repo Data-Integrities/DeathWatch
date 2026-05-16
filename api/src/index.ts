@@ -20,6 +20,7 @@ import { sendMatchNotification, sendMonthlySummary } from './services/emailServi
 import { sendMatchSms } from './services/smsService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 import { reportFatalError } from './services/fatalErrorService';
+import { reportBackup, checkTodayBackup, checkDatabaseHealth } from './services/backupService';
 import { pool } from './db/pool';
 
 // Validate required env vars in production
@@ -286,6 +287,23 @@ app.post('/api/internal/fatal-error', (req, res) => {
     .catch(err => res.status(500).json({ error: err.message }));
 });
 
+// Internal: backup report from backup-db.sh
+app.post('/api/internal/backup-report', (req, res) => {
+  const ip = req.ip || '';
+  if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) {
+    res.status(403).json({ error: 'Internal only' });
+    return;
+  }
+  const { pgDumpOk, filePath, fileSizeBytes, idriveOk, errorMessage } = req.body;
+  if (pgDumpOk === undefined) {
+    res.status(400).json({ error: 'pgDumpOk is required' });
+    return;
+  }
+  reportBackup({ pgDumpOk, filePath, fileSizeBytes, idriveOk: idriveOk ?? false, errorMessage })
+    .then(result => res.json(result))
+    .catch(err => res.status(500).json({ error: err.message }));
+});
+
 // Log obitnotes.com redirect and send to obitnote.com
 app.get('/api/internal/redirect-log', (req, res) => {
   const ip = (req.headers['x-forwarded-for'] as string || req.ip || '').split(',')[0].trim();
@@ -351,6 +369,28 @@ cron.schedule('0 14 1 * *', async () => {
   } catch (err: any) {
     console.error('[Cron] Monthly summary failed:', err);
     reportFatalError('email', null, `Monthly summary failed: ${err.message || String(err)}`).catch(() => {});
+  }
+});
+
+// Database health check: every 6 hours
+cron.schedule('0 */6 * * *', async () => {
+  console.log('[Cron] Checking database health...');
+  try {
+    await checkDatabaseHealth();
+  } catch (err: any) {
+    console.error('[Cron] Database health check failed:', err);
+    reportFatalError('database', null, `DB health check cron failed: ${err.message || String(err)}`).catch(() => {});
+  }
+});
+
+// Backup check: 10 minutes after 2:00 AM UTC backup
+cron.schedule('10 2 * * *', async () => {
+  console.log('[Cron] Checking today\'s backup...');
+  try {
+    await checkTodayBackup();
+  } catch (err: any) {
+    console.error('[Cron] Backup check failed:', err);
+    reportFatalError('backup', null, `Backup check cron failed: ${err.message || String(err)}`).catch(() => {});
   }
 });
 

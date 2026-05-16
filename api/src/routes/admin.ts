@@ -9,6 +9,7 @@ import { pool } from '../db/pool';
 import { impersonate } from '../services/authService';
 import { normalizePhone } from '../utils/phone';
 import { v4 as uuidv4 } from 'uuid';
+import { syncSubscriptionQuantity } from '../services/paddleService';
 
 const VALID_PLAN_CODES = ['PLAN_5', 'PLAN_10', 'PLAN_CUSTOM'] as const;
 
@@ -404,6 +405,9 @@ router.post('/import', async (req: Request, res: Response) => {
       inserted++;
     }
 
+    if (inserted > 0) {
+      syncSubscriptionQuantity(userId).catch(err => console.error('[Admin] Sync quantity after import failed:', err.message));
+    }
     res.json({ success: true, inserted, skippedDupes, skippedInvalid, dupeNames: dupeNames.slice(0, 20), batchId });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
@@ -438,10 +442,17 @@ router.get('/import/batches', async (req: Request, res: Response) => {
 router.delete('/import/batches/:batchId', async (req: Request, res: Response) => {
   try {
     const { batchId } = req.params;
+    const { rows: batchRows } = await pool.query(
+      'SELECT DISTINCT login_id FROM user_query WHERE import_batch_id = $1',
+      [batchId]
+    );
     const result = await pool.query(
       'DELETE FROM user_query WHERE import_batch_id = $1',
       [batchId]
     );
+    for (const row of batchRows) {
+      syncSubscriptionQuantity(row.login_id).catch(err => console.error('[Admin] Sync quantity after batch delete failed:', err.message));
+    }
     res.json({ success: true, deleted: result.rowCount });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Button } from '../src/components/Button';
+import { CopyrightFooter } from '../src/components/CopyrightFooter';
 import { colors, fontSize, spacing, borderRadius } from '../src/theme';
 
 export default function RefundPage() {
@@ -52,9 +53,7 @@ export default function RefundPage() {
           style={styles.backButton}
         />
 
-        <Text style={styles.footer}>
-          Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
-        </Text>
+        <CopyrightFooter />
       </View>
     </View>
   );

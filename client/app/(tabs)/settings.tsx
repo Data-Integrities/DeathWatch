@@ -10,6 +10,7 @@ import { Card } from '../../src/components/Card';
 import { Checkbox } from '../../src/components/Checkbox';
 import { Toast } from '../../src/components/Toast';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
+import { CopyrightFooter } from '../../src/components/CopyrightFooter';
 import { colors, fontSize, spacing } from '../../src/theme';
 import { BUILD_VERSION } from '../../src/version';
 
@@ -483,9 +484,7 @@ export default function SettingsScreen() {
         style={styles.signOut}
       />
 
-      <Text style={styles.footer}>
-        Copyright © 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
-      </Text>
+      <CopyrightFooter style={styles.footer} />
     </ScreenContainer>
   );
 }

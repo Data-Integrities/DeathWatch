@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { AppHeader } from '../../src/components/AppHeader';
+import { CopyrightFooter } from '../../src/components/CopyrightFooter';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
 import { TextField } from '../../src/components/TextField';
 import { Button } from '../../src/components/Button';
@@ -284,9 +285,7 @@ export default function SignUpScreen() {
 
       <LegalModal visible={!!legalType} type={legalType || 'terms'} onClose={() => setLegalType(null)} />
 
-      <Text style={styles.footer}>
-        Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
-      </Text>
+      <CopyrightFooter style={styles.footer} />
     </ScreenContainer>
     </View>
   );

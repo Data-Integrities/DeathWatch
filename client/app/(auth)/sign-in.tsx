@@ -8,6 +8,9 @@ import { TextField } from '../../src/components/TextField';
 import { Button } from '../../src/components/Button';
 import { Checkbox } from '../../src/components/Checkbox';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
+import { CopyrightFooter } from '../../src/components/CopyrightFooter';
+import { DailySearchesDialog } from '../../src/components/DailySearchesDialog';
+import { PricingTable } from '../../src/components/PricingTable';
 import { SignUpModal } from '../../src/components/SignUpModal';
 import { LegalModal } from '../../src/components/LegalModal';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../../src/theme';
@@ -201,15 +204,7 @@ export default function SignInScreen() {
         onCancel={() => setSupportVisible(false)}
       />
 
-      <ConfirmDialog
-        visible={searchInfoVisible}
-        title="Daily obituary searches"
-        body={<Text style={styles.introText}><Text style={styles.brandText}>ObitNote</Text> searches online newspapers and memorial websites for obituaries every day in the US, Canada, the UK, Australia, and New Zealand using the names, locations, ages, and keywords you provide.  When one of your people is found, we'll let you know right away by text and email.</Text>}
-        confirmLabel="OK"
-        cancelLabel=""
-        onConfirm={() => setSearchInfoVisible(false)}
-        onCancel={() => setSearchInfoVisible(false)}
-      />
+      <DailySearchesDialog visible={searchInfoVisible} onClose={() => setSearchInfoVisible(false)} />
 
       <Modal visible={pricingVisible} transparent animationType="fade" onRequestClose={() => setPricingVisible(false)}>
         <View style={styles.tryFreeOverlay}>
@@ -221,35 +216,13 @@ export default function SignInScreen() {
             <Text style={styles.pricingTitle}>Pricing</Text>
             <Text style={styles.pricingSubtitle}>Monitor people you care about.</Text>
 
-            <View style={styles.pricingTable}>
-              <Text style={styles.pricingBilledNote}>All plans billed yearly (cancel anytime)</Text>
-
-              <View style={[styles.pricingSection, styles.pricingRowAlt]}>
-                <Text style={styles.pricingCell}><Text style={styles.pricingPlanName}>Basic</Text> — $20/year</Text>
-                <Text style={styles.pricingPlanDesc}>Monitor up to 5 people.</Text>
-              </View>
-
-              <View style={styles.pricingSection}>
-                <Text style={styles.pricingCell}><Text style={styles.pricingPlanName}>Plus</Text> — $20/year base, plus $4/year for each person beyond 5</Text>
-                <Text style={styles.pricingPlanDesc}>Example: 15 people = $20 + (10 {'\u00d7'} $4) = $60/year.</Text>
-              </View>
-
-              <View style={[styles.pricingSection, styles.pricingRowAlt]}>
-                <Text style={styles.pricingCell}><Text style={styles.pricingPlanName}>Pro</Text> — for organizations with high-volume or special-needs requirements</Text>
-                <Text style={styles.pricingPlanDesc}>Professional and commercial use.  Plus pricing + optional add-ons.</Text>
-              </View>
-            </View>
-
-            <Text style={styles.pricingNote}>3 free trial searches before any payment is required.  Cancel, upgrade, or downgrade anytime.</Text>
+            <PricingTable />
           </View>
         </View>
       </Modal>
 
       <SignUpModal visible={signUpVisible} onClose={() => setSignUpVisible(false)} />
-
-      <Text style={styles.footer}>
-        Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.  {BUILD_VERSION}
-      </Text>
+      <CopyrightFooter style={styles.footer} suffix={BUILD_VERSION} />
     </ScreenContainer>
   );
 }
@@ -411,50 +384,6 @@ const styles = StyleSheet.create({
   pricingSubtitle: {
     fontSize: fontSize.sm,
     color: colors.brand,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  pricingTable: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-  },
-  pricingSection: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  pricingRowAlt: {
-    backgroundColor: '#F8F5FC',
-  },
-  pricingCell: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#555555',
-  },
-  pricingPlanName: {
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  pricingPlanDesc: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#444444',
-    lineHeight: 20,
-    marginTop: 4,
-  },
-  pricingBilledNote: {
-    fontSize: 12,
-    color: '#444444',
-    fontWeight: '700',
-    textAlign: 'center',
-    paddingVertical: 6,
-    backgroundColor: '#F8F5FC',
-  },
-  pricingNote: {
-    fontSize: fontSize.sm,
-    color: '#444444',
     textAlign: 'center',
     marginBottom: spacing.md,
   },

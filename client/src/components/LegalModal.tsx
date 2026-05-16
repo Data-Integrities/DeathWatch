@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Text, Pressable, StyleSheet, Modal } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { CopyrightFooter } from './CopyrightFooter';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../theme';
 
 interface Props {
@@ -119,9 +120,7 @@ export function TermsContent() {
         If you have questions about these Terms, contact us at support@obitnote.com.
       </Text>
 
-      <Text style={styles.footer}>
-        Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
-      </Text>
+      <CopyrightFooter style={styles.footer} />
     </>
   );
 }
@@ -214,9 +213,7 @@ export function PrivacyContent() {
         If you have questions about this Privacy Policy or your personal data, contact us at support@obitnote.com.
       </Text>
 
-      <Text style={styles.footer}>
-        Copyright &copy; 2025-{new Date().getFullYear()} UltraSafe Data, LLC (US).{'\n'}All rights reserved.
-      </Text>
+      <CopyrightFooter style={styles.footer} />
     </>
   );
 }

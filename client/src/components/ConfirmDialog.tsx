@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Modal, StyleSheet, Pressable } from 'react-native';
+import { View, Text, Modal, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { colors, fontSize, spacing, borderRadius, shadows, minTouchTarget } from '../theme';
 import { Button } from './Button';
 
@@ -36,7 +36,9 @@ export function ConfirmDialog({
       <Pressable style={styles.overlay} onPress={onCancel}>
         <Pressable style={styles.dialog} onPress={(e) => e.stopPropagation()}>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.body}>{body}</Text>
+          <ScrollView style={styles.bodyScroll}>
+            <Text style={styles.body}>{body}</Text>
+          </ScrollView>
           <View style={styles.actions}>
             <Button
               title={confirmLabel}
@@ -72,8 +74,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     maxWidth: 400,
+    maxHeight: '90%',
     width: '100%',
     ...shadows.modal,
+  },
+  bodyScroll: {
+    flexShrink: 1,
   },
   title: {
     fontSize: fontSize.lg,

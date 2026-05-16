@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth';
 import * as matchService from '../services/matchService';
 import * as searchService from '../services/searchService';
 import { logActivity, buildFingerprint } from '../services/activityService';
+import { syncSubscriptionQuantity } from '../services/paddleService';
 
 const router = Router();
 router.use(authMiddleware);
@@ -59,6 +60,7 @@ router.get('/:searchId/:resultId', async (req: Request, res: Response) => {
 router.post('/:searchId/:resultId/confirm', async (req: Request, res: Response) => {
   try {
     const search = await matchService.confirmResult(req.userId!, req.params.searchId, req.params.resultId);
+    syncSubscriptionQuantity(req.userId!).catch(err => console.error('[Match] Sync quantity after confirm failed:', err.message));
     res.json({ search });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
@@ -68,6 +70,7 @@ router.post('/:searchId/:resultId/confirm', async (req: Request, res: Response) 
 router.post('/:searchId/:resultId/unconfirm', async (req: Request, res: Response) => {
   try {
     const search = await matchService.unconfirmResult(req.userId!, req.params.searchId, req.params.resultId);
+    syncSubscriptionQuantity(req.userId!).catch(err => console.error('[Match] Sync quantity after unconfirm failed:', err.message));
     res.json({ search });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });

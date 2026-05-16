@@ -24,19 +24,30 @@ function wrapHtml(body: string): string {
 <html>
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
 <body style="margin: 0; padding: 0; background-color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #F5F5F5;">
     <tr>
-      <td style="padding: 32px 24px; text-align: center; background-color: #663399;">
-        <h1 style="margin: 0; color: #FFFFFF; font-size: 28px;">ObitNote<span style="font-size: 14px; font-weight: 400; vertical-align: super; line-height: 1;">&trade;</span></h1>
+      <td style="padding: 32px 24px 0 24px;">
+        <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+          <tr>
+            <td style="vertical-align: bottom; text-align: left;">
+              <h1 style="margin: 0; color: #663399; font-size: 28px; font-weight: 700; line-height: 1;">ObitNote<span style="font-size: 14px; font-weight: 400; vertical-align: super; line-height: 1;">&trade;</span></h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top; text-align: left;">
+              <p style="margin: 0; color: #663399; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; line-height: 1;">We&#8217;ll let you know</p>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
     <tr>
-      <td style="padding: 24px;">
+      <td style="padding: 8px 24px 24px;">
         ${body}
       </td>
     </tr>
     <tr>
-      <td style="padding: 16px 24px; text-align: center; color: #9E9E9E; font-size: 12px; border-top: 1px solid #E0E0E0;">
+      <td style="padding: 16px 24px; text-align: center; color: #444444; font-size: 12px; border-top: 1px solid #E0E0E0;">
         Copyright &copy; 2025-${new Date().getFullYear()} UltraSafe Data, LLC (US). All rights reserved.
       </td>
     </tr>
@@ -200,6 +211,22 @@ export async function sendErrorAlert(details: {
   await sendEmail('support@obitnote.com', 'ObitNote: Client Error Report', html);
 }
 
+export async function sendMessageReceivedEmail(toEmail: string, firstName: string, ticketId: string) {
+  const html = wrapHtml(`
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      We received your support message #${escapeHtml(ticketId)}.  We will review it and get back to you as soon as possible.
+    </p>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      Thank you,<br /><br /><span style="color: #663399; font-weight: 700;">ObitNote</span> Support
+    </p>
+  `);
+
+  await sendEmail(toEmail, 'ObitNote Support Message Received', html);
+}
+
 export async function sendMonthlySummary(toEmail: string, firstName: string, stats: {
   activeSearches: number;
   searchesPerformed: number;
@@ -227,6 +254,19 @@ export async function sendMonthlySummary(toEmail: string, firstName: string, sta
   `);
 
   await sendEmail(toEmail, subject, html);
+}
+
+export async function sendBackupAlertEmail(toEmail: string, message: string) {
+  const html = wrapHtml(`
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      <strong>Backup alert:</strong>  ${escapeHtml(message)}
+    </p>
+    <p style="margin: 0 0 16px; color: #444444; font-size: 18px; line-height: 1.5;">
+      Check the web server at 10.0.0.4 and review /var/backups/postgresql/backup.log for details.
+    </p>
+  `);
+
+  await sendEmail(toEmail, 'ObitNote ALERT: Database Backup Failed', html);
 }
 
 function escapeHtml(text: string): string {

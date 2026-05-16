@@ -67,6 +67,7 @@ function rowToUser(
     uncommittedCount: uncommitted.length,
     uncommittedPeople: uncommitted,
     proGrid: row.pro_grid || false,
+    updatedAt: row.updated_at ? row.updated_at.toISOString() : new Date().toISOString(),
   };
 }
 
