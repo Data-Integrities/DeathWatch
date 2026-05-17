@@ -76,6 +76,34 @@ async function sendInfraAlert(source: string, message: string) {
   }
 }
 
+export async function checkTodayBatch() {
+  const { rows } = await pool.query(
+    `SELECT id, status, queries_total, queries_ok, queries_failed, results_new, error_message
+     FROM batch_log
+     WHERE batch_date = CURRENT_DATE
+     ORDER BY started_at DESC LIMIT 1`
+  );
+
+  if (rows.length === 0) {
+    console.warn('[Batch] No batch log found for today — sending alert');
+    await sendInfraAlert('batch', 'Daily batch search did not run today');
+    return;
+  }
+
+  const b = rows[0];
+  if (b.status === 'running') {
+    console.warn('[Batch] Batch still running after 30 minutes — sending alert');
+    await sendInfraAlert('batch', `Daily batch still running after 30 minutes (id=${b.id})`);
+  } else if (b.status === 'failed') {
+    console.warn('[Batch] Batch failed — alert already sent by cron');
+  } else if (b.queries_failed > 0) {
+    console.warn(`[Batch] Batch completed with ${b.queries_failed} failed queries out of ${b.queries_total}`);
+    await sendInfraAlert('batch', `Daily batch completed but ${b.queries_failed} of ${b.queries_total} queries failed`);
+  } else {
+    console.log(`[Batch] Today's batch verified OK (id=${b.id}, ${b.queries_ok} queries, ${b.results_new} new results)`);
+  }
+}
+
 async function sendBackupAlert(message: string) {
   await sendInfraAlert('backup', message);
 }

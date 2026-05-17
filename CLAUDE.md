@@ -97,16 +97,41 @@ System-wide fatal error alerting via SMS to the on-call Support Chief.
 | `sms` | Sinch delivery failure | `api/src/services/smsService.ts` |
 | `batch` | Per-query batch search failure | `api/src/services/batchService.ts` |
 | `batch` | Daily cron crash | `api/src/index.ts` |
+| `batch` | Batch did not run / still running / had failures | `api/src/services/backupService.ts` |
+| `backup` | pg_dump or iDrive failure / missing today's backup | `api/src/services/backupService.ts` |
+| `database` | DB unreachable or size over threshold | `api/src/services/backupService.ts` |
+| `disk` | Web server disk usage >= 85% | `check-disk.sh` (cron on web server) |
+| `email` | SMTP delivery failure | `api/src/services/emailService.ts` |
+| `sms` | Sinch delivery failure | `api/src/services/smsService.ts` |
 | `email` | Monthly summary cron crash | `api/src/index.ts` |
 
 ### Architecture
 - API service: `api/src/services/fatalErrorService.ts` — `reportFatalError(source, errorCode, message)`
+- Infrastructure monitoring: `api/src/services/backupService.ts` — backup, batch, DB health checks
 - Search engine: `search/src/utils/fatalError.js` — POSTs to API internal endpoint
 - Internal endpoint: `POST /api/internal/fatal-error` (localhost-only, no auth)
+- Internal endpoint: `POST /api/internal/backup-report` (localhost-only, no auth)
 - Admin API: `GET /api/admin/support-staff`, `POST/PATCH/DELETE`, `POST /:id/on-call`
 - Admin API: `GET /api/admin/fatal-errors`, `GET /api/admin/fatal-errors/count`
 - Admin UI: Settings > Support Chief (`client/app/admin/oncall.tsx`)
 - Migration: `028_support_oncall.sql`
+
+## Scheduled Jobs (node-cron in API server + system crontab)
+
+| Schedule (UTC) | Schedule (ET) | Job | Alerts on failure |
+|---------------|--------------|-----|-------------------|
+| `0 16 * * *` | 11:00 AM | Daily batch search + notifications | SMS + email + `batch_log` |
+| `30 16 * * *` | 11:30 AM | Batch verification (did it run? failures?) | SMS + email |
+| `0 14 1 * *` | 9:00 AM 1st | Monthly summary emails | SMS + `fatal_error` |
+| `0 */6 * * *` | Every 6 hrs | Database health check (reachable + size) | SMS + email |
+| `10 2 * * *` | 10:10 PM | Backup verification (today's backup OK?) | SMS + email |
+| `0 2 * * *` (crontab) | 10:00 PM | pg_dump + iDrive upload | SMS + email (immediate) |
+| `0 */6 * * *` (crontab) | Every 6 hrs | Disk space check (>= 85%) | SMS + email |
+
+### Monitoring Tables
+- `batch_log` — daily batch run stats (migration 033): date, queries total/ok/failed, results, notifications, status
+- `backup_log` — daily backup stats (migration 032): date, file path, size, pg_dump/iDrive status
+- `fatal_error` — all fatal error alerts (migration 028): source, code, message, SMS delivery status
 
 ## Safe Commands
 - `cd api && npm run dev` — Start API dev server

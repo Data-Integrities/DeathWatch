@@ -20,7 +20,7 @@ import { sendMatchNotification, sendMonthlySummary } from './services/emailServi
 import { sendMatchSms } from './services/smsService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 import { reportFatalError } from './services/fatalErrorService';
-import { reportBackup, checkTodayBackup, checkDatabaseHealth } from './services/backupService';
+import { reportBackup, checkTodayBackup, checkDatabaseHealth, checkTodayBatch } from './services/backupService';
 import { pool } from './db/pool';
 
 // Validate required env vars in production
@@ -331,14 +331,19 @@ app.listen(PORT, () => {
 // Daily batch: run at 11:00 AM ET (16:00 UTC)
 cron.schedule('0 16 * * *', async () => {
   console.log('[Cron] Starting daily batch...');
+  const startedAt = new Date();
+  const { rows: [logRow] } = await pool.query(
+    `INSERT INTO batch_log (started_at, status) VALUES ($1, 'running') RETURNING id`,
+    [startedAt]
+  );
+  const logId = logRow.id;
+
   try {
-    // Purge dismissed results older than 7 days
     const purged = await purgeOldRejectedResults();
     if (purged > 0) console.log(`[Cron] Purged ${purged} dismissed results older than 7 days`);
 
-    await runBatch();
+    const batch = await runBatch();
 
-    // Send notifications to users with new batch results
     const users = await getUsersWithNewResults();
     for (const u of users) {
       await sendMatchNotification(u.email);
@@ -347,9 +352,34 @@ cron.schedule('0 16 * * *', async () => {
       }
     }
     console.log(`[Cron] Sent notifications to ${users.length} users`);
+
+    await pool.query(
+      `UPDATE batch_log SET completed_at = NOW(), status = 'completed',
+       queries_total = $1, queries_ok = $2, queries_failed = $3,
+       results_new = $4, users_notified = $5, purged = $6
+       WHERE id = $7`,
+      [batch.queriesTotal, batch.queriesOk, batch.queriesFailed,
+       batch.newResults, users.length, purged, logId]
+    );
+    console.log(`[Cron] Batch logged (id=${logId})`);
   } catch (err: any) {
     console.error('[Cron] Batch failed:', err);
+    await pool.query(
+      `UPDATE batch_log SET completed_at = NOW(), status = 'failed', error_message = $1 WHERE id = $2`,
+      [err.message || String(err), logId]
+    ).catch(() => {});
     reportFatalError('batch', null, err.message || String(err)).catch(() => {});
+  }
+});
+
+// Batch verification: 30 minutes after daily batch (11:30 AM ET / 16:30 UTC)
+cron.schedule('30 16 * * *', async () => {
+  console.log('[Cron] Verifying daily batch...');
+  try {
+    await checkTodayBatch();
+  } catch (err: any) {
+    console.error('[Cron] Batch verification failed:', err);
+    reportFatalError('batch', null, `Batch verification cron failed: ${err.message || String(err)}`).catch(() => {});
   }
 });
 

@@ -162,7 +162,7 @@ function extractDodFromText(text) {
     const year = parseInt(match[1], 10);
     const now = new Date();
     if (year <= now.getFullYear()) {
-      return match[1];
+      return `${match[1]}-01-01`;
     }
   }
 
@@ -191,7 +191,7 @@ function extractDodFromText(text) {
   const yearRangePattern = /\(?\s*(19\d{2}|20\d{2})\s*[-–—]\s*(19\d{2}|20\d{2})\s*\)?/;
   match = t.match(yearRangePattern);
   if (match) {
-    return match[2];
+    return `${match[2]}-01-01`;
   }
 
   // ===== STANDALONE DATES IN OBITUARY CONTEXT =====

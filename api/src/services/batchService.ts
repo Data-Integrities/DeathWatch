@@ -27,6 +27,8 @@ export async function runBatch() {
 
   console.log(`[Batch] Found ${queries.length} active queries`);
   let totalNewResults = 0;
+  let queriesOk = 0;
+  let queriesFailed = 0;
 
   for (let i = 0; i < queries.length; i++) {
     const q = queries[i];
@@ -104,15 +106,17 @@ export async function runBatch() {
       }
 
       totalNewResults += newCount;
+      queriesOk++;
       console.log(`  [${i + 1}/${queries.length}] ${label}: ${results.length} results, ${newCount} new`);
     } catch (err: any) {
+      queriesFailed++;
       console.error(`  [${i + 1}/${queries.length}] ${label}: ERROR -`, err);
       reportFatalError('batch', null, `Batch search failed for ${label}: ${err.message}`).catch(() => {});
     }
   }
 
-  console.log(`[Batch] Complete. ${totalNewResults} new results across ${queries.length} queries.`);
-  return { queriesRun: queries.length, newResults: totalNewResults };
+  console.log(`[Batch] Complete. ${totalNewResults} new results across ${queries.length} queries (${queriesOk} ok, ${queriesFailed} failed).`);
+  return { queriesTotal: queries.length, queriesOk, queriesFailed, newResults: totalNewResults };
 }
 
 /**

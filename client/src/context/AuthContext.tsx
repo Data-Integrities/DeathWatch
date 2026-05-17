@@ -127,6 +127,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => setOnUnauthorized(null);
   }, [signOut]);
 
+  useEffect(() => {
+    if (!user || impersonating) return;
+    const id = setInterval(() => {
+      if (Platform.OS === 'web' && typeof document !== 'undefined' && document.hidden) return;
+      refreshUser().catch(() => {});
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [user, impersonating, refreshUser]);
+
   return (
     <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, refreshUser, impersonating, startImpersonating, stopImpersonating }}>
       {children}
