@@ -10,6 +10,7 @@ import { Button } from '../../src/components/Button';
 import { StatePicker } from '../../src/components/StatePicker';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { BillingTallyModal } from '../../src/components/BillingTallyModal';
+import { Toast } from '../../src/components/Toast';
 import { colors, fontSize, spacing } from '../../src/theme';
 import type { SearchQueryCreate, SearchQuery, MatchResult } from '../../src/types';
 
@@ -37,6 +38,7 @@ export default function NewSearchScreen() {
   const [uncommittedCount, setUncommittedCount] = useState(0);
   const isFirstBeyondFive = useRef(true);
   const [committing, setCommitting] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
 
   const handleCreate = async () => {
     setError('');
@@ -101,11 +103,11 @@ export default function NewSearchScreen() {
     try {
       await api.post('/api/searches/commit', {});
       setTallyVisible(false);
-      router.replace('/matches');
+      setCommitting(false);
+      setToastVisible(true);
     } catch (err: any) {
       setError(err.message || 'Payment failed.  Your people are still being monitored.  Please try again.');
       setTallyVisible(false);
-    } finally {
       setCommitting(false);
     }
   };
@@ -233,6 +235,13 @@ export default function NewSearchScreen() {
     />
 
     <LoadingOverlay visible={committing} message="Processing payment..." />
+    <Toast
+      message="Payment updated.  Person added to your plan."
+      visible={toastVisible}
+      icon
+      duration={2000}
+      onDone={() => { setToastVisible(false); router.replace('/matches'); }}
+    />
     </View>
   );
 }

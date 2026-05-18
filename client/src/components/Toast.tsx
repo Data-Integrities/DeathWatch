@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Text, StyleSheet } from 'react-native';
+import { Animated, Text, View, StyleSheet } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import { colors, fontSize, spacing, borderRadius } from '../theme';
 
 interface ToastProps {
@@ -7,9 +8,10 @@ interface ToastProps {
   visible: boolean;
   onDone: () => void;
   duration?: number;
+  icon?: boolean;
 }
 
-export function Toast({ message, visible, onDone, duration = 1000 }: ToastProps) {
+export function Toast({ message, visible, onDone, duration = 1000, icon = false }: ToastProps) {
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -26,7 +28,10 @@ export function Toast({ message, visible, onDone, duration = 1000 }: ToastProps)
 
   return (
     <Animated.View style={[styles.container, { opacity }]}>
-      <Text style={styles.text}>{message}</Text>
+      <View style={styles.content}>
+        {icon && <FontAwesome name="check-circle" size={18} color={colors.white} style={styles.icon} />}
+        <Text style={styles.text}>{message}</Text>
+      </View>
     </Animated.View>
   );
 }
@@ -41,6 +46,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
     zIndex: 200,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    marginRight: 8,
   },
   text: {
     color: colors.white,

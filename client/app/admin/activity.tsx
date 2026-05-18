@@ -476,7 +476,7 @@ export default function ActivityScreen() {
                 : detailUser.planCode === 'PLAN_CUSTOM' && detailUser.tierCustomCap
                 ? String(detailUser.tierCustomCap)
                 : detailUser.planCode === 'PLAN_10'
-                ? 'Unlimited'
+                ? String(detailUser.searchesCount)
                 : '--')}
               {infoRow('Plan Start', detailUser.planStartDate || '--')}
               {infoRow('Plan Renewal', detailUser.planRenewalDate || '--')}
