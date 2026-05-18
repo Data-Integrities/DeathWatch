@@ -41,6 +41,7 @@ export const spacing = {
 };
 
 export const fontSize = {
+  xs: 12,
   sm: 14,
   base: 18,
   lg: 22,

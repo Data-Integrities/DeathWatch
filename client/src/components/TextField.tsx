@@ -36,7 +36,7 @@ export function TextField({ label, labelWidth, error, helperText, showPasswordTo
         <Text style={[styles.label, labelWidth ? { width: labelWidth } : undefined]}>{label}</Text>
         <View style={styles.inputWrap}>
           {!hasValue && props.placeholder && (
-            <Text style={styles.customPlaceholder} pointerEvents="none">{props.placeholder}</Text>
+            <Text style={[styles.customPlaceholder, { pointerEvents: 'none' } as any]}>{props.placeholder}</Text>
           )}
           <TextInput
             style={[
