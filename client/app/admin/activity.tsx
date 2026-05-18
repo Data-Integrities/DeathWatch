@@ -470,11 +470,14 @@ export default function ActivityScreen() {
                   </View>
                 </View>
               ) : null}
-              {infoRow('People Monitored', detailUser.planCode === 'PLAN_5'
-                ? `${detailUser.searchesCount} / 5`
+              {infoRow('People Monitored', String(detailUser.searchesCount))}
+              {infoRow('Plan Cap', detailUser.planCode === 'PLAN_5'
+                ? '5'
                 : detailUser.planCode === 'PLAN_CUSTOM' && detailUser.tierCustomCap
-                ? `${detailUser.searchesCount} / ${detailUser.tierCustomCap}`
-                : String(detailUser.searchesCount))}
+                ? String(detailUser.tierCustomCap)
+                : detailUser.planCode === 'PLAN_10'
+                ? 'Unlimited'
+                : '--')}
               {infoRow('Plan Start', detailUser.planStartDate || '--')}
               {infoRow('Plan Renewal', detailUser.planRenewalDate || '--')}
               {infoRow('Trial Searches Used', String(detailUser.trialSearchesUsed))}

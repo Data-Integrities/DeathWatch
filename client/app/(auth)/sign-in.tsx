@@ -27,7 +27,12 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (Platform.OS === 'web') {
+      try { return !!localStorage.getItem('obitnote_email'); } catch { return false; }
+    }
+    return false;
+  });
   const [supportVisible, setSupportVisible] = useState(false);
   const [pricingVisible, setPricingVisible] = useState(false);
   const [signUpVisible, setSignUpVisible] = useState(false);
