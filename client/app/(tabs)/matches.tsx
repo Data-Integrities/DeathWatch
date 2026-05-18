@@ -195,7 +195,10 @@ export default function HomeScreen() {
         </Pressable>
 
         {hasSearches && (
-          <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; const avail = user?.planCode === 'PLAN_5' ? Math.max(0, (user.planLimit ?? 5) - cnt) : user?.planCode === 'PLAN_10' ? searches.filter(s => s.confirmed).length : null; return (cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`) + (avail != null ? `  (${avail} available)` : ''); })()}{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
+          <View>
+            <Text style={styles.sectionTitle}>{(() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; })()}{'\n'}<Text style={styles.sectionSubtitle}>Tap to open</Text></Text>
+            {user?.planCode === 'PLAN_5' && (() => { const active = searches.filter(s => !s.confirmed).length; const remaining = Math.max(0, (user.planLimit ?? 5) - active); return remaining > 0 ? <Text style={styles.availableText}>{remaining} additional {remaining === 1 ? 'search' : 'searches'} available on your Basic plan.</Text> : <Text style={styles.availableText}>You've reached your Basic plan limit.  <Text style={styles.upgradeLink} onPress={() => router.push('/subscribe' as any)}>Upgrade to Plus</Text> for more.</Text>; })()}
+          </View>
         )}
         {modeToggle}
       </View>
@@ -221,7 +224,7 @@ export default function HomeScreen() {
               onDelete={(id, name) => setDeleteTarget({ id, name })}
               onNewSearch={() => router.push('/search/new')}
               onAbout={undefined}
-              searchCountText={hasSearches ? (() => { const cnt = searches.filter(s => !s.confirmed).length; const avail = user?.planCode === 'PLAN_5' ? Math.max(0, (user.planLimit ?? 5) - cnt) : user?.planCode === 'PLAN_10' ? searches.filter(s => s.confirmed).length : null; return (cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`) + (avail != null ? `  (${avail} available)` : ''); })() : undefined}
+              searchCountText={hasSearches ? (() => { const cnt = searches.filter(s => !s.confirmed).length; return cnt === 1 ? '1 Person searched for daily' : `${cnt} People searched for daily`; })() : undefined}
             />
           ) : !loading ? (
             <Text style={styles.noSearchesText}>No people being monitored yet.</Text>
@@ -373,6 +376,16 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: '700',
     color: '#444444',
+  },
+  availableText: {
+    fontSize: fontSize.sm,
+    color: '#444444',
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  upgradeLink: {
+    color: colors.green,
+    fontWeight: '700',
   },
   modeToggleRow: {
     marginBottom: spacing.sm,
