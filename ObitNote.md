@@ -78,7 +78,7 @@ Domain: obitnote.com (also owns obitnotes.com, redirects to obitnote.com)
                        v
     +------------------------------------------+
     |        PRODUCTION WEB SERVER             |
-    |        on-web-chi-1 (103.90.163.56)     |
+    |        ON-WB-CHI-1 (103.90.163.56)     |
     |        Private: 10.0.0.4                |
     |                                          |
     |  +----------+  +----------+  +--------+ |
@@ -98,7 +98,7 @@ Domain: obitnote.com (also owns obitnotes.com, redirects to obitnote.com)
     +------|---------------|-----------|--------+
     |      v               v           v       |
     |        PRODUCTION DB SERVER              |
-    |        on-db-chi-1 (10.0.0.2)           |
+    |        ON-DB-CHI-1 (10.0.0.2)           |
     |        NO public IP                      |
     |                                          |
     |        PostgreSQL 16 (:5432)             |
@@ -406,22 +406,33 @@ dw_user (login_id PK)
 
 ## 5. Infrastructure & Servers
 
+### Hostname Naming Schema
+
+Format: **ON-{FUNCTION}-{LOCATION}-{INSTANCE}** (all caps)
+
+| Segment | Meaning | Values |
+|---------|---------|--------|
+| Product | Product/purpose | `ON` = ObitNote, `GE` = general |
+| Function | Server role | `DB` = database, `WB` = web, `ST` = staging, `DV` = development |
+| Location | Datacenter city (3 letters) | `CHI` = Chicago, `DAL` = Dallas, `TOR` = Toronto |
+| Instance | Numeric instance | `1`, `2`, etc. |
+
 ### Production Environment
 
 | Server | Hostname | Public IP | Private IP | Role |
 |--------|----------|-----------|------------|------|
-| Web Server | on-web-chi-1 | 103.90.163.56 | 10.0.0.4 | nginx, API, Search, crons |
-| DB Server | on-db-chi-1 | None (removed) | 10.0.0.2 | PostgreSQL 16 only |
-| Dev/Build | — | 146.71.78.117 | 10.0.0.3 | Development, deploy source |
+| Web Server | ON-WB-CHI-1 | 103.90.163.56 | 10.0.0.4 | nginx, API, Search, crons |
+| DB Server | ON-DB-CHI-1 | None (removed) | 10.0.0.2 | PostgreSQL 16 only |
+| Dev/Build | GE-DV-CHI-3 | 146.71.78.117 | 10.0.0.3 | Development, deploy source |
 
 **Hosting Provider:** Kamatera (Chicago datacenter)  
 **VLAN:** `lan-1834538-obitnote-chi` (10.0.0.0/23, no gateway)
 
 ### Staging Environment
 
-| Server | IP | Role |
-|--------|-----|------|
-| Staging (all-in-one) | 146.71.78.194 | nginx + API + Search + PostgreSQL |
+| Server | Hostname | IP | Role |
+|--------|----------|----|------|
+| Staging (all-in-one) | ON-ST-CHI-1 | 146.71.78.194 | nginx + API + Search + PostgreSQL |
 
 **Domain:** stage.obitnote.com  
 **SSH:** `root@146.71.78.194`
