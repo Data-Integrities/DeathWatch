@@ -12,6 +12,7 @@ const sinch = isDev ? null : new SinchClient({
   projectId: PROJECT_ID,
   keyId: KEY_ID,
   keySecret: KEY_SECRET,
+  smsRegion: 'us',
 });
 
 export async function sendSms(to: string, body: string) {
