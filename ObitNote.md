@@ -1,6 +1,6 @@
 # ObitNote — Master Technical Documentation
 
-**Last Modified:** 2026-05-17  
+**Last Modified:** 2026-05-18  
 **Owner:** James Jones (james.jones@obitnote.com)  
 **Audience:** Successor developer / operations handoff
 
@@ -106,9 +106,18 @@ Domain: obitnote.com (also owns obitnotes.com, redirects to obitnote.com)
     +------------------------------------------+
 
     +------------------------------------------+
+    |        STAGING SERVER                    |
+    |        ON-ST-CHI-1 (146.71.78.194)      |
+    |        Private: 10.0.0.5                |
+    |        All-in-one: nginx + API + Search |
+    |        + PostgreSQL (port 22 VLAN only) |
+    +------------------------------------------+
+
+    +------------------------------------------+
     |        DEV/BUILD SERVER                  |
-    |        146.71.78.117 / 10.0.0.3         |
-    |        SSH key access to both servers    |
+    |        GE-DV-CHI-3 (146.71.78.117)      |
+    |        Private: 10.0.0.3                |
+    |        SSH key access to all servers     |
     +------------------------------------------+
 ```
 
@@ -430,12 +439,12 @@ Format: **ON-{FUNCTION}-{LOCATION}-{INSTANCE}** (all caps)
 
 ### Staging Environment
 
-| Server | Hostname | IP | Role |
-|--------|----------|----|------|
-| Staging (all-in-one) | ON-ST-CHI-1 | 146.71.78.194 | nginx + API + Search + PostgreSQL |
+| Server | Hostname | Public IP | Private IP | Role |
+|--------|----------|-----------|------------|------|
+| Staging (all-in-one) | ON-ST-CHI-1 | 146.71.78.194 | 10.0.0.5 | nginx + API + Search + PostgreSQL |
 
 **Domain:** stage.obitnote.com  
-**SSH:** `root@146.71.78.194`
+**SSH:** `obitnote_admin@146.71.78.194` (root login disabled)
 
 ### Network Security
 
@@ -453,9 +462,17 @@ INTERNET
     |
 +---+-------------------+
 | DB Server (10.0.0.2)  |
-| pg_hba: 10.0.0.4 only |
+| pg_hba: 10.0.0.4,     |
+|         10.0.0.5       |
 | NO public IP           |
 | NO UFW ports open      |
++---+-------------------+
+
++---+-------------------+
+| Staging (10.0.0.5)    |
+| UFW: 80, 443          |
+| Port 22: VLAN only    |
+| (public 22 closed)    |
 +---+-------------------+
 ```
 
@@ -474,7 +491,8 @@ INTERNET
 ### SSL/TLS
 
 - Let's Encrypt via certbot (auto-renewal systemd timer)
-- Covers: `obitnote.com` + `www.obitnote.com`
+- Production covers: `obitnote.com` + `www.obitnote.com`
+- Staging covers: `stage.obitnote.com`
 - www → bare domain 301 redirect (both HTTP and HTTPS)
 
 ---
@@ -506,6 +524,10 @@ tar czf /tmp/client.tar.gz --exclude='node_modules' --exclude='.expo' \
 # 2. Upload to production (via VLAN)
 scp /tmp/search.tar.gz /tmp/api.tar.gz /tmp/client.tar.gz \
     obitnote_admin@10.0.0.4:/tmp/
+
+# 2b. Upload to staging
+scp /tmp/search.tar.gz /tmp/api.tar.gz /tmp/client.tar.gz \
+    obitnote_admin@146.71.78.194:/tmp/
 
 # 3. SSH to production
 ssh obitnote_admin@10.0.0.4
@@ -835,8 +857,8 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 
 - **Role:** SMS notifications (match alerts, fatal error alerts)
 - **Phone number:** +12066493599
-- **SDK:** @sinch/sdk-core (Node.js)
-- **Status:** Delivery blocked (error code 60 — 10DLC registration issue). Support ticket pending.
+- **SDK:** @sinch/sdk-core (Node.js), configured with `smsRegion: 'us'`
+- **Status:** Delivery blocked (error code 60 — 10DLC/carrier registration issue).  Support ticket submitted 2026-05-18, awaiting response.
 - **Workaround:** Fatal error SMS still attempts; delivery will resume when Sinch resolves carrier blocking
 
 ### MaxMind GeoLite2
@@ -860,9 +882,10 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 
 ### Server Hardening
 
-- Root SSH disabled on all servers
-- Password authentication disabled (key-only)
-- UFW firewall (22, 80, 443 on web server; nothing public on DB)
+- Root SSH disabled on all servers (PermitRootLogin no)
+- All servers use `obitnote_admin` with passwordless sudo
+- UFW firewall (22, 80, 443 on web server; 80, 443 on staging; nothing public on DB)
+- Staging port 22 closed on public interface (SSH via private VLAN only)
 - Helmet.js security headers on API
 - PostgreSQL accessible only from web server IP via pg_hba.conf
 - DB server has no public IP address
@@ -1025,6 +1048,22 @@ Triggered at 85% usage.
    ```
 5. Verify: `psql -h 10.0.0.2 -U onadmin dw -c "SELECT count(*) FROM dw_user"`
 6. Restart: `pm2 start all`
+
+### Runbook: Round Robin Health Check
+
+**Script:** `/var/www/obitnote/obitnote_roundrobin_check.js` on staging (ON-ST-CHI-1)
+
+Checks 13 health points across all 3 servers:
+- SSH connectivity (prod web, prod DB, staging)
+- PM2 process health (api + search on prod and staging)
+- PostgreSQL connectivity (prod DB)
+- API health endpoint (prod and staging)
+- HTTPS availability (obitnote.com and stage.obitnote.com)
+- Disk usage (all servers)
+
+```bash
+ssh obitnote_admin@146.71.78.194 "node /var/www/obitnote/obitnote_roundrobin_check.js"
+```
 
 ### Runbook: Add New Support Staff (On-Call)
 
