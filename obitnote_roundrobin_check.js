@@ -81,7 +81,7 @@ const SERVERS = {
   staging: {
     name: 'ON-ST-CHI-1',
     role: 'Staging',
-    ip: '146.71.78.194',
+    ip: '10.0.0.5',
     sshUser: 'obitnote_admin',
     optional: true,
     checks: ['ssh', 'pm2', 'api', 'https', 'disk'],
