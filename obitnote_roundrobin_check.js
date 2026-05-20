@@ -12,6 +12,9 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
+const DRY_RUN = process.argv.includes('--dry-run');
+const TEST_FAILOVER = process.argv.includes('--test-failover');
+
 // Resolve modules from API's node_modules (Sinch, nodemailer, pg)
 module.paths.unshift('/var/www/obitnote/api/node_modules');
 
@@ -477,7 +480,8 @@ function updateCloudflareDns(ip) {
 // --- Auto-Failover ---
 
 async function performFailover(state) {
-  console.log('\n\x1b[31m*** AUTO-FAILOVER INITIATED ***\x1b[0m');
+  const mode = DRY_RUN ? 'DRY RUN' : 'LIVE';
+  console.log(`\n\x1b[31m*** AUTO-FAILOVER INITIATED (${mode}) ***\x1b[0m`);
   console.log(`[Failover] Chicago web unreachable for ${FAILOVER_THRESHOLD} consecutive checks`);
 
   const steps = [];
@@ -490,47 +494,72 @@ async function performFailover(state) {
   if (dbOk) {
     scenario = 'Web server failure (DB alive via VPN)';
     console.log('[Failover] Chicago DB reachable via VPN — keeping remote DB');
-    run("sudo sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgresql://onadmin:ondata@10.0.0.2:5432/dw|' /var/www/obitnote/api/.env");
-    run("sudo sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgresql://onadmin:ondata@10.0.0.2:5432/dw|' /var/www/obitnote/search/.env");
+    if (!DRY_RUN) {
+      run("sudo sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgresql://onadmin:ondata@10.0.0.2:5432/dw|' /var/www/obitnote/api/.env");
+      run("sudo sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgresql://onadmin:ondata@10.0.0.2:5432/dw|' /var/www/obitnote/search/.env");
+    }
     steps.push('DATABASE_URL pointed to Chicago DB (10.0.0.2) via VPN');
   } else {
     scenario = 'Full datacenter outage (DB unreachable)';
     console.log('[Failover] Chicago DB unreachable — promoting PostgreSQL replica');
-    run('sudo pg_ctlcluster 16 main promote', 30000);
-    run('sleep 3');
+    if (!DRY_RUN) {
+      run('sudo pg_ctlcluster 16 main promote', 30000);
+      run('sleep 3');
+    }
     steps.push('PostgreSQL replica promoted to primary (localhost)');
   }
 
   // Step 2: Set SERVER_ROLE=primary
-  run("sudo sed -i 's|SERVER_ROLE=standby|SERVER_ROLE=primary|' /var/www/obitnote/api/.env");
+  if (!DRY_RUN) {
+    run("sudo sed -i 's|SERVER_ROLE=standby|SERVER_ROLE=primary|' /var/www/obitnote/api/.env");
+  }
   steps.push('SERVER_ROLE set to primary');
 
   // Step 3: Restart PM2
-  const pm2Result = run('pm2 restart all --update-env', 30000);
-  steps.push(pm2Result !== null ? 'PM2 restarted' : 'PM2 restart FAILED');
+  if (!DRY_RUN) {
+    const pm2Result = run('pm2 restart all --update-env', 30000);
+    steps.push(pm2Result !== null ? 'PM2 restarted' : 'PM2 restart FAILED');
+  } else {
+    steps.push('PM2 restart (skipped — dry run)');
+  }
 
   // Step 4: Start nginx (SSL cert already pre-staged)
-  run('sudo systemctl start nginx', 15000);
+  if (!DRY_RUN) {
+    run('sudo systemctl start nginx', 15000);
+  }
   steps.push('nginx started (SSL pre-staged)');
 
   // Step 5: Update DNS
-  const dnsOk = updateCloudflareDns(DALLAS_PUBLIC_IP);
-  steps.push(dnsOk ? 'DNS updated to Dallas (43.231.235.200)' : 'DNS update FAILED — manual update required');
+  if (!DRY_RUN) {
+    const dnsOk = updateCloudflareDns(DALLAS_PUBLIC_IP);
+    steps.push(dnsOk ? 'DNS updated to Dallas (43.231.235.200)' : 'DNS update FAILED — manual update required');
+  } else {
+    steps.push('DNS update to Dallas (skipped — dry run)');
+  }
 
   // Step 6: Mark failover as executed
-  markFailoverExecuted({ scenario, steps, dbReachable: dbOk });
+  if (!DRY_RUN) {
+    markFailoverExecuted({ scenario, steps, dbReachable: dbOk });
+  } else {
+    steps.push('Failover marker (skipped — dry run)');
+  }
 
   // Step 7: Alert
   const details = steps.join('\n');
   console.log('\n[Failover] Steps completed:');
   steps.forEach(s => console.log(`  - ${s}`));
 
-  await sendFailoverAlert(scenario, details);
+  if (!DRY_RUN) {
+    await sendFailoverAlert(scenario, details);
+  } else {
+    console.log('[Failover] SMS + email alerts (skipped — dry run)');
+  }
 
-  console.log('\x1b[31m*** AUTO-FAILOVER COMPLETE ***\x1b[0m');
+  console.log(`\x1b[31m*** AUTO-FAILOVER ${DRY_RUN ? 'DRY RUN' : ''} COMPLETE ***\x1b[0m`);
 }
 
 function shouldFailover(state) {
+  if (TEST_FAILOVER) return true;
   if (isFailoverExecuted()) return false;
 
   const sshFails = state['prodWeb:ssh']?.consecutiveFails || 0;
@@ -544,7 +573,7 @@ function shouldFailover(state) {
 
 async function main() {
   const now = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z/, ' UTC');
-  console.log(`\nObitNote Round Robin Health Check`);
+  console.log(`\nObitNote Round Robin Health Check${DRY_RUN ? ' (DRY RUN)' : ''}`);
   console.log(now);
   if (isFailoverExecuted()) {
     console.log('\x1b[33m[FAILOVER MODE — Dallas is serving production]\x1b[0m');
@@ -609,12 +638,14 @@ async function main() {
   console.log(`Total: ${totalPass} passed, ${totalFail} failed, ${totalSkip} skipped`);
 
   // Save state before failover check (so consecutive counts are current)
-  saveState(state);
+  if (!DRY_RUN) {
+    saveState(state);
+  }
 
   // Check auto-failover conditions
   if (shouldFailover(state)) {
     await performFailover(state);
-  } else {
+  } else if (!DRY_RUN) {
     // Normal alerting (skip during failover execution — failover sends its own alert)
     if (newFailures.length > 0) {
       console.log(`\nSending ${newFailures.length} failure alert(s)...`);
