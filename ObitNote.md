@@ -673,6 +673,12 @@ DATABASE_URL=postgres://onadmin:ondata@10.0.0.2:5432/dw
 | `0 2 * * *` | 10:00 PM | `/home/obitnote_admin/backup-db.sh` | pg_dump + iDrive upload + report to API |
 | `0 */6 * * *` | Every 6 hrs | `/home/obitnote_admin/check-disk.sh` | Disk space check (alerts at 85%) |
 
+### System Crontab (on Dallas standby: 43.231.235.200)
+
+| Schedule (UTC) | Schedule (ET) | Script | Description |
+|---------------|--------------|--------|-------------|
+| `*/15 * * * *` | Every 15 min | `/var/www/obitnote/obitnote_roundrobin_check.js` | Round robin health check (SMS + email alerts) |
+
 ### Daily Batch Search Flow
 
 ```
@@ -747,6 +753,32 @@ When a critical error occurs anywhere in the system, it triggers:
 | backup | pg_dump or iDrive failure | api/src/services/backupService.ts |
 | database | DB unreachable or size over threshold | api/src/services/backupService.ts |
 | disk | Web server disk usage >= 85% | check-disk.sh |
+
+### Round Robin Health Check
+
+**Script:** `/var/www/obitnote/obitnote_roundrobin_check.js` on Dallas (ON-PB-DAL-1)
+**Schedule:** Every 15 minutes via crontab (`*/15 * * * *`)
+**Log:** `/var/log/obitnote/roundrobin.log`
+**State:** `/var/www/obitnote/data/roundrobin-state.json` (alert suppression tracking)
+
+Runs on Dallas because it can detect Chicago failures — the most critical scenario.
+
+**20 checks across 4 servers:**
+
+| Server | Checks |
+|--------|--------|
+| ON-PB-DAL-1 (Dallas) | PM2, PG replica status, replication lag, VPN tunnel, API health, disk |
+| ON-WB-CHI-1 (Prod Web) | SSH, PM2, API health, HTTPS (obitnote.com), disk |
+| ON-DB-CHI-1 (Prod DB) | Ping, PostgreSQL connectivity, disk |
+| ON-ST-CHI-1 (Staging) | SSH, PM2, API health, HTTPS, disk (optional — skipped when offline) |
+
+**Alerting:**
+- SMS + email to Support Chief on Call + Jim Jones (+19044770311, jimjones1000@gmail.com)
+- Direct Sinch/Zoho calls — bypasses SERVER_ROLE=standby gating
+- Max 3 consecutive alerts per failing check, then suppressed
+- Recovery notifications sent when a check passes after failing
+
+**Replication lag check:** Compares WAL receive/replay positions first.  If both match, the primary is idle and the replica is caught up regardless of timestamp age.  Only alerts when receive LSN > replay LSN and lag exceeds 5 minutes.
 
 ### External Monitoring
 
@@ -1201,18 +1233,21 @@ Triggered at 85% usage.
 
 ### Runbook: Round Robin Health Check
 
-**Script:** `/var/www/obitnote/obitnote_roundrobin_check.js` on staging (ON-ST-CHI-1)
-
-Checks 13 health points across all 3 servers:
-- SSH connectivity (prod web, prod DB, staging)
-- PM2 process health (api + search on prod and staging)
-- PostgreSQL connectivity (prod DB)
-- API health endpoint (prod and staging)
-- HTTPS availability (obitnote.com and stage.obitnote.com)
-- Disk usage (all servers)
+**Script:** `/var/www/obitnote/obitnote_roundrobin_check.js` on Dallas (ON-PB-DAL-1)
+**Runs automatically** every 15 minutes via crontab.  See Section 8 for check details and alerting behavior.
 
 ```bash
-ssh obitnote_admin@146.71.78.194 "node /var/www/obitnote/obitnote_roundrobin_check.js"
+# Manual run
+ssh obitnote_admin@43.231.235.200 "node /var/www/obitnote/obitnote_roundrobin_check.js"
+
+# View recent log
+ssh obitnote_admin@43.231.235.200 "tail -100 /var/log/obitnote/roundrobin.log"
+
+# View alert suppression state
+ssh obitnote_admin@43.231.235.200 "cat /var/www/obitnote/data/roundrobin-state.json"
+
+# Reset suppression (re-enables alerts for all checks)
+ssh obitnote_admin@43.231.235.200 "rm /var/www/obitnote/data/roundrobin-state.json"
 ```
 
 ### Runbook: Failover to Dallas Standby
@@ -1235,7 +1270,8 @@ ssh obitnote_admin@146.71.78.194 "node /var/www/obitnote/obitnote_roundrobin_che
 
 ### Runbook: Verify Dallas Standby Health
 
-**Frequency:** Weekly or after any production deploy.
+**Automated:** The round robin health check (every 15 min) monitors all of these.  See Section 8.
+**Manual verification** after deploys or suspected issues:
 
 ```bash
 ssh obitnote_admin@43.231.235.200
@@ -1243,14 +1279,16 @@ ssh obitnote_admin@43.231.235.200
 ping -c 1 10.0.0.2
 # Replication mode
 sudo -u postgres psql -c "SELECT pg_is_in_recovery();"   # should be 't'
-# Replication lag
-sudo -u postgres psql -c "SELECT NOW() - pg_last_xact_replay_timestamp();"   # should be < 1s
+# Replication lag (WAL positions should match; timestamp lag is normal when primary is idle)
+sudo -u postgres psql -c "SELECT pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() AS caught_up, NOW() - pg_last_xact_replay_timestamp() AS timestamp_lag;"
 # API health
 curl -s http://localhost:3001/api/health
 # PM2 status
 pm2 status
 # Crons disabled
 pm2 logs api --lines 5 --nostream | grep standby
+# Recent round robin results
+tail -30 /var/log/obitnote/roundrobin.log
 ```
 
 ### Runbook: Add New Support Staff (On-Call)
