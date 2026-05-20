@@ -71,7 +71,7 @@ Domain: obitnote.com (also owns obitnotes.com, redirects to obitnote.com)
                          |
                          v
                 +------------------+
-                |   GoDaddy DNS    |
+                | Cloudflare DNS   |
                 |   obitnote.com   |
                 +--------+---------+
                          |
@@ -515,18 +515,20 @@ The `SERVER_ROLE` environment variable controls cron jobs and notification deliv
 
 ### DNS Configuration
 
-| Record | Value | Provider |
-|--------|-------|----------|
-| obitnote.com A | 103.90.163.56 | GoDaddy |
-| www.obitnote.com CNAME | obitnote.com | GoDaddy |
-| obitnotes.com A | 103.90.163.56 | GoDaddy |
-| www.obitnotes.com A | 103.90.163.56 | GoDaddy |
-| stage.obitnote.com A | 146.71.78.194 | GoDaddy |
-| pb.obitnote.com A | 43.231.235.200 | GoDaddy |
-| MX (obitnote.com) | mx.zoho.com (priority 10) | GoDaddy |
-| SPF TXT | v=spf1 include:zoho.com ~all | GoDaddy |
-| DKIM TXT | zoho._domainkey | GoDaddy |
-| DMARC TXT | v=DMARC1; p=none | GoDaddy |
+| Record | Value | Provider | TTL |
+|--------|-------|----------|-----|
+| obitnote.com A | 103.90.163.56 | Cloudflare | 60s |
+| www.obitnote.com CNAME | obitnote.com | Cloudflare | 60s |
+| stage.obitnote.com A | 146.71.78.194 | Cloudflare | 60s |
+| pb.obitnote.com A | 43.231.235.200 | Cloudflare | 60s |
+| MX (obitnote.com) | mx.zoho.com (priority 10) | Cloudflare | Auto |
+| SPF TXT | v=spf1 include:zoho.com ~all | Cloudflare | Auto |
+| DKIM TXT | zoho._domainkey | Cloudflare | Auto |
+| DMARC TXT | v=DMARC1; p=none | Cloudflare | Auto |
+| obitnotes.com A | 103.90.163.56 | GoDaddy | 600s |
+| www.obitnotes.com A | 103.90.163.56 | GoDaddy | 600s |
+
+**DNS provider:** Cloudflare (free plan, DNS-only mode — no proxy).  Domain registered at GoDaddy, nameservers pointed to Cloudflare (`clyde.ns.cloudflare.com`, `leia.ns.cloudflare.com`).  obitnotes.com remains on GoDaddy DNS (redirect domain only).
 
 ### obitnotes.com Redirect
 
@@ -541,7 +543,8 @@ The alternate domain `obitnotes.com` (with an 's') redirects all traffic to `obi
 ### SSL/TLS
 
 - Let's Encrypt via certbot (auto-renewal systemd timer)
-- Production cert: `obitnote.com` + `www.obitnote.com`
+- Production cert (Chicago): `obitnote.com` + `www.obitnote.com` — HTTP-01 validation
+- Dallas standby cert: `obitnote.com` + `www.obitnote.com` — DNS-01 validation via Cloudflare API (pre-staged for failover)
 - Alternate domain cert: `obitnotes.com` + `www.obitnotes.com`
 - Staging cert: `stage.obitnote.com`
 - www → bare domain 301 redirect (both HTTP and HTTPS)
@@ -677,7 +680,7 @@ DATABASE_URL=postgres://onadmin:ondata@10.0.0.2:5432/dw
 
 | Schedule (UTC) | Schedule (ET) | Script | Description |
 |---------------|--------------|--------|-------------|
-| `*/15 * * * *` | Every 15 min | `/var/www/obitnote/obitnote_roundrobin_check.js` | Round robin health check (SMS + email alerts) |
+| `*/2 * * * *` | Every 2 min | `/var/www/obitnote/obitnote_roundrobin_check.js` | Health check + auto-failover (SMS + email alerts) |
 
 ### Daily Batch Search Flow
 
@@ -754,12 +757,13 @@ When a critical error occurs anywhere in the system, it triggers:
 | database | DB unreachable or size over threshold | api/src/services/backupService.ts |
 | disk | Web server disk usage >= 85% | check-disk.sh |
 
-### Round Robin Health Check
+### Round Robin Health Check + Auto-Failover
 
 **Script:** `/var/www/obitnote/obitnote_roundrobin_check.js` on Dallas (ON-PB-DAL-1)
-**Schedule:** Every 15 minutes via crontab (`*/15 * * * *`)
+**Schedule:** Every 2 minutes via crontab (`*/2 * * * *`)
 **Log:** `/var/log/obitnote/roundrobin.log`
 **State:** `/var/www/obitnote/data/roundrobin-state.json` (alert suppression tracking)
+**Failover marker:** `/var/www/obitnote/data/failover-executed.json` (created on auto-failover)
 
 Runs on Dallas because it can detect Chicago failures — the most critical scenario.
 
@@ -779,6 +783,28 @@ Runs on Dallas because it can detect Chicago failures — the most critical scen
 - Recovery notifications sent when a check passes after failing
 
 **Replication lag check:** Compares WAL receive/replay positions first.  If both match, the primary is idle and the replica is caught up regardless of timestamp age.  Only alerts when receive LSN > replay LSN and lag exceeds 5 minutes.
+
+**Auto-failover trigger:** If BOTH `prodWeb:ssh` (SSH to 103.90.163.56) AND `prodWeb:https` (public HTTPS to obitnote.com) fail for 5 consecutive checks (10 minutes), the script automatically fails over to Dallas.  Requiring both paths prevents false positives from VPN glitches or transient network issues.
+
+**Auto-failover steps (performed automatically):**
+1. Check if Chicago DB is reachable via VPN
+   - **DB alive:** Point DATABASE_URL to 10.0.0.2 via VPN (Scenario A: web server failure)
+   - **DB unreachable:** Promote PostgreSQL replica to primary (Scenario C: full outage)
+2. Set `SERVER_ROLE=primary` in api/.env
+3. Restart PM2 with `--update-env`
+4. Start nginx (SSL cert pre-staged via certbot + Cloudflare DNS-01 validation)
+5. Update Cloudflare DNS: obitnote.com A record → 43.231.235.200 (60s TTL)
+6. Create failover marker file (prevents re-execution on subsequent runs)
+7. Send AUTO-FAILOVER alert via SMS + email
+
+**After auto-failover:** The script continues running every 2 minutes in failover mode, skipping replica-specific checks.  Chicago checks will still fail and be reported (suppressed after 3 alerts).  Manual intervention required to restore Chicago — see "Switch Back to Chicago" in Section 9.
+
+**DNS managed by Cloudflare** (moved from GoDaddy for API access):
+- Zone ID: `6b99b2b4620c2991edf3d7459ae642a2`
+- API token in Dallas api/.env (`CLOUDFLARE_API_TOKEN`)
+- Nameservers: `clyde.ns.cloudflare.com`, `leia.ns.cloudflare.com`
+
+**SSL on Dallas:** Pre-staged via certbot with Cloudflare DNS-01 plugin.  Auto-renews via certbot systemd timer.  No delay during failover — cert exists before it's needed.
 
 ### External Monitoring
 
@@ -846,12 +872,11 @@ If missing: SMS + email alert
    ```
 4. Change `SERVER_ROLE=primary` in api/.env
 5. `pm2 restart all --update-env`
-6. Start nginx: `sudo systemctl start nginx`
-7. Run certbot: `sudo certbot --nginx -d obitnote.com -d www.obitnote.com`
-8. Update GoDaddy: obitnote.com A record → 43.231.235.200
-9. Verify: `curl https://obitnote.com/api/health` (after DNS propagates)
+6. Start nginx: `sudo systemctl start nginx` (SSL cert pre-staged)
+7. Update Cloudflare DNS: obitnote.com A record → 43.231.235.200 (auto-failover does this automatically)
+8. Verify: `curl https://obitnote.com/api/health` (after DNS propagates, ~60s)
 
-**Time estimate:** 5-15 minutes  
+**Time estimate:** ~10 minutes (automatic), 5 minutes (manual)
 **Data loss:** Seconds (streaming replication)
 
 #### Scenario B: Database Server Failure (web still alive)
@@ -880,13 +905,12 @@ If missing: SMS + email alert
 3. DATABASE_URL already points to localhost — no change needed
 4. Change `SERVER_ROLE=primary` in api/.env
 5. `pm2 restart all --update-env`
-6. Start nginx: `sudo systemctl start nginx`
-7. Run certbot: `sudo certbot --nginx -d obitnote.com -d www.obitnote.com`
-8. Update GoDaddy: obitnote.com A record → 43.231.235.200
-9. Set up backup-db.sh crontab for local pg_dump + iDrive
-10. Verify: `curl https://obitnote.com/api/health`
+6. Start nginx: `sudo systemctl start nginx` (SSL cert pre-staged)
+7. Update Cloudflare DNS: obitnote.com A record → 43.231.235.200 (auto-failover does this automatically)
+8. Set up backup-db.sh crontab for local pg_dump + iDrive
+9. Verify: `curl https://obitnote.com/api/health`
 
-**Time estimate:** 10-20 minutes  
+**Time estimate:** ~10 minutes (automatic), 5-10 minutes (manual)
 **Data loss:** Seconds (streaming replication)
 
 #### After Recovery: Switch Back to Chicago
@@ -936,7 +960,6 @@ sudo -u postgres psql -c "SELECT pg_is_in_recovery();"   # should be 't'
 #   DATABASE_URL=postgresql://onadmin:ondata@localhost:5432/dw
 pm2 restart all --update-env
 sudo systemctl stop nginx
-sudo systemctl disable nginx
 ```
 
 **Step 4: Point traffic back to Chicago**
@@ -947,10 +970,23 @@ sudo systemctl disable nginx
 #   SERVER_ROLE=primary
 pm2 restart all --update-env
 
-# Update GoDaddy: obitnote.com A record → 103.90.163.56
+# Update Cloudflare DNS: obitnote.com A record → 103.90.163.56
+# Via dashboard (dash.cloudflare.com → obitnote.com → DNS) or API:
+curl -X PUT "https://api.cloudflare.com/client/v4/zones/6b99b2b4620c2991edf3d7459ae642a2/dns_records/825d5eae8f6ba96076a74495e778533b" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"A","name":"obitnote.com","content":"103.90.163.56","ttl":60,"proxied":false}'
 ```
 
-**Step 5: Verify**
+**Step 5: Remove failover marker and reset alert state**
+
+```bash
+# On Dallas:
+rm /var/www/obitnote/data/failover-executed.json
+rm /var/www/obitnote/data/roundrobin-state.json
+```
+
+**Step 6: Verify**
 
 ```bash
 # From Chicago:
@@ -963,6 +999,9 @@ pm2 logs api --lines 5 --nostream   # should show standby message
 
 # From Chicago DB:
 sudo -u postgres psql -c "SELECT client_addr, state FROM pg_stat_replication;"   # Dallas streaming
+
+# Run health check to confirm clean state:
+node /var/www/obitnote/obitnote_roundrobin_check.js
 ```
 
 #### Scenario: Code Corruption / Bad Deploy
@@ -997,7 +1036,8 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 | Service | Purpose | Account Email | Credential Location | How to Obtain |
 |---------|---------|--------------|---------------------|---------------|
 | **Kamatera** | Server hosting | jim.jones@musicdatasystems.com | Browser saved/password manager | kamatera.com account recovery |
-| **GoDaddy** | Domain registrar + DNS | jimjones1000@gmail.com | Password manager | godaddy.com account recovery |
+| **GoDaddy** | Domain registrar (nameservers → Cloudflare) | jimjones1000@gmail.com | Password manager | godaddy.com account recovery |
+| **Cloudflare** | DNS management + API (auto-failover) | james.jones@obitnote.com | api/.env on Dallas (CLOUDFLARE_*) | dash.cloudflare.com |
 | **Paddle** | Payment processing | jim.jones@obitnote.com | api/.env (PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET) | paddle.com vendor dashboard |
 | **Serper.dev** | Google search API | jimjones1000@gmail.com | search/.env (SERPER_API_KEY) | serper.dev dashboard |
 | **Zoho Mail** | SMTP email sending | james.jones@obitnote.com | api/.env (ZOHO_SMTP_PASSWORD) | Zoho admin console |
@@ -1204,7 +1244,7 @@ Certbot auto-renews.  If it fails:
 1. SSH to web server
 2. Check: `sudo certbot certificates`
 3. Force renewal: `sudo certbot renew --force-renewal`
-4. If domain validation fails: Check GoDaddy DNS A records point to 103.90.163.56
+4. If domain validation fails: Check Cloudflare DNS A records point to correct IP (dash.cloudflare.com → obitnote.com → DNS)
 5. Restart nginx: `sudo systemctl restart nginx`
 
 ### Runbook: Disk Space Alert
@@ -1234,7 +1274,7 @@ Triggered at 85% usage.
 ### Runbook: Round Robin Health Check
 
 **Script:** `/var/www/obitnote/obitnote_roundrobin_check.js` on Dallas (ON-PB-DAL-1)
-**Runs automatically** every 15 minutes via crontab.  See Section 8 for check details and alerting behavior.
+**Runs automatically** every 2 minutes via crontab.  See Section 8 for check details, alerting, and auto-failover behavior.
 
 ```bash
 # Manual run
@@ -1248,11 +1288,17 @@ ssh obitnote_admin@43.231.235.200 "cat /var/www/obitnote/data/roundrobin-state.j
 
 # Reset suppression (re-enables alerts for all checks)
 ssh obitnote_admin@43.231.235.200 "rm /var/www/obitnote/data/roundrobin-state.json"
+
+# Check if auto-failover has been executed
+ssh obitnote_admin@43.231.235.200 "cat /var/www/obitnote/data/failover-executed.json 2>/dev/null || echo 'No failover'"
+
+# Remove failover marker (after restoring Chicago — see Section 9)
+ssh obitnote_admin@43.231.235.200 "rm /var/www/obitnote/data/failover-executed.json"
 ```
 
 ### Runbook: Failover to Dallas Standby
 
-**When:** Chicago servers are unreachable or critically degraded.
+**This failover is now AUTOMATIC.**  The round robin script auto-fails over after 10 minutes of Chicago web unreachability (see Section 8).  The steps below are for manual failover if the script hasn't triggered, or for reference.
 
 1. SSH to Dallas: `ssh obitnote_admin@43.231.235.200`
 2. Check replication status: `sudo -u postgres psql -c "SELECT pg_is_in_recovery();"`
@@ -1262,15 +1308,15 @@ ssh obitnote_admin@43.231.235.200 "rm /var/www/obitnote/data/roundrobin-state.js
    - `SERVER_ROLE=primary`
    - `DATABASE_URL=postgresql://onadmin:ondata@localhost:5432/dw` (promoted replica) or `@10.0.0.2:5432/dw` (Chicago DB via VPN)
 6. `pm2 restart all --update-env`
-7. Start nginx: `sudo systemctl start nginx`
-8. SSL: `sudo certbot --nginx -d obitnote.com -d www.obitnote.com`
-9. DNS: Update GoDaddy obitnote.com A record → 43.231.235.200
-10. Verify: `curl https://obitnote.com/api/health`
-11. Set up backup-db.sh crontab if running on local DB
+7. Start nginx: `sudo systemctl start nginx` (SSL cert already pre-staged)
+8. DNS: Update Cloudflare obitnote.com A record → 43.231.235.200 (via dashboard or API)
+9. Verify: `curl https://obitnote.com/api/health`
+10. Set up backup-db.sh crontab if running on local DB
+11. Create failover marker: `echo '{"executedAt":"'$(date -u +%FT%TZ)'","scenario":"manual"}' > /var/www/obitnote/data/failover-executed.json`
 
 ### Runbook: Verify Dallas Standby Health
 
-**Automated:** The round robin health check (every 15 min) monitors all of these.  See Section 8.
+**Automated:** The round robin health check (every 2 min) monitors all of these.  See Section 8.
 **Manual verification** after deploys or suspected issues:
 
 ```bash
