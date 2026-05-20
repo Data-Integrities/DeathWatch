@@ -8,7 +8,8 @@ const FROM_EMAIL = SMTP_USER || 'support@obitnote.com';
 const APP_URL = process.env.APP_URL || 'http://localhost:8081';
 const API_URL = process.env.API_URL || 'http://localhost:3001';
 
-const isDev = !SMTP_PASSWORD;
+const isStandby = process.env.SERVER_ROLE === 'standby';
+const isDev = isStandby || !SMTP_PASSWORD;
 
 const transporter = isDev
   ? null

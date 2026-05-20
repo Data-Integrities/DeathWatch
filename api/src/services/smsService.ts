@@ -6,7 +6,8 @@ const KEY_ID = process.env.SINCH_KEY_ID || '';
 const KEY_SECRET = process.env.SINCH_KEY_SECRET || '';
 const FROM_NUMBER = process.env.SINCH_FROM_NUMBER || '';
 
-const isDev = !PROJECT_ID || !KEY_ID || !KEY_SECRET || !FROM_NUMBER;
+const isStandby = process.env.SERVER_ROLE === 'standby';
+const isDev = isStandby || !PROJECT_ID || !KEY_ID || !KEY_SECRET || !FROM_NUMBER;
 
 const sinch = isDev ? null : new SinchClient({
   projectId: PROJECT_ID,
@@ -46,11 +47,11 @@ export async function sendSms(to: string, body: string) {
 }
 
 export async function sendMatchSms(phone: string) {
-  await sendSms(phone, 'ObitNote: New potential obituary match found.  Sign in to see: https://ObitNote.com');
+  await sendSms(phone, 'ObitNote: New potential obituary match found.  Sign in to see: https://obitnote.com');
 }
 
 export async function sendReplySms(phone: string) {
-  await sendSms(phone, 'ObitNote: You have a new support reply.  Sign in to read: https://ObitNote.com');
+  await sendSms(phone, 'ObitNote: You have a new support reply.  Sign in to read: https://obitnote.com');
 }
 
 export async function sendErrorAlertSms(phone: string, summary: string) {

@@ -1,6 +1,6 @@
 # ObitNote — Master Technical Documentation
 
-**Last Modified:** 2026-05-18  
+**Last Modified:** 2026-05-19  
 **Owner:** James Jones (james.jones@obitnote.com)  
 **Audience:** Successor developer / operations handoff
 
@@ -67,58 +67,58 @@ Domain: obitnote.com (also owns obitnotes.com, redirects to obitnote.com)
 ### High-Level Topology
 
 ```
-                    INTERNET
-                       |
-                       v
-              +------------------+
-              |   Cloudflare DNS |
-              |  obitnote.com    |
-              +--------+---------+
-                       |
-                       v
-    +------------------------------------------+
-    |        PRODUCTION WEB SERVER             |
-    |        ON-WB-CHI-1 (103.90.163.56)     |
-    |        Private: 10.0.0.4                |
-    |                                          |
-    |  +----------+  +----------+  +--------+ |
-    |  |  nginx   |  |  PM2     |  | cron   | |
-    |  | :80/:443 |  |          |  | jobs   | |
-    |  +----+-----+  +----+-----+  +--------+ |
-    |       |              |                   |
-    |       v              v                   |
-    |  /client/dist   +--------+  +--------+  |
-    |  (static SPA)   | api    |  | search |  |
-    |                  | :3001  |  | :3000  |  |
-    |                  +---+----+  +---+----+  |
-    +------|---------------|-----------|--------+
-           |               |           |
-           |    Private VLAN (10.0.0.0/23)
-           |               |           |
-    +------|---------------|-----------|--------+
-    |      v               v           v       |
-    |        PRODUCTION DB SERVER              |
-    |        ON-DB-CHI-1 (10.0.0.2)           |
-    |        NO public IP                      |
-    |                                          |
-    |        PostgreSQL 16 (:5432)             |
-    |        Database: dw                      |
-    +------------------------------------------+
+                      INTERNET
+                         |
+                         v
+                +------------------+
+                |   GoDaddy DNS    |
+                |   obitnote.com   |
+                +--------+---------+
+                         |
+                         v
+    +----------------------------------------------+
+    |  PRODUCTION WEB SERVER                       |
+    |  ON-WB-CHI-1 (103.90.163.56)                 |
+    |  Private: 10.0.0.4                           |
+    |                                              |
+    |  +----------+  +----------+  +----------+    |
+    |  |  nginx   |  |   PM2    |  |   cron   |    |
+    |  | :80/:443 |  |          |  |   jobs   |    |
+    |  +----+-----+  +----+-----+  +----------+    |
+    |       |              |                       |
+    |       v              v                       |
+    |  /client/dist   +--------+    +--------+     |
+    |  (static SPA)   |  api   |    | search |     |
+    |                 | :3001  |    | :3000  |     |
+    |                 +---+----+    +---+----+     |
+    +------|--------------|-------------|----------+
+           |              |             |
+           |     Private VLAN (10.0.0.0/23)
+           |              |             |
+    +------|--------------|-------------|----------+
+    |      v              v             v          |
+    |  PRODUCTION DB SERVER                        |
+    |  ON-DB-CHI-1 (10.0.0.2)                      |
+    |  NO public IP                                |
+    |                                              |
+    |  PostgreSQL 16 (:5432)                       |
+    |  Database: dw                                |
+    +----------------------------------------------+
 
-    +------------------------------------------+
-    |        STAGING SERVER                    |
-    |        ON-ST-CHI-1 (146.71.78.194)      |
-    |        Private: 10.0.0.5                |
-    |        All-in-one: nginx + API + Search |
-    |        + PostgreSQL (port 22 VLAN only) |
-    +------------------------------------------+
+    +----------------------------------------------+
+    |  STAGING SERVER                              |
+    |  ON-ST-CHI-1 (146.71.78.194)                 |
+    |  Private: 10.0.0.5                           |
+    |  All-in-one: nginx + API + Search + PG       |
+    |  Port 22: VLAN only (public SSH closed)      |
+    +----------------------------------------------+
 
-    +------------------------------------------+
-    |        DEV/BUILD SERVER                  |
-    |        GE-DV-CHI-3 (146.71.78.117)      |
-    |        Private: 10.0.0.3                |
-    |        SSH key access to all servers     |
-    +------------------------------------------+
+    +----------------------------------------------+
+    |  DEV/BUILD SERVER                            |
+    |  GE-DV-CHI-3 (146.71.78.117)                 |
+    |  Private: 10.0.0.3                           |
+    |  SSH key access to all servers               |
+    +----------------------------------------------+
 ```
 
 ### Request Flow
@@ -138,16 +138,16 @@ Browser  --(HTTPS)--> nginx (SSL termination)
 ### Service Communication
 
 ```
-+-------------+         +-------------+         +---------------+
-|   Client    | --API-->|   API       | --HTTP-->| Search Engine |
-|   (Browser) |         |   (Express) |         | (Express)     |
-+-------------+         +------+------+         +-------+-------+
-                               |                        |
-                               v                        v
-                        +------+------+          +------+------+
-                        | PostgreSQL  |          | Serper.dev  |
-                        | (10.0.0.2)  |          | (Google API)|
-                        +-------------+          +-------------+
++-------------+          +-------------+         +---------------+
+|   Client    |  --API-->|     API     | --HTTP->| Search Engine |
+|  (Browser)  |          |  (Express)  |         |   (Express)   |
++-------------+          +------+------+         +-------+-------+
+                                |                        |
+                                v                        v
+                         +------+------+         +-------+-------+
+                         | PostgreSQL  |         | Serper.dev    |
+                         | (10.0.0.2)  |         | (Google API)  |
+                         +-------------+         +---------------+
 ```
 
 ### Technology Stack
@@ -161,7 +161,7 @@ Browser  --(HTTPS)--> nginx (SSL termination)
 | Process Manager | PM2 | 7.0.1 |
 | Web Server | nginx | 1.28.3 |
 | SSL | Let's Encrypt (certbot) | Auto-renewal |
-| OS | Ubuntu | 26.04 LTS (web), 24.04 LTS (db) |
+| OS | Ubuntu | 26.04 LTS (web), 24.04 LTS (db, staging) |
 | Hosting | Kamatera | Chicago datacenter |
 
 ---
@@ -428,14 +428,16 @@ Format: **ON-{FUNCTION}-{LOCATION}-{INSTANCE}** (all caps)
 
 ### Production Environment
 
-| Server | Hostname | Public IP | Private IP | Role |
-|--------|----------|-----------|------------|------|
-| Web Server | ON-WB-CHI-1 | 103.90.163.56 | 10.0.0.4 | nginx, API, Search, crons |
-| DB Server | ON-DB-CHI-1 | None (removed) | 10.0.0.2 | PostgreSQL 16 only |
+| Server | Hostname | Public IP | Private/VPN IP | Role |
+|--------|----------|-----------|----------------|------|
+| Web Server | ON-WB-CHI-1 | 103.90.163.56 | 10.0.0.4 / 10.10.0.1 | nginx, API, Search, crons |
+| DB Server | ON-DB-CHI-1 | None (removed) | 10.0.0.2 | PostgreSQL 16 primary |
 | Dev/Build | GE-DV-CHI-3 | 146.71.78.117 | 10.0.0.3 | Development, deploy source |
+| Warm Standby | ON-PB-DAL-1 | 43.231.235.200 | 10.10.0.2 | PG replica, API, Search (standby) |
 
-**Hosting Provider:** Kamatera (Chicago datacenter)  
-**VLAN:** `lan-1834538-obitnote-chi` (10.0.0.0/23, no gateway)
+**Hosting Provider:** Kamatera (Chicago + Dallas datacenters)  
+**VLAN:** `lan-1834538-obitnote-chi` (10.0.0.0/23, no gateway)  
+**VPN:** WireGuard tunnel (10.10.0.0/24) between Chicago web and Dallas standby
 
 ### Staging Environment
 
@@ -449,32 +451,67 @@ Format: **ON-{FUNCTION}-{LOCATION}-{INSTANCE}** (all caps)
 ### Network Security
 
 ```
-INTERNET
-    |
-    v (ports 80, 443 only)
-+---+-------------------+
-| Web Server (10.0.0.4) |
-| UFW: 22, 80, 443      |
-+---+-------------------+
+INTERNET                                   INTERNET
+    |                                          |
+    v (ports 80, 443 only)                     v (port 51820 WireGuard)
++-----------------------------+          +-----------------------------+
+| Web Server (10.0.0.4)       |          | Standby (10.10.0.2)         |
+| Chicago, ON-WB-CHI-1        |          | Dallas, ON-PB-DAL-1         |
+| UFW: 22, 80, 443, 51820     |          | UFW: 22, 80, 443, 51820     |
+| WireGuard: 10.10.0.1        |          | WireGuard: 10.10.0.2        |
+| IP forwarding + MASQUERADE  |          | SERVER_ROLE=standby         |
+| Crons, notifications        |          | PG streaming replica        |
++-----------------------------+          +-----------------------------+
+    |               |                               |
+    |               |    WireGuard VPN tunnel       |
+    |               |    (10.10.0.0/24, ~24ms)      |
+    |               +-------------------------------+
     |
     | Private VLAN (10.0.0.0/23)
     | TCP only (ICMP blocked by Kamatera)
     |
-+---+-------------------+
-| DB Server (10.0.0.2)  |
-| pg_hba: 10.0.0.4,     |
-|         10.0.0.5       |
-| NO public IP           |
-| NO UFW ports open      |
-+---+-------------------+
++-----------------------------+
+| DB Server (10.0.0.2)        |
+| Chicago, ON-DB-CHI-1        |
+| pg_hba: 10.0.0.4, 10.0.0.5  |
+| replicator: 10.0.0.4        |
+| NO public IP                |
+| NO UFW ports open           |
++-----------------------------+
 
-+---+-------------------+
-| Staging (10.0.0.5)    |
-| UFW: 80, 443          |
-| Port 22: VLAN only    |
-| (public 22 closed)    |
-+---+-------------------+
++-----------------------------+
+| Staging (10.0.0.5)          |
+| Chicago, ON-ST-CHI-1        |
+| UFW: 80, 443                |
+| Port 22: VLAN only          |
++-----------------------------+
 ```
+
+### WireGuard VPN (Chicago ↔ Dallas)
+
+The Dallas standby server (ON-PB-DAL-1) connects to the Chicago web server (ON-WB-CHI-1) via a WireGuard VPN tunnel.  Chicago forwards Dallas traffic to the VLAN using IP forwarding and MASQUERADE NAT.
+
+| Setting | Chicago (ON-WB-CHI-1) | Dallas (ON-PB-DAL-1) |
+|---------|----------------------|----------------------|
+| VPN IP | 10.10.0.1/24 | 10.10.0.2/24 |
+| Listen port | 51820 | Dynamic |
+| Config file | /etc/wireguard/wg0.conf | /etc/wireguard/wg0.conf |
+| AllowedIPs | 10.10.0.2/32 | 10.10.0.1/32, 10.0.0.0/23 |
+| Latency | ~24ms round trip | ~24ms round trip |
+
+**IP forwarding (Chicago):** `net.ipv4.ip_forward = 1` in /etc/sysctl.conf  
+**MASQUERADE (Chicago):** NAT rule in /etc/ufw/before.rules — Dallas traffic to VLAN appears as 10.0.0.4  
+**Forwarding rules (Chicago):** ufw-before-forward allows wg0 ↔ eth1
+
+### SERVER_ROLE Gating
+
+The `SERVER_ROLE` environment variable controls cron jobs and notification delivery:
+
+| Value | Crons | SMS/Email | Use case |
+|-------|-------|-----------|----------|
+| `primary` | Run | Send | Production web server |
+| `standby` | Disabled | Console only | Dallas warm standby |
+| (undefined) | Run | Console if no creds | Local development |
 
 ### DNS Configuration
 
@@ -482,17 +519,31 @@ INTERNET
 |--------|-------|----------|
 | obitnote.com A | 103.90.163.56 | GoDaddy |
 | www.obitnote.com CNAME | obitnote.com | GoDaddy |
+| obitnotes.com A | 103.90.163.56 | GoDaddy |
+| www.obitnotes.com A | 103.90.163.56 | GoDaddy |
 | stage.obitnote.com A | 146.71.78.194 | GoDaddy |
+| pb.obitnote.com A | 43.231.235.200 | GoDaddy |
 | MX (obitnote.com) | mx.zoho.com (priority 10) | GoDaddy |
 | SPF TXT | v=spf1 include:zoho.com ~all | GoDaddy |
 | DKIM TXT | zoho._domainkey | GoDaddy |
 | DMARC TXT | v=DMARC1; p=none | GoDaddy |
 
+### obitnotes.com Redirect
+
+The alternate domain `obitnotes.com` (with an 's') redirects all traffic to `obitnote.com`.
+
+- **DNS:** Both `obitnotes.com` and `www.obitnotes.com` resolve to 103.90.163.56 (production web server)
+- **nginx:** Separate server block (`/etc/nginx/sites-available/obitnotes`) proxies all requests to `/api/internal/redirect-log`
+- **API:** The redirect-log endpoint logs the visitor IP to the `redirect_log` table, then sends a 301 to `https://obitnote.com`
+- **SSL:** Separate Let's Encrypt cert covers `obitnotes.com` + `www.obitnotes.com`
+- **Redirect chain:** `http(s)://obitnotes.com/*` → 301 → `https://obitnote.com/*`
+
 ### SSL/TLS
 
 - Let's Encrypt via certbot (auto-renewal systemd timer)
-- Production covers: `obitnote.com` + `www.obitnote.com`
-- Staging covers: `stage.obitnote.com`
+- Production cert: `obitnote.com` + `www.obitnote.com`
+- Alternate domain cert: `obitnotes.com` + `www.obitnotes.com`
+- Staging cert: `stage.obitnote.com`
 - www → bare domain 301 redirect (both HTTP and HTTPS)
 
 ---
@@ -574,7 +625,7 @@ PADDLE_WEBHOOK_SECRET=<secret>
 SINCH_PROJECT_ID=<secret>
 SINCH_KEY_ID=<secret>
 SINCH_KEY_SECRET=<secret>
-SINCH_FROM_NUMBER=+12066493599
+SINCH_FROM_NUMBER=+12013619440
 GEOLITE_DB_PATH=/var/www/obitnote/data/GeoLite2-City.mmdb
 NODE_ENV=production
 ```
@@ -748,53 +799,152 @@ If missing: SMS + email alert
 
 ### Disaster Recovery Procedures
 
-#### Scenario 1: Web Server Total Loss
+**Geographic redundancy:** Dallas warm standby (ON-PB-DAL-1) provides fast failover for all scenarios below.  PostgreSQL streaming replication keeps Dallas data within seconds of production.
 
-1. **Provision new server** on Kamatera (Chicago, Ubuntu 26.04 LTS, same specs)
-2. **Assign private IP** 10.0.0.4 on VLAN `lan-1834538-obitnote-chi`
-3. **Install software:** Node 20, nginx, PM2, Chromium, certbot
-4. **Configure UFW:** ports 22, 80, 443
-5. **Deploy code:** From dev server (10.0.0.3), run standard deploy process
-6. **Restore .env files:** Values documented in password manager (see Credentials section)
-7. **Configure nginx:** Copy site config from this document's nginx section
-8. **SSL:** Run certbot: `certbot --nginx -d obitnote.com -d www.obitnote.com`
-9. **PM2:** `pm2 start`, `pm2 save`, `pm2 startup`
-10. **Restore crontab:** backup-db.sh and check-disk.sh entries
-11. **DNS:** Update GoDaddy A record to new public IP
-12. **Verify:** `curl https://obitnote.com/api/health`
+#### Scenario A: Web Server Failure (DB still alive)
 
-**Time estimate:** 2-4 hours  
-**Data loss:** None (DB is on separate server)
+**Failover to Dallas (minutes, not hours):**
 
-#### Scenario 2: Database Server Total Loss
+1. SSH to Dallas: `ssh obitnote_admin@43.231.235.200`
+2. Verify VPN tunnel: `wg show` and `ping -c 1 10.0.0.2`
+3. Change DATABASE_URL to point through VPN:
+   ```bash
+   # In /var/www/obitnote/api/.env and search/.env:
+   DATABASE_URL=postgresql://onadmin:ondata@10.0.0.2:5432/dw
+   ```
+4. Change `SERVER_ROLE=primary` in api/.env
+5. `pm2 restart all --update-env`
+6. Start nginx: `sudo systemctl start nginx`
+7. Run certbot: `sudo certbot --nginx -d obitnote.com -d www.obitnote.com`
+8. Update GoDaddy: obitnote.com A record → 43.231.235.200
+9. Verify: `curl https://obitnote.com/api/health` (after DNS propagates)
 
-1. **Provision new server** on Kamatera (Chicago, same specs)
-2. **Assign private IP** 10.0.0.2 on same VLAN
-3. **Install PostgreSQL 16**
-4. **Configure pg_hba.conf:** Allow connections from 10.0.0.4 only
-5. **Create database:** `CREATE DATABASE dw; CREATE USER onadmin WITH PASSWORD 'ondata';`
-6. **Restore from backup:**
-   - Check web server: `ls -la /var/backups/postgresql/` (most recent dump)
-   - Or download from iDrive: `idrive --restore`
-   - Restore: `gunzip -c dw_YYYYMMDD.sql.gz | psql -U onadmin dw`
-7. **Verify from web server:** `psql -h 10.0.0.2 -U onadmin dw -c "SELECT count(*) FROM dw_user"`
-8. **Restart API:** `pm2 restart api` on web server
+**Time estimate:** 5-15 minutes  
+**Data loss:** Seconds (streaming replication)
 
-**Time estimate:** 1-2 hours  
-**Data loss:** Up to 24 hours (since last daily backup)
+#### Scenario B: Database Server Failure (web still alive)
 
-#### Scenario 3: Code Corruption / Bad Deploy
+**Promote Dallas replica:**
+
+1. SSH to Dallas: `ssh obitnote_admin@43.231.235.200`
+2. Promote: `sudo pg_ctlcluster 16 main promote`
+3. On Chicago web server, update api/.env and search/.env:
+   ```bash
+   DATABASE_URL=postgresql://onadmin:ondata@10.10.0.2:5432/dw
+   ```
+4. `pm2 restart all --update-env` on Chicago web server
+5. Set up backup-db.sh on Dallas for pg_dump + iDrive
+6. Verify: `psql -h 10.10.0.2 -U onadmin dw -c "SELECT 1"`
+
+**Time estimate:** 5-10 minutes  
+**Data loss:** Seconds (streaming replication)
+
+#### Scenario C: Full Chicago Datacenter Outage
+
+**Dallas takes over everything:**
+
+1. SSH to Dallas: `ssh obitnote_admin@43.231.235.200`
+2. Promote PG replica: `sudo pg_ctlcluster 16 main promote`
+3. DATABASE_URL already points to localhost — no change needed
+4. Change `SERVER_ROLE=primary` in api/.env
+5. `pm2 restart all --update-env`
+6. Start nginx: `sudo systemctl start nginx`
+7. Run certbot: `sudo certbot --nginx -d obitnote.com -d www.obitnote.com`
+8. Update GoDaddy: obitnote.com A record → 43.231.235.200
+9. Set up backup-db.sh crontab for local pg_dump + iDrive
+10. Verify: `curl https://obitnote.com/api/health`
+
+**Time estimate:** 10-20 minutes  
+**Data loss:** Seconds (streaming replication)
+
+#### After Recovery: Switch Back to Chicago
+
+Once Chicago servers are repaired/rebuilt, follow these steps to restore the original configuration (Chicago primary, Dallas standby).
+
+**Prerequisites:** Chicago web server (ON-WB-CHI-1) and DB server (ON-DB-CHI-1) are back online.  WireGuard tunnel is re-established (`ping -c 1 10.10.0.2` from Chicago succeeds).
+
+**Step 1: Copy data from Dallas to Chicago DB**
+
+```bash
+# On Dallas (currently the primary), dump the database:
+sudo -u postgres pg_dump -Fc dw > /tmp/dw_recovery.dump
+
+# SCP to Chicago web server, then to DB server:
+scp /tmp/dw_recovery.dump obitnote_admin@103.90.163.56:/tmp/
+# From Chicago web server:
+scp /tmp/dw_recovery.dump obitnote_admin@10.0.0.2:/tmp/
+
+# On Chicago DB server, restore:
+sudo -u postgres dropdb dw
+sudo -u postgres createdb -O onadmin dw
+sudo -u postgres pg_restore -d dw /tmp/dw_recovery.dump
+```
+
+**Step 2: Re-establish streaming replication (Chicago primary → Dallas replica)**
+
+```bash
+# On Dallas, stop the application and PostgreSQL:
+pm2 stop all
+sudo systemctl stop postgresql
+
+# Clear Dallas data directory and re-basebackup from Chicago:
+sudo -u postgres bash -c 'rm -rf /var/lib/postgresql/16/main/*'
+sudo -u postgres bash -c 'PGPASSWORD=ondata pg_basebackup -h 10.0.0.2 -U replicator -D /var/lib/postgresql/16/main -Fp -Xs -P -R'
+sudo systemctl start postgresql
+
+# Verify Dallas is back in replica mode:
+sudo -u postgres psql -c "SELECT pg_is_in_recovery();"   # should be 't'
+```
+
+**Step 3: Restore Dallas to standby mode**
+
+```bash
+# On Dallas, update api/.env:
+#   SERVER_ROLE=standby
+#   DATABASE_URL=postgresql://onadmin:ondata@localhost:5432/dw
+pm2 restart all --update-env
+sudo systemctl stop nginx
+sudo systemctl disable nginx
+```
+
+**Step 4: Point traffic back to Chicago**
+
+```bash
+# On Chicago web server, update api/.env and search/.env:
+#   DATABASE_URL=postgresql://onadmin:ondata@10.0.0.2:5432/dw
+#   SERVER_ROLE=primary
+pm2 restart all --update-env
+
+# Update GoDaddy: obitnote.com A record → 103.90.163.56
+```
+
+**Step 5: Verify**
+
+```bash
+# From Chicago:
+curl -s http://localhost:3001/api/health
+pm2 logs api --lines 5 --nostream   # should show crons running
+
+# From Dallas:
+sudo -u postgres psql -c "SELECT pg_is_in_recovery();"   # true
+pm2 logs api --lines 5 --nostream   # should show standby message
+
+# From Chicago DB:
+sudo -u postgres psql -c "SELECT client_addr, state FROM pg_stat_replication;"   # Dallas streaming
+```
+
+#### Scenario: Code Corruption / Bad Deploy
 
 1. **Rollback:** Re-deploy previous version from git
 2. **Or restore from last known-good tarball** (keep recent tarballs in /tmp)
 3. **Restart services:** `pm2 restart all`
 
-#### Scenario 4: Database Corruption (No Server Loss)
+#### Scenario: Database Corruption (No Server Loss)
 
 1. **Stop API/Search:** `pm2 stop all`
 2. **Assess damage:** `psql -h 10.0.0.2 -U onadmin dw` — check table integrity
 3. **If minor:** Targeted fixes via SQL
-4. **If severe:** Full restore from backup (see Scenario 2, step 6)
+4. **If severe:** Promote Dallas replica (see Scenario B) or full restore from backup
 5. **Restart:** `pm2 start all`
 
 ### Backup Script Location
@@ -856,10 +1006,10 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 ### Sinch (SMS)
 
 - **Role:** SMS notifications (match alerts, fatal error alerts)
-- **Phone number:** +12066493599
+- **Phone number:** +12013619440 (NJ local, area code 201)
 - **SDK:** @sinch/sdk-core (Node.js), configured with `smsRegion: 'us'`
-- **Status:** Delivery blocked (error code 60 — 10DLC/carrier registration issue).  Support ticket submitted 2026-05-18, awaiting response.
-- **Workaround:** Fatal error SMS still attempts; delivery will resume when Sinch resolves carrier blocking
+- **Status:** Operational (fixed 2026-05-18 — wrong FROM number in .env; corrected from +12066493599 to +12013619440)
+- **10DLC:** Brand registration approved (UltraSafe Data, id: 01kpxm61qryxgm58s32dc4tqce).  Campaign registration not yet submitted but SMS delivering without it.
 
 ### MaxMind GeoLite2
 
@@ -1065,6 +1215,44 @@ Checks 13 health points across all 3 servers:
 ssh obitnote_admin@146.71.78.194 "node /var/www/obitnote/obitnote_roundrobin_check.js"
 ```
 
+### Runbook: Failover to Dallas Standby
+
+**When:** Chicago servers are unreachable or critically degraded.
+
+1. SSH to Dallas: `ssh obitnote_admin@43.231.235.200`
+2. Check replication status: `sudo -u postgres psql -c "SELECT pg_is_in_recovery();"`
+3. If DB failover needed, promote replica: `sudo pg_ctlcluster 16 main promote`
+4. If using Chicago DB through VPN, verify tunnel: `wg show` and `ping -c 1 10.0.0.2`
+5. Update api/.env:
+   - `SERVER_ROLE=primary`
+   - `DATABASE_URL=postgresql://onadmin:ondata@localhost:5432/dw` (promoted replica) or `@10.0.0.2:5432/dw` (Chicago DB via VPN)
+6. `pm2 restart all --update-env`
+7. Start nginx: `sudo systemctl start nginx`
+8. SSL: `sudo certbot --nginx -d obitnote.com -d www.obitnote.com`
+9. DNS: Update GoDaddy obitnote.com A record → 43.231.235.200
+10. Verify: `curl https://obitnote.com/api/health`
+11. Set up backup-db.sh crontab if running on local DB
+
+### Runbook: Verify Dallas Standby Health
+
+**Frequency:** Weekly or after any production deploy.
+
+```bash
+ssh obitnote_admin@43.231.235.200
+# VPN tunnel
+ping -c 1 10.0.0.2
+# Replication mode
+sudo -u postgres psql -c "SELECT pg_is_in_recovery();"   # should be 't'
+# Replication lag
+sudo -u postgres psql -c "SELECT NOW() - pg_last_xact_replay_timestamp();"   # should be < 1s
+# API health
+curl -s http://localhost:3001/api/health
+# PM2 status
+pm2 status
+# Crons disabled
+pm2 logs api --lines 5 --nostream | grep standby
+```
+
 ### Runbook: Add New Support Staff (On-Call)
 
 1. Admin panel → Support Chief page
@@ -1086,6 +1274,7 @@ ssh obitnote_admin@146.71.78.194 "node /var/www/obitnote/obitnote_roundrobin_che
 - Node.js 20+
 - PostgreSQL (any recent version; dev uses 18)
 - Git
+- GitHub CLI (`gh`) — for monitoring CI status after pushes
 
 ### Local Setup
 
@@ -1116,6 +1305,12 @@ npm run dev
 | Search Engine | 3000 | http://localhost:3000 |
 | API Server | 3001 | http://localhost:3001 |
 | Expo Dev Server | 8081 | http://localhost:8081 |
+
+### CI / GitHub Actions
+
+- **Trigger:** Every push to main runs `npx tsc --noEmit` on both client and API
+- **Monitor after push:** `gh run list --limit 1` then `gh run view <id> --log-failed` if it fails
+- **Known gotcha:** `.gitignore` pattern `data/` can exclude files under `client/src/data/` — use `git add -f` for those files
 
 ### Code Conventions
 

@@ -328,6 +328,13 @@ app.listen(PORT, () => {
   console.log(`ObitNote API running on http://localhost:${PORT}`);
 });
 
+const isStandby = process.env.SERVER_ROLE === 'standby';
+if (isStandby) {
+  console.log('[Startup] SERVER_ROLE=standby — cron jobs disabled');
+}
+
+if (!isStandby) {
+
 // Daily batch: run at 11:00 AM ET (16:00 UTC)
 cron.schedule('0 16 * * *', async () => {
   console.log('[Cron] Starting daily batch...');
@@ -423,6 +430,8 @@ cron.schedule('10 2 * * *', async () => {
     reportFatalError('backup', null, `Backup check cron failed: ${err.message || String(err)}`).catch(() => {});
   }
 });
+
+} // end if (!isStandby)
 
 // Clean up headless browser on shutdown
 process.on('SIGINT', async () => { await closeBrowser(); process.exit(0); });
