@@ -18,6 +18,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta property="og:description" content="Get notified when an obituary is published for someone you care about.  ObitNote searches daily and sends you a text and email." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://obitnote.com" />
+        <meta property="og:image" content="https://obitnote.com/og-image.jpg" />
         <meta property="og:site_name" content="ObitNote" />
 
         {/* Twitter/X card */}
