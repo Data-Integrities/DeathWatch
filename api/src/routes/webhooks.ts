@@ -6,6 +6,10 @@ import { reportFatalError } from '../services/fatalErrorService';
 const router = Router();
 
 const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET || '';
+if (process.env.NODE_ENV === 'production' && !PADDLE_WEBHOOK_SECRET) {
+  console.error('[FATAL] PADDLE_WEBHOOK_SECRET is required in production');
+  process.exit(1);
+}
 
 function verifyPaddleSignature(rawBody: string, signatureHeader: string): boolean {
   const parts = signatureHeader.split(';');
@@ -42,7 +46,7 @@ router.post('/paddle', async (req: Request, res: Response) => {
     return;
   }
 
-  if (PADDLE_WEBHOOK_SECRET && !verifyPaddleSignature(rawBody, signature)) {
+  if (!verifyPaddleSignature(rawBody, signature)) {
     console.error('[Webhook] Invalid signature');
     reportFatalError('paddle', '401', 'Paddle webhook signature verification failed').catch(() => {});
     res.status(401).json({ error: 'Invalid signature' });

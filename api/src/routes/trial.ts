@@ -45,34 +45,35 @@ router.use(authMiddleware);
 
 router.post('/search', async (req: Request, res: Response) => {
   try {
-    // Check trial eligibility
+    // Atomically check eligibility and increment trial counter
     const { rows: userRows } = await pool.query(
-      'SELECT trial_searches_used, subscription_active, email, phone_number, sms_opt_in FROM dw_user WHERE login_id = $1',
-      [req.userId!]
+      `UPDATE dw_user
+       SET trial_searches_used = trial_searches_used + 1, updated_at = NOW()
+       WHERE login_id = $1 AND subscription_active = false AND trial_searches_used < $2
+       RETURNING trial_searches_used, email, phone_number, sms_opt_in`,
+      [req.userId!, TRIAL_MAX]
     );
     if (userRows.length === 0) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-
-    const user = userRows[0];
-    if (user.subscription_active) {
-      res.status(400).json({ error: 'Subscribers do not need trial searches.' });
-      return;
-    }
-    if (user.trial_searches_used >= TRIAL_MAX) {
+      const { rows: check } = await pool.query(
+        'SELECT subscription_active, trial_searches_used FROM dw_user WHERE login_id = $1',
+        [req.userId!]
+      );
+      if (check.length === 0) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+      if (check[0].subscription_active) {
+        res.status(400).json({ error: 'Subscribers do not need trial searches.' });
+        return;
+      }
       res.status(403).json({ error: 'All free trial searches have been used.' });
       return;
     }
 
+    const user = userRows[0];
+
     // Validate input
     const data = searchCreateSchema.parse(req.body);
-
-    // Increment trial counter
-    await pool.query(
-      'UPDATE dw_user SET trial_searches_used = trial_searches_used + 1, updated_at = NOW() WHERE login_id = $1',
-      [req.userId!]
-    );
 
     // Call search engine
     const params = new URLSearchParams();
@@ -132,7 +133,7 @@ router.post('/search', async (req: Request, res: Response) => {
     res.json({
       trialSearchId: trialRows[0].id,
       results,
-      trialSearchesUsed: user.trial_searches_used + 1,
+      trialSearchesUsed: user.trial_searches_used,
       trialSearchesMax: TRIAL_MAX,
     });
   } catch (err: any) {

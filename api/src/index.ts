@@ -50,7 +50,9 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
+app.use(cors({
+  origin: process.env.APP_URL || 'http://localhost:8081',
+}));
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -110,6 +112,29 @@ app.get('/api/proxy', async (req, res) => {
 
   if (!url) {
     res.status(400).send('url required');
+    return;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') {
+      res.status(400).send('Only https URLs are allowed');
+      return;
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/.test(hostname)
+    ) {
+      res.status(400).send('URL not allowed');
+      return;
+    }
+  } catch {
+    res.status(400).send('Invalid URL');
     return;
   }
 
