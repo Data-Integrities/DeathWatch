@@ -1052,6 +1052,8 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 | **iDrive** | Off-site backup storage | jim.jones@musicdatasystems.com | Configured in idrive CLI on server | idrive.com account |
 | **UptimeRobot** | Uptime monitoring | jimjones1000@gmail.com | Web dashboard | uptimerobot.com |
 | **Betterstack** | Uptime monitoring | jimjones1000@gmail.com | Web dashboard | betterstack.com |
+| **Facebook** | Marketing / advertising | jimjones1000@gmail.com | Facebook Business Suite | business.facebook.com |
+| **Northwest Registered Agent** | LLC registered agent | jimjones1000@gmail.com | Client dashboard | northwestregisteredagent.com |
 
 ### Paddle.com (Payment Provider)
 
@@ -1094,6 +1096,21 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 - **Database file:** GeoLite2-City.mmdb
 - **Location:** /var/www/obitnote/data/ on both prod and staging
 - **Updates:** Manual download from MaxMind account (free tier, quarterly updates)
+
+### Facebook (Marketing)
+
+- **Role:** Primary marketing and advertising channel for user acquisition
+- **Page:** ObitNote Facebook page (live)
+- **Ads:** Campaigns starting ~2026-05-24
+- **Open Graph:** og:image tag deployed (ObitNote_FB_profile_1.jpg served as /og-image.jpg)
+- **Account:** jimjones1000@gmail.com via Facebook Business Suite
+
+### Northwest Registered Agent
+
+- **Role:** Registered agent for UltraSafe Data, LLC
+- **Service:** Receives legal/state correspondence on behalf of the company
+- **Account:** jimjones1000@gmail.com
+- **Dashboard:** northwestregisteredagent.com client portal
 
 ---
 
