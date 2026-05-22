@@ -66,11 +66,7 @@ export function SearchCard({ search, onPress, onViewMatches, onEdit, onDelete }:
 
         {hasMatchBadge && (
           <View style={styles.matchBadgeHighlight}>
-            {search.matchCntNew > 0 ? (
-              <Text style={styles.matchBadgeHighlightText}>Possible match found</Text>
-            ) : (
-              <Text style={styles.matchBadgeHighlightText}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text></Text>
-            )}
+            <Text style={styles.matchBadgeHighlightText}>Possible match found.  <Text style={styles.matchLink}>Please open.</Text></Text>
           </View>
         )}
       </Pressable>
