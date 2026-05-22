@@ -1,6 +1,6 @@
 # ObitNote — Master Technical Documentation
 
-**Last Modified:** 2026-05-19  
+**Last Modified:** 2026-05-22  
 **Owner:** James Jones (james.jones@obitnote.com)  
 **Audience:** Successor developer / operations handoff
 
@@ -606,7 +606,11 @@ cp /var/www/obitnote/client/assets/apple-touch-icon.png /var/www/obitnote/client
 cp /var/www/obitnote/client/assets/icon-192.png /var/www/obitnote/client/dist/
 cp /var/www/obitnote/client/assets/icon-512.png /var/www/obitnote/client/dist/
 cp /var/www/obitnote/client/assets/manifest.json /var/www/obitnote/client/dist/
+cp /var/www/obitnote/client/assets/ObitNote_FB_profile_1.jpg /var/www/obitnote/client/dist/og-image.jpg
 sed -i 's|</head>|<link rel="apple-touch-icon" href="/apple-touch-icon.png" /><link rel="manifest" href="/manifest.json" /><meta name="theme-color" content="#663399" /></head>|' /var/www/obitnote/client/dist/index.html
+# Fix title and inject SEO/OG meta tags (Expo export doesn't include +html.tsx tags)
+sed -i 's|<title>ObitNote</title>|<title>ObitNote - Obituary Monitoring \&amp; Alert Service</title>|' /var/www/obitnote/client/dist/index.html
+sed -i 's|</head>|<meta name="description" content="ObitNote is an obituary monitoring and alert service.  Get notified when an obituary is published for someone you care about.  Daily obituary watch across the US, Canada, the UK, Australia, and New Zealand with email and text notifications." /><meta name="keywords" content="obituary alert, obituary notification, obituary monitoring, obituary watch, death notification service, funeral notification" /><link rel="canonical" href="https://obitnote.com" /><meta property="og:title" content="ObitNote - Obituary Monitoring \&amp; Alert Service" /><meta property="og:description" content="Get notified when an obituary is published for someone you care about.  ObitNote searches daily and sends you a text and email." /><meta property="og:type" content="website" /><meta property="og:url" content="https://obitnote.com" /><meta property="og:image" content="https://obitnote.com/og-image.jpg" /><meta property="og:site_name" content="ObitNote" /><meta name="twitter:card" content="summary" /><meta name="twitter:title" content="ObitNote - Obituary Monitoring \&amp; Alert Service" /><meta name="twitter:description" content="Get notified when an obituary is published for someone you care about." /></head>|' /var/www/obitnote/client/dist/index.html
 
 # 6. Run migrations (if new migration files)
 cd /var/www/obitnote/search && node src/db/migrate.js
@@ -654,6 +658,7 @@ DATABASE_URL=postgres://onadmin:ondata@10.0.0.2:5432/dw
 5. **expo-secure-store crashes on web** — must stay uninstalled
 6. **Must use --no-minify** — minification breaks expo-modules-core class name detection
 7. **nginx gzip** compensates for unminified bundle size (3MB → 616KB transfer)
+8. **+html.tsx is NOT used in static export** — Expo export ignores the custom HTML template; SEO/OG meta tags must be injected via sed post-build
 
 ---
 
@@ -1114,8 +1119,10 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 
 ### Application Security
 
-- CORS enabled
-- Webhook signature verification (Paddle HMAC-SHA256)
+- CORS restricted to APP_URL origin (not wildcard)
+- Proxy endpoint validates URL scheme (HTTPS only) and blocks private/internal IP ranges (SSRF protection)
+- Trial search limit enforced atomically (UPDATE ... WHERE ... RETURNING, prevents race condition bypass)
+- Paddle webhook signature verification required in production (HMAC-SHA256, server refuses to start without secret)
 - Internal API endpoints restricted to localhost (IP check)
 - 16-second search creation throttle (anti-bot)
 - Express rate limiting on all public endpoints
