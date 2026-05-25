@@ -376,7 +376,7 @@ cron.schedule('0 16 * * *', async () => {
 
     const batch = await runBatch();
 
-    const users = await getUsersWithNewResults();
+    const users = await getUsersWithNewResults(batch.ranDt);
     for (const u of users) {
       await sendMatchNotification(u.email);
       if (u.smsOptIn && u.phoneNumber) {

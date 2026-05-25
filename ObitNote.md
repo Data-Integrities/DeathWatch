@@ -725,10 +725,21 @@ INSERT new results into user_result (status='pending', source_type='batch')
 UPDATE batch_log (status='completed', stats)
     |
     v
-For each user with new unread batch results:
+For each user with results inserted in THIS batch run (ran_dt match):
     +-- Send email notification
     +-- Send SMS (if opted in)
 ```
+
+### Notification Deduplication
+
+**Purpose:** Ensure users receive exactly ONE notification per new obituary match — not repeated daily alerts for the same unreviewed result.
+
+**Problem solved:** Without scoping notifications to the current batch run, any user with unread pending batch results would be re-notified every day until they log in and review.  This caused false "new match" alerts even when no new obituary was found.
+
+**Logic:**
+1. `runBatch()` records its start time as `ranDt` and stamps every newly inserted `user_result` row with that timestamp.
+2. After the batch completes, `getUsersWithNewResults(ranDt)` queries for users who have results with `source_type='batch'`, `status='pending'`, `is_read=false`, **AND `ran_dt` matching the current batch run**.
+3. Only users with genuinely new results (found today) receive email/SMS.  Older unread results do not trigger re-notification.
 
 ---
 

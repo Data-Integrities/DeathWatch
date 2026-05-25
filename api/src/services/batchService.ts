@@ -116,7 +116,7 @@ export async function runBatch() {
   }
 
   console.log(`[Batch] Complete. ${totalNewResults} new results across ${queries.length} queries (${queriesOk} ok, ${queriesFailed} failed).`);
-  return { queriesTotal: queries.length, queriesOk, queriesFailed, newResults: totalNewResults };
+  return { queriesTotal: queries.length, queriesOk, queriesFailed, newResults: totalNewResults, ranDt };
 }
 
 /**
@@ -129,7 +129,7 @@ export interface NotifyUser {
   smsOptIn: boolean;
 }
 
-export async function getUsersWithNewResults(): Promise<NotifyUser[]> {
+export async function getUsersWithNewResults(batchRanDt: Date): Promise<NotifyUser[]> {
   const { rows } = await pool.query(
     `SELECT DISTINCT du.email, du.phone_number, du.sms_opt_in
      FROM dw_user du
@@ -138,7 +138,9 @@ export async function getUsersWithNewResults(): Promise<NotifyUser[]> {
        AND ur.is_read = false
        AND ur.status = 'pending'
        AND ur.source_type = 'batch'
-     WHERE du.email IS NOT NULL`
+       AND ur.ran_dt = $1
+     WHERE du.email IS NOT NULL`,
+    [batchRanDt]
   );
   return rows.map((r: any) => ({
     email: r.email,
