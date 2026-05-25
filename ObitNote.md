@@ -784,8 +784,10 @@ Runs on Dallas because it can detect Chicago failures — the most critical scen
 **Alerting:**
 - SMS + email to Support Chief on Call + Jim Jones (+19044770311, jimjones1000@gmail.com)
 - Direct Sinch/Zoho calls — bypasses SERVER_ROLE=standby gating
-- Max 3 consecutive alerts per failing check, then suppressed
-- Recovery notifications sent when a check passes after failing
+- Requires 2 consecutive failures before first alert (single transient blips are logged but don't notify)
+- Max 3 alerts per failing check (on consecutive failures 2, 3, 4), then suppressed
+- Recovery notifications only sent if an alert was actually sent (i.e., failure reached 2+ consecutive)
+- HTTPS timeout: 20 seconds (increased from 10s to reduce false positives from transient network latency)
 
 **Replication lag check:** Compares WAL receive/replay positions first.  If both match, the primary is idle and the replica is caught up regardless of timestamp age.  Only alerts when receive LSN > replay LSN and lag exceeds 5 minutes.
 
