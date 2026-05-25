@@ -22,6 +22,7 @@ const ENV_PATH = '/var/www/obitnote/api/.env';
 const STATE_FILE = '/var/www/obitnote/data/roundrobin-state.json';
 const FAILOVER_FILE = '/var/www/obitnote/data/failover-executed.json';
 const MAX_ALERTS = 3;
+const ALERT_MIN_FAILS = 2; // require 2 consecutive failures before first alert
 const REPLICATION_LAG_THRESHOLD = 300; // seconds
 const FAILOVER_THRESHOLD = 5; // consecutive failures before auto-failover (5 × 2 min = 10 min)
 const DALLAS_PUBLIC_IP = '43.231.235.200';
@@ -239,7 +240,7 @@ function checkApiRemote(server) {
 }
 
 function checkHttps(server) {
-  const result = run(`curl -s -o /dev/null -w '%{http_code}' --max-time 10 ${server.httpsUrl}`);
+  const result = run(`curl -s -o /dev/null -w '%{http_code}' --max-time 20 ${server.httpsUrl}`);
   const ok = result === '200';
   return { check: 'HTTPS', passed: ok, detail: ok ? server.httpsUrl : `HTTP ${result || 'timeout'}` };
 }
@@ -613,7 +614,7 @@ async function main() {
       const prev = state[r.checkKey];
 
       if (r.passed) {
-        if (prev && prev.consecutiveFails > 0) {
+        if (prev && prev.consecutiveFails >= ALERT_MIN_FAILS) {
           recoveries.push(r);
         }
         delete state[r.checkKey];
@@ -624,11 +625,13 @@ async function main() {
         state[r.checkKey].consecutiveFails++;
         state[r.checkKey].lastFailDetail = r.detail;
 
-        if (state[r.checkKey].consecutiveFails <= MAX_ALERTS) {
+        if (state[r.checkKey].consecutiveFails >= ALERT_MIN_FAILS && state[r.checkKey].consecutiveFails < ALERT_MIN_FAILS + MAX_ALERTS) {
           newFailures.push(r);
           state[r.checkKey].lastAlertTime = new Date().toISOString();
+        } else if (state[r.checkKey].consecutiveFails < ALERT_MIN_FAILS) {
+          console.log(`  ${''.padEnd(14)} (watching — ${state[r.checkKey].consecutiveFails}/${ALERT_MIN_FAILS} consecutive fails before alert)`);
         } else {
-          console.log(`  ${''.padEnd(14)} (suppressed — alert ${state[r.checkKey].consecutiveFails}/${MAX_ALERTS} max)`);
+          console.log(`  ${''.padEnd(14)} (suppressed — ${MAX_ALERTS} alerts already sent)`);
         }
       }
     }
