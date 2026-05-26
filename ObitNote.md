@@ -103,6 +103,25 @@ Domain: obitnote.com (also owns obitnotes.com, redirects to obitnote.com)
     |                                              |
     |  PostgreSQL 16 (:5432)                       |
     |  Database: dw                                |
+    +--------------------+-------------------------+
+                         |
+                         | streaming replication
+                         |
+                         | WireGuard VPN (10.10.0.0/24)
+                         |
+    +--------------------+-------------------------+
+    |  DALLAS WARM STANDBY                         |
+    |  ON-PB-DAL-1 (43.231.235.200)                |
+    |  WireGuard: 10.10.0.2                        |
+    |                                              |
+    |  +----------+  +--------+    +--------+      |
+    |  |  nginx   |  |  api   |    | search |      |
+    |  | :80/:443 |  | :3001  |    | :3000  |      |
+    |  +----------+  +--------+    +--------+      |
+    |  SERVER_ROLE=standby (crons disabled)         |
+    |  PG 16 streaming replica                     |
+    |  Auto-failover: health check every 2 min     |
+    |  DNS swing via Cloudflare API on failure      |
     +----------------------------------------------+
 
     +----------------------------------------------+
