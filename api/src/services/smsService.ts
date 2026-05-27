@@ -54,6 +54,10 @@ export async function sendReplySms(phone: string) {
   await sendSms(phone, 'ObitNote: You have a new support reply.  Sign in to read: https://obitnote.com');
 }
 
+export async function sendNewSubscriptionSms(userState: string, geoState: string, amount: string) {
+  await sendSms('+19044770311', `ObitNote: new cust User ST: ${userState} Geo ST: ${geoState} - ${amount}`);
+}
+
 export async function sendErrorAlertSms(phone: string, summary: string) {
   await sendSms(phone, `ObitNote ERROR: ${summary}`);
 }

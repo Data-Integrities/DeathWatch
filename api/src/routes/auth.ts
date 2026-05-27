@@ -16,6 +16,7 @@ const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   phoneNumber: z.string().optional(),
+  stateCode: z.string().optional(),
 }).refine(d => d.password === d.passwordConfirm, {
   message: 'Passwords don\'t match',
   path: ['passwordConfirm'],
@@ -33,7 +34,7 @@ router.post('/register', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Invalid phone number.  Please check the number and try again.' });
       return;
     }
-    const result = await authService.register(data.email, data.password, data.firstName, data.lastName, data.phoneNumber);
+    const result = await authService.register(data.email, data.password, data.firstName, data.lastName, data.phoneNumber, data.stateCode);
     res.status(201).json(result);
   } catch (err: any) {
     if (err.name === 'ZodError') {

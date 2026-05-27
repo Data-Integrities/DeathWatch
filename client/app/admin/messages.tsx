@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Platform, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../src/services/api/client';
@@ -76,6 +76,12 @@ export default function MessagesScreen() {
   const [replyText, setReplyText] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
   const [toast, setToast] = useState('');
+  const replyInputRef = useCallback((node: any) => {
+    if (Platform.OS === 'web' && node) {
+      const el = node as HTMLTextAreaElement;
+      el.style.resize = 'vertical';
+    }
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -227,6 +233,7 @@ export default function MessagesScreen() {
                       ) : (
                         <View style={styles.replyForm}>
                           <TextInput
+                            ref={replyInputRef}
                             style={styles.replyInput}
                             value={replyText}
                             onChangeText={setReplyText}

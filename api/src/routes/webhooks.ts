@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { pool } from '../db/pool';
 import { reportFatalError } from '../services/fatalErrorService';
+import { sendNewSubscriptionSms } from '../services/smsService';
 
 const router = Router();
 
@@ -86,6 +87,30 @@ router.post('/paddle', async (req: Request, res: Response) => {
           [subscriptionId, planCode, startDate, renewalDate, userId]
         );
         console.log(`[Webhook] Activated subscription for user ${userId}, plan ${planCode}`);
+
+        // SMS notification to owner for new subscriptions
+        try {
+          const { rows: userRows } = await pool.query(
+            `SELECT state_code FROM dw_user WHERE login_id = $1`,
+            [userId]
+          );
+          const { rows: geoRows } = await pool.query(
+            `SELECT geo_region FROM login_history WHERE login_id = $1 ORDER BY created_at ASC LIMIT 1`,
+            [userId]
+          );
+          const userState = userRows[0]?.state_code || '??';
+          const geoState = geoRows[0]?.geo_region || '??';
+          const totalCents = (data.items || []).reduce((sum: number, item: any) => {
+            const unitAmount = parseInt(item.price?.unit_price?.amount || '0', 10);
+            const qty = item.quantity || 1;
+            return sum + unitAmount * qty;
+          }, 0);
+          const amount = totalCents > 0 ? `$${(totalCents / 100).toFixed(0)}` : planCode || 'new';
+          sendNewSubscriptionSms(userState, geoState, amount).catch(() => {});
+        } catch (smsErr: any) {
+          console.error('[Webhook] New subscription SMS failed:', smsErr.message);
+        }
+
         break;
       }
 

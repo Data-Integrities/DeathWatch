@@ -95,7 +95,7 @@ export async function impersonate(targetUserId: string) {
   return { token, user };
 }
 
-export async function register(email: string, password: string, firstName: string, lastName: string, phoneNumber?: string) {
+export async function register(email: string, password: string, firstName: string, lastName: string, phoneNumber?: string, stateCode?: string) {
   const existing = await pool.query(
     'SELECT login_id FROM dw_user WHERE email = $1',
     [email.toLowerCase()]
@@ -108,10 +108,10 @@ export async function register(email: string, password: string, firstName: strin
   const { token: verificationToken, expires: verificationExpires } = generateVerificationToken();
 
   const { rows } = await pool.query(
-    `INSERT INTO dw_user (email, password_hash, first_name, last_name, verification_token, verification_token_expires, phone_number)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO dw_user (email, password_hash, first_name, last_name, verification_token, verification_token_expires, phone_number, state_code)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [email.toLowerCase(), passwordHash, firstName, lastName, verificationToken, verificationExpires, normalizePhone(phoneNumber)]
+    [email.toLowerCase(), passwordHash, firstName, lastName, verificationToken, verificationExpires, normalizePhone(phoneNumber), stateCode || null]
   );
 
   const user = rowToUser(rows[0]);

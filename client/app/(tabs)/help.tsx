@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TextInput, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Image, Pressable, StyleSheet, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api/client';
@@ -46,6 +46,14 @@ export default function HelpScreen() {
 
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const messageInputRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && messageInputRef.current) {
+      const el = messageInputRef.current as HTMLTextAreaElement;
+      el.style.resize = 'vertical';
+    }
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -188,6 +196,7 @@ export default function HelpScreen() {
           />
           <Text style={styles.messageLabel}>Message</Text>
           <TextInput
+            ref={messageInputRef}
             style={styles.messageInput}
             value={body}
             onChangeText={setBody}

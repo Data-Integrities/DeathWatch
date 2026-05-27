@@ -7,7 +7,7 @@ interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
   signIn: (email: string, password: string, remember?: boolean) => Promise<UserProfile>;
-  signUp: (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string, phoneNumber?: string) => Promise<void>;
+  signUp: (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string, phoneNumber?: string, stateCode?: string) => Promise<void>;
   signOut: () => void;
   refreshUser: () => Promise<void>;
   impersonating: string | null;
@@ -86,8 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res.user;
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string, phoneNumber?: string) => {
-    const res = await api.post<LoginResponse>('/api/auth/register', { email, password, passwordConfirm, firstName, lastName, phoneNumber });
+  const signUp = useCallback(async (email: string, password: string, passwordConfirm: string, firstName: string, lastName: string, phoneNumber?: string, stateCode?: string) => {
+    const res = await api.post<LoginResponse>('/api/auth/register', { email, password, passwordConfirm, firstName, lastName, phoneNumber, stateCode });
     setAuthToken(res.token);
     storeToken(res.token);
     setUser(res.user);

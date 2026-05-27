@@ -72,7 +72,7 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       const fullPhone = buildFullPhone() || undefined;
-      await signUp(email, password, passwordConfirm, firstName, lastName, fullPhone);
+      await signUp(email, password, passwordConfirm, firstName, lastName, fullPhone, state || undefined);
       setRegistered(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed.  Please try again.');
