@@ -1,6 +1,6 @@
 # ObitNote — Master Technical Documentation
 
-**Last Modified:** 2026-05-22  
+**Last Modified:** 2026-05-26  
 **Owner:** James Jones (james.jones@obitnote.com)  
 **Audience:** Successor developer / operations handoff
 
@@ -204,7 +204,8 @@ obit-person/                          # Mono-repo root
 │   │   │   ├── subscription.ts       # Cancel, change plan
 │   │   │   ├── webhooks.ts           # Paddle payment webhooks
 │   │   │   ├── admin.ts              # Admin: users, activity, impersonation
-│   │   │   └── errors.ts             # Client error reporting
+│   │   │   ├── errors.ts             # Client error reporting
+│   │   │   └── page-hits.ts         # Admin page hit analytics
 │   │   ├── services/
 │   │   │   ├── authService.ts        # JWT, bcrypt, user CRUD, preferences
 │   │   │   ├── searchService.ts      # Search query management
@@ -217,12 +218,13 @@ obit-person/                          # Mono-repo root
 │   │   │   ├── backupService.ts      # Backup/batch/DB health monitoring
 │   │   │   ├── messageService.ts     # Support ticket management
 │   │   │   ├── activityService.ts    # Activity logging
+│   │   │   ├── pageHitService.ts     # Anonymous page visit logging
 │   │   │   ├── geoService.ts         # MaxMind GeoIP lookups
 │   │   │   └── browserFetch.ts       # Puppeteer/Chromium page fetcher
 │   │   ├── db/
 │   │   │   ├── pool.ts              # pg.Pool (reports fatal on pool error)
 │   │   │   ├── migrate.ts           # Migration runner (_migrations table)
-│   │   │   └── migrations/          # 006-033 SQL migration files
+│   │   │   └── migrations/          # 006-034 SQL migration files
 │   │   └── types.ts                 # Shared TypeScript interfaces
 │   ├── dist/                        # Compiled JS (production runs from here)
 │   ├── package.json
@@ -277,6 +279,7 @@ obit-person/                          # Mono-repo root
 │   │   │   ├── users.tsx            # User management + impersonation
 │   │   │   ├── messages.tsx         # Support ticket admin
 │   │   │   ├── errors.tsx           # Error log viewer
+│   │   │   ├── page-hits.tsx       # Page visit analytics
 │   │   │   └── oncall.tsx           # Support Chief roster + fatal errors
 │   │   ├── search/
 │   │   │   ├── new.tsx              # New search form
@@ -334,8 +337,12 @@ obit-person/                          # Mono-repo root
 | paddleService | Paddle API: create/update/cancel subscriptions, sync person quantities |
 | fatalErrorService | Log fatal errors to DB, SMS on-call Support Chief (rate-limited 3/3min) |
 | backupService | Infrastructure monitoring: backup verification, batch verification, DB health checks |
-| geoService | MaxMind GeoLite2 IP-to-location (login history) |
+| pageHitService | Anonymous page visit logging with geolocation |
+| geoService | MaxMind GeoLite2 IP-to-location (login history, page hits) |
 | browserFetch | Headless Chromium for Cloudflare-protected pages (proxy endpoint) |
+
+**Public Endpoints (no auth):**
+- `POST /api/page-hit` — anonymous page visit logging (rate-limited: 10/minute); records page name, IP, geolocation
 
 **Internal Endpoints (localhost-only, no auth):**
 - `POST /api/internal/fatal-error` — fatal error reporting from search engine/cron scripts
@@ -401,6 +408,7 @@ Used for deduplication and exclusion matching across syndicated obituary URLs.
 | batch_log | Daily batch run statistics |
 | backup_log | Daily backup verification records |
 | error_log | Client-side JavaScript errors |
+| page_hit | Anonymous page visit tracking (IP, geolocation, timestamp) |
 | redirect_log | obitnotes.com → obitnote.com redirect tracking |
 | name_first_variant | Nickname/variant mappings (2,691 entries) for scoring |
 | _migrations | Migration tracking (prevents re-running applied migrations) |
@@ -408,7 +416,7 @@ Used for deduplication and exclusion matching across syndicated obituary URLs.
 ### Migration System
 
 - **Search engine migrations:** `search/src/db/migrations/` (001-005)
-- **API migrations:** `api/src/db/migrations/` (006-033)
+- **API migrations:** `api/src/db/migrations/` (006-034)
 - Both use `_migrations` tracking table — idempotent, safe to run repeatedly
 - Run: `cd api && npm run migrate` and `cd search && npm run db:migrate`
 
@@ -858,6 +866,7 @@ Runs on Dallas because it can detect Chicago failures — the most critical scen
 | batch_log | Daily batch run statistics | Indefinite |
 | backup_log | Daily backup status | Indefinite |
 | error_log | Client-side JavaScript errors | Indefinite |
+| page_hit | Anonymous page visits with geolocation | Indefinite |
 
 ---
 
@@ -1201,6 +1210,7 @@ All credentials are stored in `.env` files on the respective servers.  Jim Jones
 | Users | /admin/users | All users with stats, tier management, impersonation |
 | Messages | /admin/messages | Support ticket management with reply |
 | Error Log | /admin/errors | Client-side JS errors (date range, search, sort) |
+| Page Hits | /admin/page-hits | Anonymous page visit analytics (geo, date range, per-page filter) |
 | Support Chief | /admin/oncall | On-call roster + fatal error log |
 
 ### Admin Features

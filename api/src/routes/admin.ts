@@ -10,6 +10,7 @@ import { impersonate } from '../services/authService';
 import { normalizePhone } from '../utils/phone';
 import { v4 as uuidv4 } from 'uuid';
 import { syncSubscriptionQuantity } from '../services/paddleService';
+import { getPageHitSummary, getTrackedPages } from '../services/pageHitService';
 
 const VALID_PLAN_CODES = ['PLAN_5', 'PLAN_10', 'PLAN_CUSTOM'] as const;
 
@@ -491,6 +492,32 @@ router.get('/import/searches', async (req: Request, res: Response) => {
       nameLast: r.name_last,
       city: r.city,
     }))});
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// --- Page Hits ---
+
+router.get('/page-hits', async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const startDate = (req.query.startDate as string) || weekAgo.toISOString().slice(0, 10);
+    const endDate = (req.query.endDate as string) || today.toISOString().slice(0, 10);
+    const page = (req.query.page as string) || undefined;
+    const summary = await getPageHitSummary(startDate, endDate, page);
+    res.json({ summary });
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.get('/page-hits/pages', async (_req: Request, res: Response) => {
+  try {
+    const pages = await getTrackedPages();
+    res.json({ pages });
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message });
   }

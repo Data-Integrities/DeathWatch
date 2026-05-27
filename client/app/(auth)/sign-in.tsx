@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Platform, Pressable, Modal } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
@@ -40,6 +40,15 @@ export default function SignInScreen() {
   const [legalType, setLegalType] = useState<'terms' | 'privacy' | null>(null);
   const [searchInfoVisible, setSearchInfoVisible] = useState(false);
   const [unreadTicketId, setUnreadTicketId] = useState('');
+  useEffect(() => {
+    const base = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+    fetch(`${base}/api/page-hit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: 'sign-in' }),
+    }).catch(() => {});
+  }, []);
+
   const isReturning = Platform.OS === 'web' && (() => {
     try { return localStorage.getItem('obitnote_returning') === '1'; } catch { return false; }
   })();

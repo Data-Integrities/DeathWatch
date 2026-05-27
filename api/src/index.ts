@@ -21,6 +21,7 @@ import { sendMatchSms } from './services/smsService';
 import { browserFetch, closeBrowser } from './services/browserFetch';
 import { reportFatalError } from './services/fatalErrorService';
 import { reportBackup, checkTodayBackup, checkDatabaseHealth, checkTodayBatch } from './services/backupService';
+import { logPageHit } from './services/pageHitService';
 import { pool } from './db/pool';
 
 // Validate required env vars in production
@@ -335,6 +336,25 @@ app.get('/api/internal/redirect-log', (req, res) => {
   pool.query('INSERT INTO redirect_log (ip_address) VALUES ($1)', [ip]).catch(() => {});
   const path = (req.query.path as string) || '/';
   res.redirect(301, `https://obitnote.com${path}`);
+});
+
+// Page hit tracking (no auth required — fires before user signs in)
+const pageHitLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests.' },
+});
+app.post('/api/page-hit', pageHitLimiter, (req, res) => {
+  const { page } = req.body;
+  if (!page || typeof page !== 'string') {
+    res.status(400).json({ error: 'page is required' });
+    return;
+  }
+  const ip = (req.headers['x-forwarded-for'] as string || req.ip || '').split(',')[0].trim();
+  logPageHit(page, ip);
+  res.json({ ok: true });
 });
 
 // Health check

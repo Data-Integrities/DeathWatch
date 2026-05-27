@@ -278,6 +278,11 @@ export function SettingsModal({ visible, onClose }: Props) {
                   <Text style={styles.adminRowText}>Data Import</Text>
                   <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
                 </Pressable>
+                <View style={styles.adminDivider} />
+                <Pressable onPress={() => { onClose(); router.push('/admin/page-hits'); }} style={styles.adminRow}>
+                  <Text style={styles.adminRowText}>Page Hits</Text>
+                  <Text style={styles.adminRowArrow}>{'\u203A'}</Text>
+                </Pressable>
               </Card>
             )}
 
